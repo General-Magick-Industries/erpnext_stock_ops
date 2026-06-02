@@ -1,0 +1,20 @@
+{
+  "name": "Stock Ops",
+  "short_name": "StockOps",
+  "description": "Material Request & Stock Entry (mobile)",
+  "start_url": "/stock_ops/",
+  "scope": "/stock_ops/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#181410",
+  "theme_color": "#8a6f4e",
+  "lang": "id",
+  "icons": [
+    {
+      "src": "/assets/stock_ops/stock_ops/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

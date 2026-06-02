@@ -1,0 +1,25 @@
+{
+  "name": "stock-ops-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Stock Ops PWA frontend (Vue 3) for the stock_ops Frappe app",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "build:frappe": "node scripts/build-frappe.mjs",
+    "preview": "vite preview --host"
+  },
+  "dependencies": {
+    "@zxing/browser": "^0.1.5",
+    "@zxing/library": "^0.21.3",
+    "pinia": "^2.1.7",
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "vite": "^5.2.0",
+    "vite-plugin-pwa": "^0.17.5"
+  }
+}

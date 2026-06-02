@@ -1,0 +1,28 @@
+# Secrets
+**/.env
+**/.env.local
+**/.env.*.local
+*.pem
+*.key
+
+# Node / Vite
+node_modules/
+frontend/dist/
+frontend/dist-frappe/
+frontend/dev-dist/
+**/.vite/
+*.log
+
+# Python / Frappe
+__pycache__/
+*.pyc
+*.pyo
+
+# Built frontend (di-generate oleh `npm run build:frappe`)
+stock_ops/public/stock_ops/
+stock_ops/www/stock_ops/index.html
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.claude/
