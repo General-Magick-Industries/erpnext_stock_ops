@@ -1,0 +1,158 @@
+<script setup>
+import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useApp } from '../stores/app'
+import { useDocs } from '../stores/docs'
+import { useI18n } from '../lib/i18n'
+import { DOC_TYPE_LIST, DOC_TYPES } from '../data/mock'
+import { getLowStock } from '../lib/service'
+import AppBar from '../components/AppBar.vue'
+import StatusBadge from '../components/StatusBadge.vue'
+import { fmtDateTime } from '../lib/util'
+
+const app = useApp()
+const docs = useDocs()
+const router = useRouter()
+const { t, locale } = useI18n()
+
+const recent = computed(() => docs.sorted.slice(0, 4))
+const synced = computed(() => docs.docs.filter((d) => d.status === 'synced').length)
+
+// Menu peluncur (semua tile identik → pasti seragam)
+const menu = [
+  { icon: '🔎', color: '#0ea5e9', label: 'home.menu.lookup', to: '/lookup' },
+  { icon: '🏬', color: 'var(--brand)', label: 'home.menu.balance', to: '/balance' },
+  { icon: '📈', color: '#2563eb', label: 'home.menu.movement', to: '/movement' },
+  { icon: '⚠️', color: 'var(--warn)', label: 'home.menu.low', to: '/low' },
+  { icon: '🔁', color: '#ea580c', label: 'home.menu.transfer', to: '/quick-transfer' },
+  { icon: '📋', color: '#7c3aed', label: 'home.menu.opname', to: '/opname' }
+]
+
+// Alert stok menipis
+const lowCount = ref(0)
+async function loadLow() {
+  if (!app.online) return
+  try {
+    const r = await getLowStock(app.settings.company)
+    lowCount.value = (r.items || []).length
+  } catch {
+    lowCount.value = 0
+  }
+}
+
+// Jam berjalan
+const now = ref(new Date())
+let timer = null
+onMounted(() => {
+  loadLow()
+  timer = setInterval(() => (now.value = new Date()), 1000)
+})
+onUnmounted(() => clearInterval(timer))
+
+const clock = computed(() => {
+  const p = (n) => String(n).padStart(2, '0')
+  const d = now.value
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+})
+const dateStr = computed(() =>
+  now.value.toLocaleDateString(locale.value === 'id' ? 'id-ID' : 'en-GB', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  })
+)
+</script>
+
+<template>
+  <AppBar logo bell :bell-count="lowCount" />
+  <div class="content">
+    <!-- Hero -->
+    <div class="hero" style="position: relative; overflow: hidden">
+      <span v-if="app.settings.design === 'v2'" style="position: absolute; right: 14px; bottom: 8px; font-size: 52px; opacity: 0.85">📦</span>
+      <div class="row between">
+        <div>
+          <div class="small" style="opacity: 0.9">{{ t('home.hello', { name: app.user?.name }) }}</div>
+          <div style="font-weight: 700; margin-top: 2px; opacity: 0.95">{{ app.settings.company }}</div>
+        </div>
+        <div class="net-pill" :class="{ off: !app.online }" style="background: rgba(255,255,255,.18)">
+          <span class="dot"></span>{{ app.online ? t('common.online') : t('common.offline') }}
+        </div>
+      </div>
+      <div class="hero-clock">{{ clock }}</div>
+      <div class="small" style="opacity: 0.9; text-transform: capitalize">{{ dateStr }}</div>
+    </div>
+
+    <!-- Kartu stat berwarna (Desain v2) -->
+    <div v-if="app.settings.design === 'v2'" class="v2-stats mt12">
+      <div class="v2-stat" style="background: #d98a3d"><div class="n">{{ docs.docs.length }}</div><div class="l">{{ t('home.totalDocs') }}</div></div>
+      <div class="v2-stat" style="background: #7fa6a0"><div class="n">{{ docs.pendingCount }}</div><div class="l">{{ t('home.pendingSync') }}</div></div>
+      <div class="v2-stat" style="background: var(--brand)"><div class="n">{{ synced }}</div><div class="l">{{ t('home.synced') }}</div></div>
+    </div>
+
+    <!-- KPI hanya Desain A -->
+    <div v-if="app.settings.design === 'a'" class="kpi-grid mt12">
+      <div class="kpi"><div class="n">{{ docs.docs.length }}</div><div class="l">{{ t('home.totalDocs') }}</div></div>
+      <div class="kpi"><div class="n">{{ docs.pendingCount }}</div><div class="l">{{ t('home.pendingSync') }}</div></div>
+      <div class="kpi"><div class="n">{{ synced }}</div><div class="l">{{ t('home.synced') }}</div></div>
+    </div>
+
+    <div v-if="!app.online" class="banner-offline mt12">{{ t('home.offlineBanner') }}</div>
+
+    <!-- Alert stok menipis -->
+    <button v-if="lowCount" class="alert-low mt12" @click="router.push('/low')">
+      <span class="al-ic">⚠️</span>
+      <span class="grow" style="text-align: left; min-width: 0">
+        <span style="display: block; font-weight: 700">{{ t('home.lowAlert', { n: lowCount }) }}</span>
+        <span class="tiny" style="opacity: 0.85">{{ t('home.lowAlertSub') }}</span>
+      </span>
+      <span class="al-go">{{ t('home.viewAlerts') }} ›</span>
+    </button>
+
+    <!-- Menu peluncur seragam -->
+    <div class="section-title">{{ t('home.menuTitle') }}</div>
+    <div class="launch-grid">
+      <button v-for="m in menu" :key="m.to" class="launch-tile" @click="router.push(m.to)">
+        <span class="li" :style="{ background: m.color }">{{ m.icon }}</span>
+        <span class="lt">{{ t(m.label) }}</span>
+      </button>
+    </div>
+
+    <!-- Buat dokumen -->
+    <div class="section-title">{{ t('home.quickCreate') }}</div>
+    <div class="quick-grid">
+      <button
+        v-for="ty in DOC_TYPE_LIST"
+        :key="ty.key"
+        class="quick-tile"
+        :style="{ background: ty.color }"
+        @click="router.push(`/form/${ty.key}`)"
+      >
+        {{ t('docType.' + ty.key) }}
+      </button>
+    </div>
+
+    <!-- Terbaru -->
+    <div class="row between" style="margin-top: 18px">
+      <div class="section-title" style="margin: 0 4px">{{ t('home.recent') }}</div>
+      <router-link to="/docs" class="small" style="color: var(--brand); font-weight: 600">{{ t('common.viewAll') }}</router-link>
+    </div>
+
+    <div v-if="!recent.length" class="empty">
+      <div class="big">📦</div>
+      {{ t('home.emptyDocs') }}
+    </div>
+
+    <div
+      v-for="d in recent"
+      :key="d.localId"
+      class="list-item"
+      @click="router.push(`/doc/${d.localId}`)"
+      style="cursor: pointer"
+    >
+      <span class="lead-icon" :style="{ background: DOC_TYPES[d.type].color }">{{ DOC_TYPES[d.type].icon }}</span>
+      <div class="grow">
+        <div class="truncate" style="font-weight: 600">{{ d.remoteName || t('home.draftLocal') }}</div>
+        <div class="tiny muted">{{ t('docType.' + d.type) }} · {{ d.items.length }} {{ t('common.items') }} · {{ fmtDateTime(d.createdAt) }}</div>
+      </div>
+      <StatusBadge :status="d.status" :submitted="d.submitted" />
+    </div>
+  </div>
+</template>

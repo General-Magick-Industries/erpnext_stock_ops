@@ -1,0 +1,189 @@
+import { defineStore } from 'pinia'
+import { DOC_TYPES } from '../data/mock'
+import { uuid, todayStr } from '../lib/util'
+import { useApp } from './app'
+import { useI18n } from '../lib/i18n'
+import { buildPayload } from '../lib/payload'
+import { createTransaction, submitTransaction, cancelTransaction, uploadFile } from '../lib/service'
+import { getPhoto, deletePhotosByLocalId } from '../lib/idb'
+
+const LS = 'stockops.docs'
+
+function load() {
+  try {
+    return JSON.parse(localStorage.getItem(LS)) || []
+  } catch {
+    return []
+  }
+}
+
+// Status dokumen:
+//  draft   = tersimpan lokal, online, belum disubmit di server   (sudah punya remoteName)
+//  pending = dibuat offline, menunggu sync                         (outbox)
+//  syncing = sedang dikirim
+//  synced  = sudah dibuat di server (punya remoteName)            (= draft online juga)
+//  error   = gagal validasi server
+export const useDocs = defineStore('docs', {
+  state: () => ({
+    docs: load()
+  }),
+  getters: {
+    sorted: (s) => [...s.docs].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
+    outbox: (s) => s.docs.filter((d) => ['pending', 'syncing', 'error'].includes(d.status)),
+    pendingCount: (s) => s.docs.filter((d) => ['pending', 'error'].includes(d.status)).length,
+    byLocalId: (s) => (id) => s.docs.find((d) => d.localId === id)
+  },
+  actions: {
+    persist() {
+      localStorage.setItem(LS, JSON.stringify(this.docs))
+    },
+
+    newDraft(typeKey) {
+      const cfg = DOC_TYPES[typeKey]
+      const app = useApp()
+      return {
+        localId: uuid(),
+        type: typeKey,
+        doctype: cfg.doctype,
+        company: app.settings.company,
+        date: todayStr(),
+        sourceWarehouse: cfg.source ? app.settings.defaultSourceWarehouse : '',
+        targetWarehouse: cfg.target ? app.settings.defaultTargetWarehouse : '',
+        supplier: '',
+        remark: '',
+        geo: '',
+        items: [],
+        photos: [], // [{ id, dataUrl }]
+        status: 'pending',
+        remoteName: null,
+        error: null,
+        createdAt: new Date().toISOString()
+      }
+    },
+
+    // Simpan dokumen baru ke "outbox". Jika online + autoSync → langsung disinkron.
+    async save(doc) {
+      const app = useApp()
+      const { t } = useI18n()
+      doc.status = 'pending'
+      doc.createdAt = doc.createdAt || new Date().toISOString()
+      this.docs.unshift(doc)
+      this.persist()
+      if (app.online && app.settings.autoSync) {
+        await this.syncOne(doc.localId)
+      } else {
+        app.notify(t('toast.savedOutbox'), 'warn')
+      }
+      return doc
+    },
+
+    // Kirim ke ERPNext: buat dokumen draft (idempoten) lalu upload foto & lampirkan.
+    async syncOne(localId) {
+      const app = useApp()
+      const { t } = useI18n()
+      const doc = this.byLocalId(localId)
+      if (!doc || doc.status === 'synced') return
+      if (!app.online) {
+        app.notify(t('toast.syncDelayed'), 'warn')
+        return
+      }
+      doc.status = 'syncing'
+      this.persist()
+      try {
+        // 1) buat dokumen (server cek external_localid → cegah duplikat saat retry)
+        if (!doc.remoteName) {
+          const res = await createTransaction(buildPayload(doc))
+          doc.remoteName = res.name
+          this.persist()
+        }
+        // 2) upload foto yang belum terkirim (Blob dari IndexedDB), lampirkan ke dokumen
+        for (const p of doc.photos) {
+          if (p.uploaded) continue
+          const rec = await getPhoto(p.id)
+          const blob = rec ? rec.blob : null
+          if (!blob) {
+            p.uploaded = true // tidak ada blob (mis. data lama) — lewati
+            continue
+          }
+          await uploadFile(blob, {
+            doctype: doc.doctype,
+            docname: doc.remoteName,
+            isPrivate: app.settings.privatePhotos,
+            filename: p.name || 'foto.jpg'
+          })
+          p.uploaded = true
+          this.persist()
+        }
+        doc.status = 'synced'
+        doc.error = null
+        this.persist()
+        app.notify(t('toast.syncedTo', { doc: doc.remoteName }), 'success')
+      } catch (e) {
+        doc.status = 'error'
+        doc.error = e && e.message ? e.message : String(e)
+        this.persist()
+        app.notify(doc.error, 'error')
+      }
+    },
+
+    async syncAll() {
+      const app = useApp()
+      const { t } = useI18n()
+      if (!app.online) {
+        app.notify(t('toast.cantSyncOffline'), 'warn')
+        return
+      }
+      const pend = this.docs.filter((d) => ['pending', 'error'].includes(d.status))
+      if (!pend.length) {
+        app.notify(t('toast.nothingToSync'), 'info')
+        return
+      }
+      for (const d of pend) {
+        await this.syncOne(d.localId)
+      }
+    },
+
+    // Submit (online) — docstatus 1 via whitelisted method.
+    async submit(localId) {
+      const app = useApp()
+      const { t } = useI18n()
+      const doc = this.byLocalId(localId)
+      if (!doc) return
+      if (doc.status !== 'synced' || !doc.remoteName) {
+        app.notify(t('toast.submitFirst'), 'warn')
+        return
+      }
+      try {
+        await submitTransaction(doc.doctype, doc.remoteName)
+        doc.submitted = true
+        this.persist()
+        app.notify(t('toast.submitted', { doc: doc.remoteName }), 'success')
+      } catch (e) {
+        app.notify(e && e.message ? e.message : String(e), 'error')
+      }
+    },
+
+    // Batalkan dokumen submitted (docstatus 2)
+    async cancel(localId) {
+      const app = useApp()
+      const { t } = useI18n()
+      const doc = this.byLocalId(localId)
+      if (!doc || !doc.submitted || !doc.remoteName) return
+      try {
+        await cancelTransaction(doc.doctype, doc.remoteName)
+        doc.submitted = false
+        doc.cancelled = true
+        this.persist()
+        app.notify(t('toast.cancelled', { doc: doc.remoteName }), 'success')
+      } catch (e) {
+        app.notify(e && e.message ? e.message : String(e), 'error')
+      }
+    },
+
+    remove(localId) {
+      this.docs = this.docs.filter((d) => d.localId !== localId)
+      this.persist()
+      deletePhotosByLocalId(localId).catch(() => {})
+    }
+  }
+})

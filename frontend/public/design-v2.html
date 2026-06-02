@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="id" data-variant="vibrant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Stock Ops — Desain v2 (mockup)</title>
+<style>
+  :root{
+    --radius:24px; --r-sm:16px;
+    --ink:#1f2330; --muted:#8b90a0; --line:#eef0f5; --card:#fff;
+  }
+  /* ===== Palet (toggle) ===== */
+  body[data-variant="vibrant"]{ --bg1:#eef0ff; --bg2:#fbeefe; --brand:#6366f1; --brand2:#8b5cf6;
+    --c1:#fb7185; --c2:#38bdf8; --c3:#fbbf24; --hero1:#7c3aed; --hero2:#6366f1; }
+  body[data-variant="warm"]{ --bg1:#f6f3ef; --bg2:#fdf6ec; --brand:#8a6f4e; --brand2:#a88e6e;
+    --c1:#e0a35e; --c2:#7fa6a0; --c3:#caa06a; --hero1:#8a6f4e; --hero2:#a88e6e; }
+  body[data-variant="teal"]{ --bg1:#e9f6f3; --bg2:#eefaf6; --brand:#0d9488; --brand2:#14b8a6;
+    --c1:#f87171; --c2:#0ea5e9; --c3:#f59e0b; --hero1:#0f766e; --hero2:#14b8a6; }
+
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2));min-height:100vh;color:var(--ink)}
+  .topbar{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.8);backdrop-filter:blur(8px);
+    padding:12px 18px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .topbar h1{font-size:16px;margin:0;flex:1;min-width:160px}
+  .topbar .pal{display:flex;gap:6px}
+  .topbar .pal button{border:0;border-radius:999px;padding:8px 14px;font-weight:700;font-size:13px;cursor:pointer;background:#e9ebf3;color:#555}
+  .topbar .pal button.on{background:var(--brand);color:#fff}
+  .gallery{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;padding:26px 16px 60px}
+
+  /* ===== Phone frame ===== */
+  .phone{width:300px;height:620px;background:var(--card);border-radius:38px;box-shadow:0 30px 60px rgba(40,40,80,.18);
+    border:9px solid #11131c;overflow:hidden;position:relative;display:flex;flex-direction:column}
+  .scr{flex:1;overflow:hidden;display:flex;flex-direction:column;background:linear-gradient(170deg,var(--bg1),#fff 40%)}
+  .scr.dark{background:#0d1018}
+  .stat-os{height:30px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:11px;font-weight:700;flex:none}
+  .body{flex:1;overflow:hidden;padding:6px 16px 0}
+  .label{text-align:center;font-size:12px;color:var(--muted);margin-top:8px;font-weight:600}
+
+  /* shared bits */
+  .appbar{display:flex;align-items:center;gap:10px;padding:6px 2px 12px}
+  .appbar .logo{font-weight:800;font-size:16px;color:var(--brand);flex:1}
+  .ic-btn{width:34px;height:34px;border-radius:12px;background:#fff;box-shadow:0 4px 10px rgba(0,0,0,.06);display:grid;place-items:center;font-size:15px}
+  .hero{border-radius:var(--radius);padding:16px;color:#fff;background:linear-gradient(120deg,var(--hero1),var(--hero2));position:relative;overflow:hidden}
+  .hero .big{font-size:34px;position:absolute;right:14px;top:12px;opacity:.9}
+  .hero h2{margin:0;font-size:18px}
+  .hero p{margin:4px 0 0;font-size:12px;opacity:.9;max-width:70%}
+  .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:14px}
+  .stat{border-radius:var(--r-sm);padding:12px 10px;color:#fff}
+  .stat .n{font-size:22px;font-weight:800;line-height:1}
+  .stat .t{font-size:10px;opacity:.95;margin-top:4px}
+  .acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  .act{border-radius:var(--r-sm);padding:14px;color:#fff;display:flex;flex-direction:column;gap:8px;font-weight:700;font-size:13px}
+  .act .e{font-size:22px}
+  .sect{font-size:13px;font-weight:800;margin:16px 2px 8px;color:var(--ink)}
+  .row{display:flex;align-items:center;gap:12px;background:#fff;border-radius:var(--r-sm);padding:11px 12px;box-shadow:0 6px 16px rgba(40,40,80,.05);margin-bottom:10px}
+  .thumb{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:20px;flex:none;background:linear-gradient(135deg,var(--bg1),var(--bg2))}
+  .row .nm{font-weight:700;font-size:13px}
+  .row .sub{font-size:11px;color:var(--muted)}
+  .bar{height:6px;border-radius:99px;background:var(--line);margin-top:6px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:99px;background:var(--brand)}
+  .qty{font-weight:800;font-size:14px;white-space:nowrap}
+  .pill{border-radius:999px;background:var(--brand);color:#fff;font-weight:700;font-size:11px;padding:5px 10px}
+  .search{display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:10px 14px;box-shadow:0 6px 16px rgba(40,40,80,.06);margin:4px 0 10px}
+  .search input{border:0;outline:0;flex:1;font-size:13px;background:transparent}
+  .seg{display:flex;gap:6px;background:#fff;border-radius:999px;padding:4px;box-shadow:0 6px 16px rgba(40,40,80,.05);margin-bottom:12px}
+  .seg span{flex:1;text-align:center;font-size:12px;font-weight:700;color:var(--muted);padding:7px;border-radius:999px}
+  .seg span.on{background:var(--brand);color:#fff}
+
+  /* bottom nav + FAB */
+  .nav{height:64px;background:#fff;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-around;flex:none;position:relative}
+  .nav a{font-size:18px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px}
+  .nav a .e{font-size:18px}
+  .nav a.on{color:var(--brand)}
+  .fab{position:absolute;left:50%;top:-22px;transform:translateX(-50%);width:54px;height:54px;border-radius:50%;
+    background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;display:grid;place-items:center;font-size:26px;
+    box-shadow:0 10px 22px rgba(99,102,241,.45)}
+
+  /* item detail */
+  .imgwrap{height:150px;border-radius:var(--radius);background:linear-gradient(135deg,var(--bg1),var(--bg2));display:grid;place-items:center;font-size:60px;margin-bottom:12px}
+  .kv{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .kv b{font-weight:700}
+  .qa{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}
+  .qa button{border:0;border-radius:14px;color:#fff;padding:12px 4px;font-size:11px;font-weight:700;display:flex;flex-direction:column;gap:3px;align-items:center}
+
+  /* scan */
+  .scanwrap{flex:1;position:relative;display:grid;place-items:center}
+  .qr{width:170px;height:170px;border-radius:20px;background:#fff;display:grid;place-items:center;font-size:90px}
+  .frame{position:absolute;width:200px;height:200px;border:3px solid #fff;border-radius:24px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
+  .scanhint{position:absolute;bottom:80px;color:#fff;font-size:13px;opacity:.9}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>Stock Ops — Desain v2 <span style="color:var(--muted);font-weight:500">(mockup, klik palet)</span></h1>
+    <div class="pal">
+      <button class="on" onclick="setV(this,'vibrant')">Vibrant</button>
+      <button onclick="setV(this,'warm')">RMI Warm</button>
+      <button onclick="setV(this,'teal')">Teal</button>
+    </div>
+  </div>
+
+  <div class="gallery">
+
+    <!-- ===== 1. DASHBOARD ===== -->
+    <div>
+    <div class="phone"><div class="scr">
+      <div class="stat-os"><span>9:41</span><span>● ● ●</span></div>
+      <div class="body" style="overflow-y:auto">
+        <div class="appbar"><span class="logo">◆ RMI Stock</span><span class="ic-btn">🔔</span><span class="ic-btn">👤</span></div>
+        <div class="hero">
+          <span class="big">📦</span>
+          <h2>Hai, Bangun 👋</h2>
+          <p>Yuk cek &amp; atur stok barangmu hari ini</p>
+        </div>
+        <div class="stats">
+          <div class="stat" style="background:var(--c1)"><div class="n">12</div><div class="t">Menipis</div></div>
+          <div class="stat" style="background:var(--c2)"><div class="n">3</div><div class="t">Pending</div></div>
+          <div class="stat" style="background:var(--c3)"><div class="n">486</div><div class="t">Total Item</div></div>
+        </div>
+        <div class="acts">
+          <div class="act" style="background:linear-gradient(135deg,var(--brand),var(--brand2))"><span class="e">🔁</span>Transfer Cepat</div>
+          <div class="act" style="background:linear-gradient(135deg,var(--c3),#f59e0b)"><span class="e">📋</span>Stock Opname</div>
+        </div>
+        <div class="sect">Stok Menipis</div>
+        <div class="row"><span class="thumb">🔌</span><div style="flex:1"><div class="nm">Kabel NYM 2x1.5</div><div class="sub">Gudang Utama</div><div class="bar"><i style="width:18%;background:var(--c1)"></i></div></div><span class="qty" style="color:var(--c1)">9</span></div>
+        <div class="row"><span class="thumb">💡</span><div style="flex:1"><div class="nm">Lampu LED 12W</div><div class="sub">Toko Jakarta</div><div class="bar"><i style="width:30%;background:var(--c3)"></i></div></div><span class="qty">14</span></div>
+      </div>
+      <div class="nav"><a class="on"><span class="e">🏠</span>Home</a><a><span class="e">🏬</span>Stok</a><span class="fab">＋</span><a><span class="e">📈</span>Mutasi</a><a><span class="e">⚙️</span>Set</a></div>
+    </div></div>
+    <div class="label">Dashboard</div>
+    </div>
+
+    <!-- ===== 2. INVENTORY ===== -->
+    <div>
+    <div class="phone"><div class="scr">
+      <div class="stat-os"><span>9:41</span><span>● ● ●</span></div>
+      <div class="body" style="overflow-y:auto">
+        <div class="appbar"><span class="logo">Stok Gudang</span><span class="ic-btn">📷</span></div>
+        <div class="search">🔍 <input placeholder="Cari item / kode / barcode…"></div>
+        <div class="seg"><span class="on">Semua</span><span>Menipis</span><span>Reserved</span></div>
+        <div class="row"><span class="thumb">🪣</span><div style="flex:1"><div class="nm">Cat Tembok Putih 5kg</div><div class="sub">ITM-0003 · Box</div><div class="bar"><i style="width:80%"></i></div></div><span class="pill">220</span></div>
+        <div class="row"><span class="thumb">🧱</span><div style="flex:1"><div class="nm">Semen Portland 40kg</div><div class="sub">ITM-0005 · Box</div><div class="bar"><i style="width:55%"></i></div></div><span class="pill">138</span></div>
+        <div class="row"><span class="thumb">🚰</span><div style="flex:1"><div class="nm">Keran Air Stainless</div><div class="sub">ITM-0006 · Pcs</div><div class="bar"><i style="width:40%"></i></div></div><span class="pill">44</span></div>
+        <div class="row"><span class="thumb">⚡</span><div style="flex:1"><div class="nm">Sekring MCB 10A</div><div class="sub">ITM-0007 · Pcs</div><div class="bar"><i style="width:25%;background:var(--c3)"></i></div></div><span class="pill">28</span></div>
+        <div class="row"><span class="thumb">🟦</span><div style="flex:1"><div class="nm">Pipa PVC 3/4"</div><div class="sub">ITM-0004 · Nos</div><div class="bar"><i style="width:65%"></i></div></div><span class="pill">90</span></div>
+      </div>
+      <div class="nav"><a><span class="e">🏠</span>Home</a><a class="on"><span class="e">🏬</span>Stok</a><span class="fab">＋</span><a><span class="e">📈</span>Mutasi</a><a><span class="e">⚙️</span>Set</a></div>
+    </div></div>
+    <div class="label">Inventory / Stok</div>
+    </div>
+
+    <!-- ===== 3. ITEM DETAIL ===== -->
+    <div>
+    <div class="phone"><div class="scr">
+      <div class="stat-os"><span>9:41</span><span>● ● ●</span></div>
+      <div class="body" style="overflow-y:auto">
+        <div class="appbar"><span class="ic-btn">‹</span><span class="logo" style="font-size:14px">Detail Item</span><span class="ic-btn">⭐</span></div>
+        <div class="imgwrap">🧴</div>
+        <div style="font-weight:800;font-size:16px">Keran Air Stainless</div>
+        <div class="sub" style="color:var(--muted);font-size:12px">ITM-0006 · Barcode 8991234500062</div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:10px">
+          <div><div class="sub" style="color:var(--muted);font-size:11px">Total Stok</div><div style="font-size:28px;font-weight:800;color:var(--brand)">44 <span style="font-size:13px;color:var(--muted)">Pcs</span></div></div>
+        </div>
+        <div class="qa">
+          <button style="background:#16a34a">📥<span>Stock In</span></button>
+          <button style="background:#dc2626">📤<span>Stock Out</span></button>
+          <button style="background:var(--c3)">🔁<span>Transfer</span></button>
+        </div>
+        <div class="sect">Stok per Gudang</div>
+        <div class="kv"><span>🏬 Gudang Utama</span><b>30 Pcs</b></div>
+        <div class="kv"><span>🏬 Toko Jakarta</span><b>14 Pcs</b></div>
+        <div class="sect">Mutasi Terakhir</div>
+        <div class="kv"><span>Stock Entry · STE-019</span><b style="color:#16a34a">+20</b></div>
+        <div class="kv"><span>Transfer · STE-014</span><b style="color:#dc2626">−6</b></div>
+      </div>
+    </div></div>
+    <div class="label">Detail Item</div>
+    </div>
+
+    <!-- ===== 4. SCAN ===== -->
+    <div>
+    <div class="phone"><div class="scr dark">
+      <div class="stat-os" style="color:#fff"><span>9:41</span><span>● ● ●</span></div>
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 16px;color:#fff"><span class="ic-btn" style="background:#1c2030;color:#fff">‹</span><b style="flex:1">Scan Barcode</b><span class="ic-btn" style="background:#1c2030;color:#fff">⚡</span></div>
+      <div class="scanwrap">
+        <div class="qr">▦</div>
+        <div class="frame"></div>
+        <div class="scanhint">Arahkan kamera ke barcode item</div>
+      </div>
+      <div style="padding:16px;background:#0d1018"><div class="search" style="margin:0"><input placeholder="…atau ketik kode item"> <span class="pill">Cari</span></div></div>
+    </div></div>
+    <div class="label">Scan QR / Barcode</div>
+    </div>
+
+  </div>
+
+<script>
+  function setV(btn,v){
+    document.body.setAttribute('data-variant',v);
+    document.querySelectorAll('.pal button').forEach(b=>b.classList.remove('on'));
+    btn.classList.add('on');
+  }
+</script>
+</body>
+</html>

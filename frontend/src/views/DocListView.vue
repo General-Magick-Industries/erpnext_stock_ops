@@ -1,0 +1,128 @@
+<script setup>
+import { ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { useDocs } from '../stores/docs'
+import { useApp } from '../stores/app'
+import { useMaster } from '../stores/master'
+import { useI18n } from '../lib/i18n'
+import { listRecent } from '../lib/service'
+import { DOC_TYPES, DOC_TYPE_LIST } from '../data/mock'
+import AppBar from '../components/AppBar.vue'
+import StatusBadge from '../components/StatusBadge.vue'
+import FilterBar from '../components/FilterBar.vue'
+import { fmtDateTime } from '../lib/util'
+
+const docs = useDocs()
+const app = useApp()
+const master = useMaster()
+const router = useRouter()
+const { t } = useI18n()
+
+const scope = ref('local') // 'local' | 'server'
+const filterType = ref('ALL')
+const filterStatus = ref('ALL')
+const statusTabs = ['ALL', 'pending', 'synced', 'error']
+const activeCount = computed(() => (filterType.value !== 'ALL' ? 1 : 0) + (filterStatus.value !== 'ALL' ? 1 : 0))
+
+const localList = computed(() =>
+  docs.sorted.filter((d) => {
+    if (filterType.value !== 'ALL' && d.type !== filterType.value) return false
+    if (filterStatus.value !== 'ALL' && d.status !== filterStatus.value) return false
+    return true
+  })
+)
+
+// ===== Server =====
+const serverDocs = ref([])
+const loadingServer = ref(false)
+async function loadServer() {
+  loadingServer.value = true
+  try {
+    serverDocs.value = await listRecent(app.settings.company, 30)
+  } catch (e) {
+    app.notify(e && e.message ? e.message : String(e), 'error')
+    serverDocs.value = []
+  } finally {
+    loadingServer.value = false
+  }
+}
+watch(scope, (s) => {
+  if (s === 'server' && !serverDocs.value.length) loadServer()
+})
+
+// Petakan dokumen server → jenis app (untuk ikon/warna/label)
+function typeKeyOf(d) {
+  if (d.doctype === 'Material Request') return d.subtype === 'Purchase' ? 'PR' : 'MR'
+  return { 'Material Receipt': 'SE_IN', 'Material Issue': 'SE_OUT', 'Material Transfer': 'SE_TRANSFER' }[d.subtype] || 'SE_TRANSFER'
+}
+const docstatusClass = { 0: 's-pending', 1: 's-submitted', 2: 's-error' }
+function openInErp(d) {
+  const slug = d.doctype.toLowerCase().replace(/ /g, '-')
+  window.open(`/app/${slug}/${encodeURIComponent(d.name)}`, '_blank')
+}
+</script>
+
+<template>
+  <AppBar :title="t('list.title')" />
+  <div class="content">
+    <FilterBar :collapsible="scope === 'local'" :count="activeCount">
+      <template #bar>
+        <div class="seg">
+          <button :class="{ active: scope === 'local' }" @click="scope = 'local'">{{ t('list.local') }}</button>
+          <button :class="{ active: scope === 'server' }" @click="scope = 'server'">{{ t('list.server') }}</button>
+        </div>
+      </template>
+      <template v-if="scope === 'local'">
+        <div class="chips" style="margin-top: 10px">
+          <button class="chip" :class="{ active: filterType === 'ALL' }" @click="filterType = 'ALL'">{{ t('common.all') }}</button>
+          <button v-for="ty in DOC_TYPE_LIST" :key="ty.key" class="chip" :class="{ active: filterType === ty.key }" @click="filterType = ty.key">
+            {{ ty.icon }} {{ ty.short }}
+          </button>
+        </div>
+        <div class="chips" style="margin-top: 8px">
+          <button v-for="s in statusTabs" :key="s" class="chip" :class="{ active: filterStatus === s }" @click="filterStatus = s">
+            {{ s === 'ALL' ? t('common.all') : t('status.' + s) }}
+          </button>
+        </div>
+      </template>
+    </FilterBar>
+
+    <!-- ===== LOKAL ===== -->
+    <template v-if="scope === 'local'">
+      <div v-if="!localList.length" class="empty"><div class="big">📋</div>{{ t('list.empty') }}</div>
+
+      <div v-for="d in localList" :key="d.localId" class="list-item mt12" style="cursor: pointer" @click="router.push(`/doc/${d.localId}`)">
+        <span class="lead-icon" :style="{ background: DOC_TYPES[d.type].color }">{{ DOC_TYPES[d.type].icon }}</span>
+        <div class="grow">
+          <div class="row between">
+            <div class="truncate" style="font-weight: 700">{{ d.remoteName || t('home.draftLocal') }}</div>
+            <StatusBadge :status="d.status" :submitted="d.submitted" />
+          </div>
+          <div class="tiny muted truncate">{{ t('docType.' + d.type) }} · {{ d.items.length }} {{ t('common.items') }} · {{ fmtDateTime(d.createdAt) }}</div>
+          <div class="tiny muted truncate">{{ d.sourceWarehouse || '—' }} → {{ d.targetWarehouse || '—' }}</div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ===== SERVER ===== -->
+    <template v-else>
+      <div class="row between" style="margin: 2px 4px 8px">
+        <span class="tiny muted">{{ app.settings.company }}</span>
+        <button class="btn sm" :disabled="loadingServer" @click="loadServer">🔄</button>
+      </div>
+      <div v-if="loadingServer" class="empty"><div class="big">⏳</div>…</div>
+      <div v-else-if="!serverDocs.length" class="empty"><div class="big">📋</div>{{ t('list.empty') }}</div>
+      <div v-for="d in serverDocs" :key="d.name" class="list-item mt12" style="cursor: pointer" @click="openInErp(d)">
+        <span class="lead-icon" :style="{ background: DOC_TYPES[typeKeyOf(d)].color }">{{ DOC_TYPES[typeKeyOf(d)].icon }}</span>
+        <div class="grow">
+          <div class="row between">
+            <div class="truncate" style="font-weight: 700">{{ d.name }}</div>
+            <span class="badge-status" :class="docstatusClass[d.docstatus]">{{ t('status.' + d.docstatus) }}</span>
+          </div>
+          <div class="tiny muted truncate">{{ t('docType.' + typeKeyOf(d)) }} · {{ d.date }}</div>
+          <div class="tiny muted truncate">{{ t('list.openErp') }} ↗</div>
+        </div>
+      </div>
+    </template>
+  </div>
+</template>

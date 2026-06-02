@@ -1,0 +1,278 @@
+import { computed } from 'vue'
+import { useApp } from '../stores/app'
+
+export const LANGS = [
+  { code: 'id', label: 'Indonesia' },
+  { code: 'en', label: 'English' }
+]
+
+const messages = {
+  id: {
+    appName: 'Stock Ops',
+    common: {
+      online: 'Online', offline: 'Offline', save: 'Simpan', saving: 'Menyimpan…',
+      close: 'Tutup', add: 'Tambah', delete: 'Hapus', cancel: 'Batal', total: 'Total',
+      items: 'item', note: 'Catatan', optional: 'opsional', all: 'Semua', search: 'Cari',
+      logout: 'Keluar', yes: 'Ya', viewAll: 'Lihat semua', back: 'Kembali'
+    },
+    nav: { home: 'Beranda', list: 'Daftar', create: 'Buat', settings: 'Setelan', sync: 'Sync', balance: 'Stok', movement: 'Mutasi' },
+    docType: {
+      MR: 'Permintaan Transfer Barang',
+      PR: 'Permintaan Pembelian Barang',
+      SE_IN: 'Stock In (Barang Masuk)',
+      SE_OUT: 'Stock Out (Barang Keluar)',
+      SE_TRANSFER: 'Transfer Barang',
+      groupMR: 'Permintaan Barang',
+      groupSE: 'Stok Barang'
+    },
+    home: {
+      hello: 'Halo, {name} 👋', pendingSync: 'Menunggu sync', synced: 'Tersinkron',
+      totalDocs: 'Total dokumen', quickCreate: 'Buat Dokumen', recent: 'Terbaru', menuTitle: 'Menu',
+      emptyDocs: 'Belum ada dokumen. Tekan tombol Buat di bawah.',
+      offlineBanner: '📴 Mode offline — transaksi tersimpan di Outbox & disinkron saat online.',
+      draftLocal: 'Draft lokal',
+      lowAlert: '{n} item stok menipis', lowAlertSub: 'Ketuk untuk lihat & minta beli', viewAlerts: 'Lihat',
+      menu: { lookup: 'Cari / Scan', balance: 'Stok', movement: 'Mutasi', low: 'Menipis', transfer: 'Transfer', opname: 'Opname' }
+    },
+    create: { title: 'Buat Dokumen' },
+    form: {
+      newSuffix: 'Baru', company: 'Perusahaan', date: 'Tanggal', supplier: 'Supplier',
+      sourceWh: 'Gudang Asal', targetWh: 'Gudang Tujuan', noItems: 'Belum ada item',
+      totalQty: 'Total Qty', photos: 'Foto Barang', addPhoto: 'Tambah foto',
+      processing: 'Memproses…', notePlaceholder: 'Keterangan (opsional)',
+      photoHint: 'Foto di-upload ke attachment dokumen ({vis}) saat sync.',
+      offlineHint: '📴 Offline — tersimpan di Outbox & disinkron otomatis saat online.',
+      location: 'Lokasi', tagLocation: 'Tag Lokasi', locating: 'Mengambil lokasi…', locationOff: 'Lokasi tidak tersedia', viewMap: 'Lihat peta',
+      saveSync: 'Simpan & Sync (draft)', saveOutbox: 'Simpan ke Outbox',
+      vItems: 'Tambahkan minimal 1 item', vQty: 'Qty item tidak boleh 0',
+      vSrc: 'Pilih gudang asal', vTgt: 'Pilih gudang tujuan', vSame: 'Gudang asal & tujuan tidak boleh sama'
+    },
+    list: { title: 'Daftar Dokumen', empty: 'Tidak ada dokumen pada filter ini', local: 'Lokal', server: 'Server', openErp: 'Buka di ERPNext' },
+    detail: {
+      localId: 'Local ID', created: 'Dibuat', error: 'Error', syncNow: 'Sync sekarang',
+      syncing: 'Menyinkron…', offlineCantSync: 'Offline — tidak bisa sync',
+      submit: 'Submit dokumen', cancel: 'Batalkan dokumen', confirmCancel: 'Batalkan dokumen ini?',
+      notFound: 'Dokumen tidak ditemukan', confirmDelete: 'Hapus dokumen ini?'
+    },
+    report: {
+      title: 'Laporan', period: 'Bulan ini', mrGroup: 'Permintaan Barang', seGroup: 'Stok Barang',
+      none: 'Belum ada data bulan ini', total: 'Total'
+    },
+    balance: {
+      title: 'Stok Gudang', search: 'Cari item…', empty: 'Tidak ada stok', allWh: 'Semua',
+      restricted: 'Gudang Anda', available: 'Tersedia', reserved: 'Reserved', items: 'item'
+    },
+    movement: {
+      title: 'Pergerakan Stok', search: 'Cari item…', empty: 'Belum ada pergerakan',
+      all: 'Semua', in: 'Masuk', out: 'Keluar', sisa: 'Sisa', from: 'Dari', to: 'Sampai'
+    },
+    lookup: {
+      title: 'Cari / Scan Item', search: 'Ketik kode / nama item…', scanHint: 'atau scan barcode',
+      empty: 'Ketik kode item atau scan barcode', notFound: 'Item tidak ditemukan'
+    },
+    item: {
+      title: 'Detail Item', totalStock: 'Total Stok', perWarehouse: 'Stok per Gudang',
+      movements: 'Mutasi Terakhir', barcode: 'Barcode', group: 'Grup', noStock: 'Tidak ada stok di gudang Anda',
+      transfer: 'Transfer', stockIn: 'Stock In', stockOut: 'Stock Out'
+    },
+    low: {
+      title: 'Stok Menipis', threshold: 'Ambang', empty: 'Tidak ada stok menipis 👍',
+      level: 'Batas', request: 'Minta Beli', items: 'item',
+      selectAll: 'Pilih semua', clear: 'Batal', reqQty: 'Req', bulkRequest: 'Request Beli',
+      selected: '{n} dipilih', created: 'MR {name} dibuat ({n} item)'
+    },
+    opname: {
+      title: 'Stock Opname', pickWh: 'Pilih gudang', search: 'Cari item…', system: 'Sistem', counted: 'Fisik',
+      diff: 'Selisih', empty: 'Tidak ada item di gudang ini', submit: 'Buat Rekonsiliasi',
+      noDiff: 'Tidak ada selisih untuk direkonsiliasi', created: 'Rekonsiliasi {name} dibuat ({n} item)',
+      changedOnly: 'Hanya item dengan selisih yang dikirim', count: 'item berubah'
+    },
+    qt: {
+      title: 'Transfer Cepat', item: 'Item', pickItem: 'Pilih item…', from: 'Dari Gudang', to: 'Ke Gudang',
+      qty: 'Jumlah', available: 'Tersedia', submit: 'Buat Transfer', needItem: 'Pilih item dulu',
+      sameWh: 'Gudang asal & tujuan harus beda', needQty: 'Jumlah harus > 0'
+    },
+    sync: {
+      title: 'Sync / Outbox', waiting: '{n} menunggu', syncedN: '{n} tersinkron',
+      syncAll: '🔄 Sync semua', autoSync: 'Auto-sync', autoSyncDesc: 'Kirim otomatis saat online',
+      outbox: 'Outbox', allSynced: 'Semua sudah tersinkron', sync: 'Sync'
+    },
+    settings: {
+      title: 'Pengaturan', defaults: 'Default Transaksi', companyDefault: 'Perusahaan default',
+      srcDefault: 'Gudang Asal default', tgtDefault: 'Gudang Tujuan default',
+      appearance: 'Tampilan & Bahasa', language: 'Bahasa', theme: 'Tema',
+      themeSystem: 'Ikut sistem', themeLight: 'Terang', themeDark: 'Gelap',
+      design: 'Tampilan', designClassic: 'Klasik', designA: 'Desain A · Dashboard', designB: 'Desain B · Kompak', designV2: 'Desain v2 · Modern',
+      notif: 'Notifikasi', enableNotif: 'Aktifkan notifikasi push', enableNotifDesc: 'Pemberitahuan saat dokumen disubmit',
+      testNotif: 'Kirim notifikasi uji', notifOnlyBench: 'Tersedia saat dibuka via server (bukan dev)',
+      photoSync: 'Foto & Sync', privatePhoto: 'Foto private', privatePhotoDesc: 'is_private = 1 di attachment',
+      autoSync: 'Auto-sync', autoSyncDesc: 'Kirim otomatis saat online',
+      saveSettings: 'Simpan Pengaturan', syncOutbox: 'Sync / Outbox', syncOutboxDesc: 'Antrian & status sinkronisasi',
+      reports: 'Laporan', reportsDesc: 'Ringkasan dokumen bulan ini',
+      other: 'Lainnya', backend: 'Backend (P1)', mockVersion: 'Versi mock',
+      clearData: '🧹 Bersihkan data lokal', confirmClear: 'Hapus semua dokumen lokal (mock)?'
+    },
+    login: {
+      subtitle: 'Permintaan & Stok Barang — Mobile', email: 'Email', password: 'Password',
+      signIn: 'Masuk', mockNote: 'P0 mock — login apa saja diterima. Di P1 terhubung ke sesi ERPNext.'
+    },
+    status: { pending: 'Pending', syncing: 'Syncing…', synced: 'Synced', error: 'Error', draft: 'Draft', submitted: 'Submitted', cancelled: 'Cancelled', '0': 'Draft', '1': 'Submitted', '2': 'Cancelled' },
+    picker: { title: 'Pilih Item', searchPlaceholder: 'Cari nama / kode / barcode…', noMatch: 'Tidak ada item cocok' },
+    scan: {
+      title: 'Scan Barcode', hint: 'Arahkan kamera ke barcode item',
+      notFound: 'Item dengan barcode {code} tidak ditemukan', camFail: 'Kamera tidak tersedia / izin ditolak'
+    },
+    toast: {
+      loginOk: 'Login berhasil (mock)', photosAdded: '{n} foto ditambahkan', photoFail: 'Gagal memproses foto',
+      savedOutbox: 'Tersimpan di Outbox (offline) — akan disinkron saat online', syncedTo: 'Tersinkron → {doc}',
+      syncDelayed: 'Masih offline — sync ditunda', nothingToSync: 'Tidak ada yang perlu disinkron',
+      cantSyncOffline: 'Tidak bisa sync — sedang offline', submitFirst: 'Sync dulu sebelum submit',
+      submitted: '{doc} disubmit', cancelled: '{doc} dibatalkan', settingsSaved: 'Pengaturan disimpan', dataCleared: 'Data lokal dibersihkan',
+      scan: 'Scan: {code} → {name}',
+      notifOn: 'Notifikasi diaktifkan', notifOff: 'Notifikasi dimatikan', notifDenied: 'Izin notifikasi ditolak', testSent: 'Notifikasi uji dikirim'
+    }
+  },
+  en: {
+    appName: 'Stock Ops',
+    common: {
+      online: 'Online', offline: 'Offline', save: 'Save', saving: 'Saving…',
+      close: 'Close', add: 'Add', delete: 'Delete', cancel: 'Cancel', total: 'Total',
+      items: 'items', note: 'Note', optional: 'optional', all: 'All', search: 'Search',
+      logout: 'Log out', yes: 'Yes', viewAll: 'View all', back: 'Back'
+    },
+    nav: { home: 'Home', list: 'Docs', create: 'New', settings: 'Settings', sync: 'Sync', balance: 'Stock', movement: 'Moves' },
+    docType: {
+      MR: 'Goods Transfer Request',
+      PR: 'Purchase Request',
+      SE_IN: 'Stock In (Receipt)',
+      SE_OUT: 'Stock Out (Issue)',
+      SE_TRANSFER: 'Stock Transfer',
+      groupMR: 'Material Requests',
+      groupSE: 'Stock Entries'
+    },
+    home: {
+      hello: 'Hi, {name} 👋', pendingSync: 'Pending sync', synced: 'Synced',
+      totalDocs: 'Total documents', quickCreate: 'Create Document', recent: 'Recent', menuTitle: 'Menu',
+      emptyDocs: 'No documents yet. Tap the Create button below.',
+      offlineBanner: '📴 Offline mode — transactions saved to Outbox & synced when online.',
+      draftLocal: 'Local draft',
+      lowAlert: '{n} low-stock items', lowAlertSub: 'Tap to view & request', viewAlerts: 'View',
+      menu: { lookup: 'Find / Scan', balance: 'Stock', movement: 'Moves', low: 'Low Stock', transfer: 'Transfer', opname: 'Count' }
+    },
+    create: { title: 'Create Document' },
+    form: {
+      newSuffix: 'New', company: 'Company', date: 'Date', supplier: 'Supplier',
+      sourceWh: 'Source Warehouse', targetWh: 'Target Warehouse', noItems: 'No items yet',
+      totalQty: 'Total Qty', photos: 'Item Photos', addPhoto: 'Add photo',
+      processing: 'Processing…', notePlaceholder: 'Remark (optional)',
+      photoHint: 'Photos are uploaded to the document attachment ({vis}) on sync.',
+      offlineHint: '📴 Offline — saved to Outbox & auto-synced when online.',
+      location: 'Location', tagLocation: 'Tag Location', locating: 'Getting location…', locationOff: 'Location unavailable', viewMap: 'View map',
+      saveSync: 'Save & Sync (draft)', saveOutbox: 'Save to Outbox',
+      vItems: 'Add at least 1 item', vQty: 'Item qty cannot be 0',
+      vSrc: 'Select source warehouse', vTgt: 'Select target warehouse', vSame: 'Source & target warehouse must differ'
+    },
+    list: { title: 'Documents', empty: 'No documents for this filter', local: 'Local', server: 'Server', openErp: 'Open in ERPNext' },
+    detail: {
+      localId: 'Local ID', created: 'Created', error: 'Error', syncNow: 'Sync now',
+      syncing: 'Syncing…', offlineCantSync: 'Offline — cannot sync',
+      submit: 'Submit document', cancel: 'Cancel document', confirmCancel: 'Cancel this document?',
+      notFound: 'Document not found', confirmDelete: 'Delete this document?'
+    },
+    report: {
+      title: 'Reports', period: 'This month', mrGroup: 'Material Requests', seGroup: 'Stock Entries',
+      none: 'No data this month yet', total: 'Total'
+    },
+    balance: {
+      title: 'Warehouse Stock', search: 'Search item…', empty: 'No stock', allWh: 'All',
+      restricted: 'Your warehouse', available: 'Available', reserved: 'Reserved', items: 'items'
+    },
+    movement: {
+      title: 'Stock Movement', search: 'Search item…', empty: 'No movements yet',
+      all: 'All', in: 'In', out: 'Out', sisa: 'Bal', from: 'From', to: 'To'
+    },
+    lookup: {
+      title: 'Find / Scan Item', search: 'Type item code / name…', scanHint: 'or scan barcode',
+      empty: 'Type an item code or scan a barcode', notFound: 'Item not found'
+    },
+    item: {
+      title: 'Item Detail', totalStock: 'Total Stock', perWarehouse: 'Stock per Warehouse',
+      movements: 'Recent Movements', barcode: 'Barcode', group: 'Group', noStock: 'No stock in your warehouses',
+      transfer: 'Transfer', stockIn: 'Stock In', stockOut: 'Stock Out'
+    },
+    low: {
+      title: 'Low Stock', threshold: 'Threshold', empty: 'No low stock items 👍',
+      level: 'Limit', request: 'Request', items: 'items',
+      selectAll: 'Select all', clear: 'Clear', reqQty: 'Req', bulkRequest: 'Request Purchase',
+      selected: '{n} selected', created: 'MR {name} created ({n} items)'
+    },
+    opname: {
+      title: 'Stock Count', pickWh: 'Pick warehouse', search: 'Search item…', system: 'System', counted: 'Counted',
+      diff: 'Diff', empty: 'No items in this warehouse', submit: 'Create Reconciliation',
+      noDiff: 'No differences to reconcile', created: 'Reconciliation {name} created ({n} items)',
+      changedOnly: 'Only changed items are sent', count: 'items changed'
+    },
+    qt: {
+      title: 'Quick Transfer', item: 'Item', pickItem: 'Pick item…', from: 'From Warehouse', to: 'To Warehouse',
+      qty: 'Qty', available: 'Available', submit: 'Create Transfer', needItem: 'Pick an item first',
+      sameWh: 'Source & target must differ', needQty: 'Qty must be > 0'
+    },
+    sync: {
+      title: 'Sync / Outbox', waiting: '{n} waiting', syncedN: '{n} synced',
+      syncAll: '🔄 Sync all', autoSync: 'Auto-sync', autoSyncDesc: 'Send automatically when online',
+      outbox: 'Outbox', allSynced: 'Everything is synced', sync: 'Sync'
+    },
+    settings: {
+      title: 'Settings', defaults: 'Transaction Defaults', companyDefault: 'Default company',
+      srcDefault: 'Default source warehouse', tgtDefault: 'Default target warehouse',
+      appearance: 'Appearance & Language', language: 'Language', theme: 'Theme',
+      themeSystem: 'Follow system', themeLight: 'Light', themeDark: 'Dark',
+      design: 'Layout', designClassic: 'Classic', designA: 'Design A · Dashboard', designB: 'Design B · Compact', designV2: 'Design v2 · Modern',
+      notif: 'Notifications', enableNotif: 'Enable push notifications', enableNotifDesc: 'Alert when a document is submitted',
+      testNotif: 'Send test notification', notifOnlyBench: 'Available when opened via server (not dev)',
+      photoSync: 'Photo & Sync', privatePhoto: 'Private photos', privatePhotoDesc: 'is_private = 1 on attachment',
+      autoSync: 'Auto-sync', autoSyncDesc: 'Send automatically when online',
+      saveSettings: 'Save Settings', syncOutbox: 'Sync / Outbox', syncOutboxDesc: 'Queue & sync status',
+      reports: 'Reports', reportsDesc: "This month's document summary",
+      other: 'Other', backend: 'Backend (P1)', mockVersion: 'Mock version',
+      clearData: '🧹 Clear local data', confirmClear: 'Delete all local documents (mock)?'
+    },
+    login: {
+      subtitle: 'Material Request & Stock Entry — Mobile', email: 'Email', password: 'Password',
+      signIn: 'Sign in', mockNote: 'P0 mock — any login accepted. P1 connects to ERPNext session.'
+    },
+    status: { pending: 'Pending', syncing: 'Syncing…', synced: 'Synced', error: 'Error', draft: 'Draft', submitted: 'Submitted', cancelled: 'Cancelled', '0': 'Draft', '1': 'Submitted', '2': 'Cancelled' },
+    picker: { title: 'Pick Item', searchPlaceholder: 'Search name / code / barcode…', noMatch: 'No matching item' },
+    scan: {
+      title: 'Scan Barcode', hint: 'Point the camera at the item barcode',
+      notFound: 'No item with barcode {code}', camFail: 'Camera unavailable / permission denied'
+    },
+    toast: {
+      loginOk: 'Logged in (mock)', photosAdded: '{n} photo(s) added', photoFail: 'Failed to process photo',
+      savedOutbox: 'Saved to Outbox (offline) — will sync when online', syncedTo: 'Synced → {doc}',
+      syncDelayed: 'Still offline — sync deferred', nothingToSync: 'Nothing to sync',
+      cantSyncOffline: 'Cannot sync — currently offline', submitFirst: 'Sync before submitting',
+      submitted: '{doc} submitted', cancelled: '{doc} cancelled', settingsSaved: 'Settings saved', dataCleared: 'Local data cleared',
+      scan: 'Scan: {code} → {name}',
+      notifOn: 'Notifications enabled', notifOff: 'Notifications disabled', notifDenied: 'Notification permission denied', testSent: 'Test notification sent'
+    }
+  }
+}
+
+function resolve(dict, key) {
+  return key.split('.').reduce((o, k) => (o == null ? o : o[k]), dict)
+}
+
+export function useI18n() {
+  const app = useApp()
+  const locale = computed(() => app.settings.lang || 'id')
+  const t = (key, params) => {
+    const dict = messages[locale.value] || messages.id
+    let s = resolve(dict, key)
+    if (s == null) s = resolve(messages.id, key)
+    if (s == null) return key
+    if (params) for (const p of Object.keys(params)) s = s.replaceAll(`{${p}}`, params[p])
+    return s
+  }
+  return { t, locale }
+}
