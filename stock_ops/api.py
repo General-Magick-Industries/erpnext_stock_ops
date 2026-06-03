@@ -462,3 +462,30 @@ def report_counts(company=None):
 		if c:
 			res["se"][tp] = c
 	return res
+
+
+@frappe.whitelist()
+def get_or_create_token():
+	"""Setelah login (sesi via /api/method/login), kembalikan api_key + api_secret BARU.
+
+	Dipakai app mobile (Capacitor): login user/password sekali, lalu pakai token auth
+	untuk semua request berikutnya (tanpa cookie/CSRF) → ramah lintas-origin.
+	"""
+	user = frappe.session.user
+	if user == "Guest":
+		frappe.throw(frappe._("Harus login"), frappe.AuthenticationError)
+
+	# Set langsung pada user yang sedang login (bukan generate_keys yang butuh System Manager).
+	doc = frappe.get_doc("User", user)
+	if not doc.api_key:
+		doc.api_key = frappe.generate_hash(length=15)
+	secret = frappe.generate_hash(length=15)
+	doc.api_secret = secret
+	doc.save(ignore_permissions=True)
+	frappe.db.commit()
+	return {
+		"api_key": doc.api_key,
+		"api_secret": secret,
+		"user": user,
+		"full_name": frappe.utils.get_fullname(user),
+	}

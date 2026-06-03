@@ -1,4 +1,30 @@
 import { call, uploadFile } from './api'
+import { setServerUrl, setToken } from './platform'
+
+// Login app native: user/password → session → tukar jadi api token (disimpan).
+// 1) POST /api/method/login (login Frappe yang terlindungi rate-limit/lockout).
+// 2) GET get_or_create_token (cookie sesi, GET → tanpa CSRF) → api_key + api_secret.
+// Di Capacitor, fetch lewat native (CapacitorHttp) → bebas CORS, cookie dikelola native.
+export async function nativeLogin(url, usr, pwd) {
+  const base = (url || '').replace(/\/+$/, '')
+  if (!base) throw new Error('URL server kosong')
+  const r1 = await fetch(`${base}/api/method/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ usr, pwd })
+  })
+  if (!r1.ok) {
+    throw new Error(r1.status === 401 ? 'Email/username atau password salah' : `Login gagal (HTTP ${r1.status})`)
+  }
+  const r2 = await fetch(`${base}/api/method/stock_ops.api.get_or_create_token`, { headers: { Accept: 'application/json' } })
+  if (!r2.ok) throw new Error(`Gagal ambil token (HTTP ${r2.status})`)
+  const j = await r2.json()
+  const m = j && j.message
+  if (!m || !m.api_key || !m.api_secret) throw new Error('Token tidak valid dari server')
+  setServerUrl(base)
+  setToken(m.api_key, m.api_secret)
+  return m
+}
 
 // Master data (sekali panggil, untuk cache offline)
 export const bootstrap = () => call('stock_ops.api.get_bootstrap')

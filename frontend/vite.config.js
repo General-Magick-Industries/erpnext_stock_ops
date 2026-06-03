@@ -8,8 +8,10 @@ const nodeMajor = Number(process.versions.node.split('.')[0])
 // Build untuk disajikan bench: set STOCKOPS_OUTDIR ke apps/stock_ops/stock_ops/public/stock_ops.
 const frappeOut = process.env.STOCKOPS_OUTDIR || ''
 const isFrappeBuild = !!frappeOut
-// SW PWA dimatikan di Node<20 dan (sementara) pada build bench (scope SW di sub-path perlu penanganan khusus).
-const pwaDisabled = nodeMajor < 20 || isFrappeBuild
+// Build untuk Capacitor (Android): set CAP=1.
+const isCapBuild = !!process.env.CAP
+// SW PWA dimatikan di Node<20, pada build bench (scope SW sub-path), dan pada build native (tak perlu di WebView).
+const pwaDisabled = nodeMajor < 20 || isFrappeBuild || isCapBuild
 
 export default defineConfig(({ mode }) => {
   // loadEnv tanpa prefix '' => baca SEMUA var (termasuk non-VITE seperti FRAPPE_*).

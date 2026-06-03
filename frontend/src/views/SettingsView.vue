@@ -39,6 +39,7 @@ function setDesign(v) {
   app.saveSettings({ design: v })
 }
 const designs = computed(() => [
+  { v: 'erpnext', label: t('settings.designErp') },
   { v: 'v2', label: t('settings.designV2') },
   { v: 'classic', label: t('settings.designClassic') },
   { v: 'a', label: t('settings.designA') },
