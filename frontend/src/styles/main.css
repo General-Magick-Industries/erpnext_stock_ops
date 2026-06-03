@@ -332,6 +332,38 @@ a { color: inherit; text-decoration: none; }
 :root[data-design='v2'] .idv-img { width: 100%; height: 150px; border-radius: 22px; }
 :root[data-design='v2'] .idv-head { flex-direction: column; align-items: flex-start; gap: 10px; }
 
+/* ===== Tema ERPNext (biru Frappe, flat) — light & dark ===== */
+:root[data-design='erpnext'] { --radius: 10px; }
+:root[data-design='erpnext'][data-theme='light'] {
+  --bg: #f4f5f6; --card: #ffffff; --ink: #1f272e; --muted: #6b7280; --line: #e2e4e9;
+  --brand: #2490ef; --brand-ink: #ffffff; --brand-soft: #e7f1fd;
+  --appbar-bg: #ffffff; --appbar-ink: #1f272e;
+  --shadow: 0 1px 2px rgba(17, 24, 39, 0.05), 0 1px 3px rgba(17, 24, 39, 0.06);
+  --grad: linear-gradient(135deg, #2490ef, #1170cf);
+  --input-bg: #ffffff;
+}
+:root[data-design='erpnext'][data-theme='dark'] {
+  --bg: #141a1f; --card: #1f262d; --ink: #e8edf2; --muted: #8d99a6; --line: #2b343d;
+  --brand: #4aa3f0; --brand-ink: #08111a; --brand-soft: #15273a;
+  --appbar-bg: #1f262d; --appbar-ink: #e8edf2;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4); --grad: linear-gradient(135deg, #1f6fc0, #2490ef);
+  --input-bg: #11171c;
+}
+/* bentuk flat ala desk */
+:root[data-design='erpnext'] .card { border: 1px solid var(--line); border-radius: 10px; }
+:root[data-design='erpnext'] .list-item { border: 1px solid var(--line); box-shadow: none; border-radius: 10px; }
+:root[data-design='erpnext'] .lead-icon { border-radius: 8px; }
+:root[data-design='erpnext'] .thumb { border-radius: 8px; }
+:root[data-design='erpnext'] .btn { border-radius: 8px; }
+:root[data-design='erpnext'] .appbar { box-shadow: 0 1px 0 var(--line); }
+:root[data-design='erpnext'] .appbar .wordmark { color: var(--brand); font-weight: 800; font-size: 18px; }
+:root[data-design='erpnext'] .net-pill,
+:root[data-design='erpnext'] .bell-btn,
+:root[data-design='erpnext'] .appbar .back { background: var(--brand-soft); color: var(--ink); }
+:root[data-design='erpnext'] .bell-badge { border-color: var(--appbar-bg); }
+:root[data-design='erpnext'] .quick-tile { border-radius: 10px; }
+:root[data-design='erpnext'] .launch-tile { border-radius: 12px; border: 1px solid var(--line); box-shadow: none; }
+
 .switch { position: relative; display: inline-block; width: 48px; height: 28px; }
 .switch input { display: none; }
 .switch .slider { position: absolute; inset: 0; background: var(--line); border-radius: 999px; transition: .2s; }

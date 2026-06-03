@@ -1,12 +1,28 @@
-// Lapisan akses Frappe REST. Browser memanggil same-origin (/api/...),
-// proxy dev (vite.config.js) menambahkan token auth di sisi Node.
-// Saat di-deploy di dalam bench (P4), same-origin pakai cookie sesi.
+// Lapisan akses Frappe REST.
+// - Web di-serve bench: same-origin (/api/...) + cookie sesi + CSRF.
+// - Web dev (vite): same-origin diproksikan + token disuntik proxy Node.
+// - Native (Capacitor): base URL absolut (ERPNext) + Authorization token; CapacitorHttp
+//   mem-patch fetch → lewat native → tidak kena CORS.
+import { apiBase, getToken } from './platform'
 
-// CSRF token disuntik oleh www page Frappe (window.csrf_token). Di dev (proxy token) kosong.
+// CSRF token disuntik oleh www page Frappe (window.csrf_token). Di dev/native kosong.
 function csrfToken() {
   const t = typeof window !== 'undefined' ? window.csrf_token : ''
   if (!t || t.includes('{{')) return ''
   return t
+}
+
+// Header auth: native pakai token; web pakai CSRF (untuk POST) + cookie sesi.
+function authHeaders(isPost) {
+  const h = {}
+  const tok = getToken()
+  if (tok) {
+    h.Authorization = tok
+  } else if (isPost) {
+    const c = csrfToken()
+    if (c) h['X-Frappe-CSRF-Token'] = c
+  }
+  return h
 }
 
 class ApiError extends Error {
@@ -45,12 +61,10 @@ async function handle(res) {
 
 // Panggil whitelisted method. GET untuk read, POST untuk aksi.
 export async function call(method, params = {}, { post = false } = {}) {
-  let url = `/api/method/${method}`
-  const opts = { method: post ? 'POST' : 'GET', headers: { Accept: 'application/json' } }
+  let url = `${apiBase()}/api/method/${method}`
+  const opts = { method: post ? 'POST' : 'GET', headers: { Accept: 'application/json', ...authHeaders(post) } }
   if (post) {
     opts.headers['Content-Type'] = 'application/json'
-    const c = csrfToken()
-    if (c) opts.headers['X-Frappe-CSRF-Token'] = c
     opts.body = JSON.stringify(params)
   } else {
     const qs = new URLSearchParams()
@@ -70,12 +84,16 @@ export async function list(doctype, { fields, filters, limit = 0, order_by, pare
   if (order_by) qs.append('order_by', order_by)
   qs.append('limit_page_length', String(limit))
   if (parent) qs.append('parent', parent)
-  const json = await handle(await fetch(`/api/resource/${encodeURIComponent(doctype)}?${qs.toString()}`))
+  const json = await handle(
+    await fetch(`${apiBase()}/api/resource/${encodeURIComponent(doctype)}?${qs.toString()}`, { headers: authHeaders(false) })
+  )
   return json ? json.data : []
 }
 
 export async function getDoc(doctype, name) {
-  const json = await handle(await fetch(`/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`))
+  const json = await handle(
+    await fetch(`${apiBase()}/api/resource/${encodeURIComponent(doctype)}/${encodeURIComponent(name)}`, { headers: authHeaders(false) })
+  )
   return json ? json.data : null
 }
 
@@ -87,10 +105,9 @@ export async function uploadFile(blob, { doctype, docname, isPrivate = true, fil
   fd.append('folder', 'Home/Attachments')
   fd.append('doctype', doctype)
   fd.append('docname', docname)
-  const headers = {}
-  const c = csrfToken()
-  if (c) headers['X-Frappe-CSRF-Token'] = c
-  const json = await handle(await fetch('/api/method/upload_file', { method: 'POST', body: fd, headers }))
+  const json = await handle(
+    await fetch(`${apiBase()}/api/method/upload_file`, { method: 'POST', body: fd, headers: authHeaders(true) })
+  )
   return json ? json.message : null
 }
 

@@ -1,0 +1,13 @@
+{
+  "appId": "com.rmi.stockops",
+  "appName": "Stock Ops",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}

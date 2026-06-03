@@ -102,7 +102,7 @@ const messages = {
       srcDefault: 'Gudang Asal default', tgtDefault: 'Gudang Tujuan default',
       appearance: 'Tampilan & Bahasa', language: 'Bahasa', theme: 'Tema',
       themeSystem: 'Ikut sistem', themeLight: 'Terang', themeDark: 'Gelap',
-      design: 'Tampilan', designClassic: 'Klasik', designA: 'Desain A · Dashboard', designB: 'Desain B · Kompak', designV2: 'Desain v2 · Modern',
+      design: 'Tampilan', designClassic: 'Klasik', designA: 'Desain A · Dashboard', designB: 'Desain B · Kompak', designV2: 'Desain v2 · Modern', designErp: 'ERPNext · Biru',
       notif: 'Notifikasi', enableNotif: 'Aktifkan notifikasi push', enableNotifDesc: 'Pemberitahuan saat dokumen disubmit',
       testNotif: 'Kirim notifikasi uji', notifOnlyBench: 'Tersedia saat dibuka via server (bukan dev)',
       photoSync: 'Foto & Sync', privatePhoto: 'Foto private', privatePhotoDesc: 'is_private = 1 di attachment',
@@ -114,7 +114,9 @@ const messages = {
     },
     login: {
       subtitle: 'Permintaan & Stok Barang — Mobile', email: 'Email', password: 'Password',
-      signIn: 'Masuk', mockNote: 'P0 mock — login apa saja diterima. Di P1 terhubung ke sesi ERPNext.'
+      signIn: 'Masuk', mockNote: 'P0 mock — login apa saja diterima. Di P1 terhubung ke sesi ERPNext.',
+      server: 'URL Server ERPNext', userId: 'Email / Username',
+      nativeNote: 'Login dengan akun ERPNext Anda. Token disimpan di perangkat.'
     },
     status: { pending: 'Pending', syncing: 'Syncing…', synced: 'Synced', error: 'Error', draft: 'Draft', submitted: 'Submitted', cancelled: 'Cancelled', '0': 'Draft', '1': 'Submitted', '2': 'Cancelled' },
     picker: { title: 'Pilih Item', searchPlaceholder: 'Cari nama / kode / barcode…', noMatch: 'Tidak ada item cocok' },
@@ -227,7 +229,7 @@ const messages = {
       srcDefault: 'Default source warehouse', tgtDefault: 'Default target warehouse',
       appearance: 'Appearance & Language', language: 'Language', theme: 'Theme',
       themeSystem: 'Follow system', themeLight: 'Light', themeDark: 'Dark',
-      design: 'Layout', designClassic: 'Classic', designA: 'Design A · Dashboard', designB: 'Design B · Compact', designV2: 'Design v2 · Modern',
+      design: 'Layout', designClassic: 'Classic', designA: 'Design A · Dashboard', designB: 'Design B · Compact', designV2: 'Design v2 · Modern', designErp: 'ERPNext · Blue',
       notif: 'Notifications', enableNotif: 'Enable push notifications', enableNotifDesc: 'Alert when a document is submitted',
       testNotif: 'Send test notification', notifOnlyBench: 'Available when opened via server (not dev)',
       photoSync: 'Photo & Sync', privatePhoto: 'Private photos', privatePhotoDesc: 'is_private = 1 on attachment',
@@ -239,7 +241,9 @@ const messages = {
     },
     login: {
       subtitle: 'Material Request & Stock Entry — Mobile', email: 'Email', password: 'Password',
-      signIn: 'Sign in', mockNote: 'P0 mock — any login accepted. P1 connects to ERPNext session.'
+      signIn: 'Sign in', mockNote: 'P0 mock — any login accepted. P1 connects to ERPNext session.',
+      server: 'ERPNext Server URL', userId: 'Email / Username',
+      nativeNote: 'Sign in with your ERPNext account. Token stored on device.'
     },
     status: { pending: 'Pending', syncing: 'Syncing…', synced: 'Synced', error: 'Error', draft: 'Draft', submitted: 'Submitted', cancelled: 'Cancelled', '0': 'Draft', '1': 'Submitted', '2': 'Cancelled' },
     picker: { title: 'Pick Item', searchPlaceholder: 'Search name / code / barcode…', noMatch: 'No matching item' },

@@ -22,6 +22,10 @@ __pycache__/
 stock_ops/public/stock_ops/
 stock_ops/www/stock_ops/index.html
 
+# Capacitor native projects (regenerate dgn `npx cap add android`)
+frontend/android/
+frontend/ios/
+
 # OS / editor
 .DS_Store
 Thumbs.db

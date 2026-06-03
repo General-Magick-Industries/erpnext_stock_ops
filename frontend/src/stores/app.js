@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { COMPANIES, WAREHOUSES } from '../data/mock'
 import { useMaster } from './master'
+import { isNative } from '../lib/platform'
 
 const LS = 'stockops.app'
 
@@ -30,7 +31,7 @@ export const useApp = defineStore('app', {
         autoSync: true,
         lang: 'id', // 'id' | 'en'
         theme: 'system', // 'system' | 'light' | 'dark'
-        design: 'classic', // 'classic' | 'a' | 'b'
+        design: isNative() ? 'erpnext' : 'classic', // native default = tema ERPNext
         ...(saved.settings || {})
       },
       // toast sederhana
@@ -76,6 +77,8 @@ export const useApp = defineStore('app', {
     logout() {
       this.user = null
       this.persist()
+      // hapus token native (jika ada) supaya tidak auto-login lagi
+      import('../lib/platform').then((p) => p.clearToken()).catch(() => {})
     },
     setForceOffline(v) {
       this.forceOffline = v
