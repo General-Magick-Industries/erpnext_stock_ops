@@ -53,6 +53,33 @@ Di Android Studio: **Build → Build Bundle(s)/APK(s) → Build APK(s)**. APK ad
   `android/app/src/main/AndroidManifest.xml` bila belum (CAMERA, ACCESS_FINE_LOCATION). Capacitor sudah
   menambah INTERNET default.
 
+## Build via CLI tanpa Android Studio (mis. env: Android SDK + JBR JDK 21)
+`npx cap add android` membuat project Gradle dengan AGP 8.2.1 + Gradle 8.2.1 (mendukung JDK ≤20) dan
+build-tools default 34.0.0. Jika mesin pakai **JDK 21** dan/atau **belum ada build-tools 34.0.0**,
+sesuaikan project `android/` (sekali, setelah `cap add android`):
+
+1. `android/gradle/wrapper/gradle-wrapper.properties` → `gradle-8.7-all.zip` (dukung JDK 21).
+2. `android/build.gradle` → `classpath 'com.android.tools.build:gradle:8.5.2'`.
+3. `android/variables.gradle` → tambah `buildToolsVersion = '35.0.0'` (versi yang terpasang).
+4. `android/build.gradle` → di blok `subprojects { afterEvaluate { ... } }` set
+   `project.android.buildToolsVersion = rootProject.ext.buildToolsVersion` untuk semua modul.
+5. `android/local.properties` → `sdk.dir=D:\\Android\\Sdk`.
+6. Izin di `android/app/src/main/AndroidManifest.xml`: `CAMERA`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION`.
+
+Build:
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Android\Android Studio\jbr"   # JDK (JBR 21)
+$env:ANDROID_HOME = "D:\Android\Sdk"
+cd android
+.\gradlew.bat :app:assembleDebug --no-daemon
+```
+APK: `android/app/build/outputs/apk/debug/app-debug.apk`.
+
+> NB: folder `android/` di-gitignore (di-generate ulang via `cap add`). Bila ingin tweak di atas
+> permanen lintas-mesin, commit folder `android/` atau buat patch.
+
 ## Catatan
+- Scan kamera & geolokasi memakai API web (getUserMedia/Geolocation) di WebView; izin Android sudah
+  dideklarasikan. Login & semua fitur data jalan via token. Uji kamera/lokasi di perangkat nyata.
 - Service worker & Web Push tidak aktif di WebView native; push HP nanti via FCM (belum diimplementasi).
 - HTTPS server wajib untuk produksi (kamera/lokasi & keamanan token).
