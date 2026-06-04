@@ -325,24 +325,51 @@ MENU_FIELDS = {
 }
 
 
-def _menu_settings():
-	"""Flag tampil/sembunyi tiap menu dari Single 'Stock Ops Settings'.
-	Default True bila DocType belum ada (belum migrate) atau field belum diset."""
+def _menu_settings(settings=None):
+	"""Flag tampil/sembunyi tiap menu, dengan override per-role.
+
+	- Default per menu = field global `show_*` (True bila belum migrate/diset).
+	- Bila sebuah menu punya baris override untuk salah satu role user, nilai
+	  role dipakai (OR antar role: tampil bila ada role yang mengizinkan).
+	"""
+	s = settings
+	if s is None:
+		try:
+			s = frappe.get_cached_doc("Stock Ops Settings")
+		except Exception:
+			s = None
+
+	base = {}
+	for key, field in MENU_FIELDS.items():
+		val = getattr(s, field, None) if s else None
+		base[key] = True if val is None else bool(val)
+
+	# Kumpulkan override yang berlaku untuk role user
+	roles = set(frappe.get_roles(frappe.session.user))
+	applicable = {}  # menu -> list[bool]
+	for row in (getattr(s, "menu_overrides", None) or []):
+		if row.role in roles and row.menu in MENU_FIELDS:
+			applicable.setdefault(row.menu, []).append(bool(row.visible))
+
+	out = {}
+	for key in MENU_FIELDS:
+		out[key] = any(applicable[key]) if key in applicable else base[key]
+	return out
+
+
+def _app_settings():
 	try:
 		s = frappe.get_cached_doc("Stock Ops Settings")
 	except Exception:
 		s = None
-	out = {}
-	for key, field in MENU_FIELDS.items():
-		val = getattr(s, field, None) if s else None
-		out[key] = True if val is None else bool(val)
-	return out
+	default_lang = (getattr(s, "default_language", None) or "id") if s else "id"
+	return {"menu": _menu_settings(s), "default_lang": default_lang}
 
 
 @frappe.whitelist()
 def get_app_settings():
-	"""Hanya flag menu (untuk refresh tanpa bootstrap penuh)."""
-	return {"menu": _menu_settings()}
+	"""Menu flags + bahasa default (untuk refresh tanpa bootstrap penuh)."""
+	return _app_settings()
 
 
 @frappe.whitelist()
@@ -384,6 +411,7 @@ def get_bootstrap():
 		suppliers = []
 
 	default_company = frappe.defaults.get_user_default("Company") or (companies[0]["name"] if companies else None)
+	_app = _app_settings()
 
 	return {
 		"user": {"name": user, "full_name": frappe.utils.get_fullname(user)},
@@ -394,7 +422,8 @@ def get_bootstrap():
 		"suppliers": suppliers,
 		"defaults": {"company": default_company},
 		"user_warehouses": get_user_warehouses(),
-		"menu": _menu_settings(),
+		"menu": _app["menu"],
+		"default_lang": _app["default_lang"],
 		"server_time": frappe.utils.now(),
 	}
 
