@@ -307,6 +307,44 @@ def get_stock_balance(warehouse=None, company=None):
 	return {"warehouses": whs, "restricted": restricted, "balance": bins}
 
 
+# Peta key menu (dipakai aplikasi) -> fieldname checkbox di Stock Ops Settings.
+MENU_FIELDS = {
+	"stock_balance": "show_stock_balance",
+	"movement": "show_movement",
+	"documents": "show_documents",
+	"notifications": "show_notifications",
+	"scan": "show_scan",
+	"transfer": "show_transfer",
+	"low_stock": "show_low_stock",
+	"opname": "show_opname",
+	"mr": "show_mr",
+	"pr": "show_pr",
+	"se_in": "show_se_in",
+	"se_out": "show_se_out",
+	"se_transfer": "show_se_transfer",
+}
+
+
+def _menu_settings():
+	"""Flag tampil/sembunyi tiap menu dari Single 'Stock Ops Settings'.
+	Default True bila DocType belum ada (belum migrate) atau field belum diset."""
+	try:
+		s = frappe.get_cached_doc("Stock Ops Settings")
+	except Exception:
+		s = None
+	out = {}
+	for key, field in MENU_FIELDS.items():
+		val = getattr(s, field, None) if s else None
+		out[key] = True if val is None else bool(val)
+	return out
+
+
+@frappe.whitelist()
+def get_app_settings():
+	"""Hanya flag menu (untuk refresh tanpa bootstrap penuh)."""
+	return {"menu": _menu_settings()}
+
+
 @frappe.whitelist()
 def get_bootstrap():
 	"""Master data untuk Stock Ops PWA dalam satu panggilan (untuk cache offline)."""
@@ -356,6 +394,7 @@ def get_bootstrap():
 		"suppliers": suppliers,
 		"defaults": {"company": default_company},
 		"user_warehouses": get_user_warehouses(),
+		"menu": _menu_settings(),
 		"server_time": frappe.utils.now(),
 	}
 
