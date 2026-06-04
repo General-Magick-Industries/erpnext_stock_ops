@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApp } from '../stores/app'
 import { useDocs } from '../stores/docs'
+import { useMaster } from '../stores/master'
 import { useI18n } from '../lib/i18n'
 import { DOC_TYPE_LIST, DOC_TYPES } from '../data/mock'
 import { getLowStock } from '../lib/service'
@@ -12,26 +13,29 @@ import { fmtDateTime } from '../lib/util'
 
 const app = useApp()
 const docs = useDocs()
+const master = useMaster()
 const router = useRouter()
 const { t, locale } = useI18n()
 
 const recent = computed(() => docs.sorted.slice(0, 4))
 const synced = computed(() => docs.docs.filter((d) => d.status === 'synced').length)
 
-// Menu peluncur (semua tile identik → pasti seragam)
-const menu = [
-  { icon: '🔎', color: '#0ea5e9', label: 'home.menu.lookup', to: '/lookup' },
-  { icon: '🏬', color: 'var(--brand)', label: 'home.menu.balance', to: '/balance' },
-  { icon: '📈', color: '#2563eb', label: 'home.menu.movement', to: '/movement' },
-  { icon: '⚠️', color: 'var(--warn)', label: 'home.menu.low', to: '/low' },
-  { icon: '🔁', color: '#ea580c', label: 'home.menu.transfer', to: '/quick-transfer' },
-  { icon: '📋', color: '#7c3aed', label: 'home.menu.opname', to: '/opname' }
+// Menu peluncur (semua tile identik → pasti seragam). `key` = flag Stock Ops Settings.
+const menuAll = [
+  { icon: '🔎', color: '#0ea5e9', label: 'home.menu.lookup', to: '/lookup', key: 'scan' },
+  { icon: '🏬', color: 'var(--brand)', label: 'home.menu.balance', to: '/balance', key: 'stock_balance' },
+  { icon: '📈', color: '#2563eb', label: 'home.menu.movement', to: '/movement', key: 'movement' },
+  { icon: '⚠️', color: 'var(--warn)', label: 'home.menu.low', to: '/low', key: 'low_stock' },
+  { icon: '🔁', color: '#ea580c', label: 'home.menu.transfer', to: '/quick-transfer', key: 'transfer' },
+  { icon: '📋', color: '#7c3aed', label: 'home.menu.opname', to: '/opname', key: 'opname' }
 ]
+const menu = computed(() => menuAll.filter((m) => master.menuOn(m.key)))
+const createTypes = computed(() => DOC_TYPE_LIST.filter((ty) => master.menuOn(ty.key.toLowerCase())))
 
 // Alert stok menipis
 const lowCount = ref(0)
 async function loadLow() {
-  if (!app.online) return
+  if (!app.online || !master.menuOn('low_stock')) return
   try {
     const r = await getLowStock(app.settings.company)
     lowCount.value = (r.items || []).length
@@ -107,52 +111,58 @@ const dateStr = computed(() =>
     </button>
 
     <!-- Menu peluncur seragam -->
-    <div class="section-title">{{ t('home.menuTitle') }}</div>
-    <div class="launch-grid">
-      <button v-for="m in menu" :key="m.to" class="launch-tile" @click="router.push(m.to)">
-        <span class="li" :style="{ background: m.color }">{{ m.icon }}</span>
-        <span class="lt">{{ t(m.label) }}</span>
-      </button>
-    </div>
+    <template v-if="menu.length">
+      <div class="section-title">{{ t('home.menuTitle') }}</div>
+      <div class="launch-grid">
+        <button v-for="m in menu" :key="m.to" class="launch-tile" @click="router.push(m.to)">
+          <span class="li" :style="{ background: m.color }">{{ m.icon }}</span>
+          <span class="lt">{{ t(m.label) }}</span>
+        </button>
+      </div>
+    </template>
 
     <!-- Buat dokumen -->
-    <div class="section-title">{{ t('home.quickCreate') }}</div>
-    <div class="quick-grid">
-      <button
-        v-for="ty in DOC_TYPE_LIST"
-        :key="ty.key"
-        class="quick-tile"
-        :style="{ background: ty.color }"
-        @click="router.push(`/form/${ty.key}`)"
-      >
-        {{ t('docType.' + ty.key) }}
-      </button>
-    </div>
+    <template v-if="createTypes.length">
+      <div class="section-title">{{ t('home.quickCreate') }}</div>
+      <div class="quick-grid">
+        <button
+          v-for="ty in createTypes"
+          :key="ty.key"
+          class="quick-tile"
+          :style="{ background: ty.color }"
+          @click="router.push(`/form/${ty.key}`)"
+        >
+          {{ t('docType.' + ty.key) }}
+        </button>
+      </div>
+    </template>
 
     <!-- Terbaru -->
-    <div class="row between" style="margin-top: 18px">
-      <div class="section-title" style="margin: 0 4px">{{ t('home.recent') }}</div>
-      <router-link to="/docs" class="small" style="color: var(--brand); font-weight: 600">{{ t('common.viewAll') }}</router-link>
-    </div>
-
-    <div v-if="!recent.length" class="empty">
-      <div class="big">📦</div>
-      {{ t('home.emptyDocs') }}
-    </div>
-
-    <div
-      v-for="d in recent"
-      :key="d.localId"
-      class="list-item"
-      @click="router.push(`/doc/${d.localId}`)"
-      style="cursor: pointer"
-    >
-      <span class="lead-icon" :style="{ background: DOC_TYPES[d.type].color }">{{ DOC_TYPES[d.type].icon }}</span>
-      <div class="grow">
-        <div class="truncate" style="font-weight: 600">{{ d.remoteName || t('home.draftLocal') }}</div>
-        <div class="tiny muted">{{ t('docType.' + d.type) }} · {{ d.items.length }} {{ t('common.items') }} · {{ fmtDateTime(d.createdAt) }}</div>
+    <template v-if="master.menuOn('documents')">
+      <div class="row between" style="margin-top: 18px">
+        <div class="section-title" style="margin: 0 4px">{{ t('home.recent') }}</div>
+        <router-link to="/docs" class="small" style="color: var(--brand); font-weight: 600">{{ t('common.viewAll') }}</router-link>
       </div>
-      <StatusBadge :status="d.status" :submitted="d.submitted" />
-    </div>
+
+      <div v-if="!recent.length" class="empty">
+        <div class="big">📦</div>
+        {{ t('home.emptyDocs') }}
+      </div>
+
+      <div
+        v-for="d in recent"
+        :key="d.localId"
+        class="list-item"
+        @click="router.push(`/doc/${d.localId}`)"
+        style="cursor: pointer"
+      >
+        <span class="lead-icon" :style="{ background: DOC_TYPES[d.type].color }">{{ DOC_TYPES[d.type].icon }}</span>
+        <div class="grow">
+          <div class="truncate" style="font-weight: 600">{{ d.remoteName || t('home.draftLocal') }}</div>
+          <div class="tiny muted">{{ t('docType.' + d.type) }} · {{ d.items.length }} {{ t('common.items') }} · {{ fmtDateTime(d.createdAt) }}</div>
+        </div>
+        <StatusBadge :status="d.status" :submitted="d.submitted" />
+      </div>
+    </template>
   </div>
 </template>

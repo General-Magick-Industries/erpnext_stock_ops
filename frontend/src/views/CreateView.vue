@@ -1,19 +1,23 @@
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { DOC_TYPE_LIST } from '../data/mock'
 import { useI18n } from '../lib/i18n'
+import { useMaster } from '../stores/master'
 import AppBar from '../components/AppBar.vue'
 
 const router = useRouter()
 const { t } = useI18n()
-const mrTypes = DOC_TYPE_LIST.filter((x) => x.doctype === 'Material Request')
-const seTypes = DOC_TYPE_LIST.filter((x) => x.doctype === 'Stock Entry')
+const master = useMaster()
+const on = (ty) => master.menuOn(ty.key.toLowerCase())
+const mrTypes = computed(() => DOC_TYPE_LIST.filter((x) => x.doctype === 'Material Request' && on(x)))
+const seTypes = computed(() => DOC_TYPE_LIST.filter((x) => x.doctype === 'Stock Entry' && on(x)))
 </script>
 
 <template>
   <AppBar :title="t('create.title')" />
   <div class="content">
-    <div class="section-title">{{ t('docType.groupMR') }}</div>
+    <div v-if="mrTypes.length" class="section-title">{{ t('docType.groupMR') }}</div>
     <button
       v-for="ty in mrTypes"
       :key="ty.key"
@@ -29,7 +33,7 @@ const seTypes = DOC_TYPE_LIST.filter((x) => x.doctype === 'Stock Entry')
       <span style="font-size: 22px; color: var(--muted)">›</span>
     </button>
 
-    <div class="section-title">{{ t('docType.groupSE') }}</div>
+    <div v-if="seTypes.length" class="section-title">{{ t('docType.groupSE') }}</div>
     <button
       v-for="ty in seTypes"
       :key="ty.key"

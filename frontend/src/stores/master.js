@@ -24,12 +24,16 @@ export const useMaster = defineStore('master', {
       suppliers: s.suppliers || [],
       userWarehouses: s.userWarehouses || [],
       defaults: s.defaults || null,
+      menu: s.menu || {}, // visibilitas menu dari Stock Ops Settings
+      defaultLang: s.defaultLang || 'id',
       loadedAt: s.loadedAt || null,
       loading: false
     }
   },
   getters: {
     hasData: (s) => s.items.length > 0,
+    // Menu tampil? default true bila belum dimuat / tak diset di server.
+    menuOn: (s) => (key) => s.menu[key] !== false,
     // Item siap pakai untuk picker (normalisasi field + fallback gambar)
     itemList: (s) => (s.items.length ? s.items : ITEMS),
     warehouseNames: (s) => (s.warehouses.length ? s.warehouses.map((w) => w.name) : WAREHOUSES),
@@ -55,6 +59,8 @@ export const useMaster = defineStore('master', {
           suppliers: this.suppliers,
           userWarehouses: this.userWarehouses,
           defaults: this.defaults,
+          menu: this.menu,
+          defaultLang: this.defaultLang,
           loadedAt: this.loadedAt
         })
       )
@@ -76,8 +82,13 @@ export const useMaster = defineStore('master', {
         this.suppliers = b.suppliers || []
         this.userWarehouses = b.user_warehouses || []
         this.defaults = b.defaults || null
+        this.menu = b.menu || {}
+        this.defaultLang = b.default_lang || 'id'
         this.loadedAt = new Date().toISOString()
         this.persist()
+        // Terapkan bahasa default server (kecuali user sudah memilih manual)
+        const { useApp } = await import('./app')
+        useApp().applyServerLang(this.defaultLang)
         return b
       } finally {
         this.loading = false
