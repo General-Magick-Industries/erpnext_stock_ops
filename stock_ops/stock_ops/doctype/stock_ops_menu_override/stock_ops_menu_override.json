@@ -1,0 +1,25 @@
+{
+ "actions": [],
+ "creation": "2026-06-04 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "istable": 1,
+ "field_order": ["role", "menu", "visible"],
+ "fields": [
+  {"fieldname": "role", "fieldtype": "Link", "label": "Role", "options": "Role", "reqd": 1, "in_list_view": 1, "columns": 4},
+  {"fieldname": "menu", "fieldtype": "Select", "label": "Menu", "reqd": 1, "in_list_view": 1, "columns": 4, "options": "stock_balance\nmovement\ndocuments\nnotifications\nscan\ntransfer\nlow_stock\nopname\nmr\npr\nse_in\nse_out\nse_transfer"},
+  {"fieldname": "visible", "fieldtype": "Check", "label": "Tampil", "default": "0", "in_list_view": 1, "columns": 2}
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-06-04 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Stock Ops",
+ "name": "Stock Ops Menu Override",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
