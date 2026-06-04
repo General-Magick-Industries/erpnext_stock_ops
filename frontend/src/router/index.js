@@ -1,5 +1,18 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useApp } from '../stores/app'
+import { useMaster } from '../stores/master'
+
+// route name -> menu key (Stock Ops Settings). Route tanpa entri = selalu boleh.
+const ROUTE_MENU = {
+  balance: 'stock_balance',
+  movement: 'movement',
+  docs: 'documents',
+  lookup: 'scan',
+  low: 'low_stock',
+  'quick-transfer': 'transfer',
+  opname: 'opname'
+}
+const CREATE_KEYS = ['mr', 'pr', 'se_in', 'se_out', 'se_transfer']
 
 const routes = [
   { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { public: true } },
@@ -33,6 +46,14 @@ router.beforeEach((to) => {
   const app = useApp()
   if (!to.meta.public && !app.isLoggedIn) return { name: 'login' }
   if (to.name === 'login' && app.isLoggedIn) return { name: 'home' }
+  // Blokir akses langsung (URL) ke menu yang dimatikan di Stock Ops Settings.
+  if (app.isLoggedIn) {
+    const master = useMaster()
+    const key = ROUTE_MENU[to.name]
+    if (key && !master.menuOn(key)) return { name: 'home' }
+    if (to.name === 'create' && !CREATE_KEYS.some((k) => master.menuOn(k))) return { name: 'home' }
+    if (to.name === 'form' && to.params.type && !master.menuOn(String(to.params.type).toLowerCase())) return { name: 'home' }
+  }
 })
 
 export default router

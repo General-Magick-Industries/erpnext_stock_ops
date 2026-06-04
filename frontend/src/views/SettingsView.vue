@@ -28,7 +28,7 @@ const themes = computed(() => [
 // Bahasa & tema diterapkan langsung agar efeknya terlihat seketika.
 function setLang(code) {
   form.lang = code
-  app.saveSettings({ lang: code })
+  app.saveSettings({ lang: code, langUserSet: true })
 }
 function setTheme(v) {
   form.theme = v
@@ -185,7 +185,7 @@ function clearData() {
       </div>
     </div>
 
-    <template v-if="notifSupported">
+    <template v-if="notifSupported && master.menuOn('notifications')">
       <div class="section-title">{{ t('settings.notif') }}</div>
       <div class="card">
         <div class="row between">

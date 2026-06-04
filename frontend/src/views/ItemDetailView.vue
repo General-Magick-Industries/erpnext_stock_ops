@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useApp } from '../stores/app'
+import { useMaster } from '../stores/master'
 import { useI18n } from '../lib/i18n'
 import { getItemDetail } from '../lib/service'
 import AppBar from '../components/AppBar.vue'
@@ -10,6 +11,7 @@ import { fmtDateTime } from '../lib/util'
 const route = useRoute()
 const router = useRouter()
 const app = useApp()
+const master = useMaster()
 const { t } = useI18n()
 
 const loading = ref(false)
@@ -75,11 +77,11 @@ function initials() {
         <div v-if="data.restricted" class="tiny muted mt8">🔒 {{ t('balance.restricted') }}: {{ data.warehouses.join(', ') }}</div>
       </div>
 
-      <!-- Aksi cepat -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 12px">
-        <button class="btn" style="background: #16a34a; color: #fff; flex-direction: column; gap: 2px; padding: 12px 6px; font-size: 12px" @click="quick('SE_IN')">📥<span>{{ t('item.stockIn') }}</span></button>
-        <button class="btn" style="background: #dc2626; color: #fff; flex-direction: column; gap: 2px; padding: 12px 6px; font-size: 12px" @click="quick('SE_OUT')">📤<span>{{ t('item.stockOut') }}</span></button>
-        <button class="btn" style="background: #ea580c; color: #fff; flex-direction: column; gap: 2px; padding: 12px 6px; font-size: 12px" @click="quick('SE_TRANSFER')">🔁<span>{{ t('item.transfer') }}</span></button>
+      <!-- Aksi cepat (ikut Stock Ops Settings) -->
+      <div v-if="master.menuOn('se_in') || master.menuOn('se_out') || master.menuOn('transfer')" style="display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; margin-top: 12px">
+        <button v-if="master.menuOn('se_in')" class="btn" style="background: #16a34a; color: #fff; flex-direction: column; gap: 2px; padding: 12px 6px; font-size: 12px" @click="quick('SE_IN')">📥<span>{{ t('item.stockIn') }}</span></button>
+        <button v-if="master.menuOn('se_out')" class="btn" style="background: #dc2626; color: #fff; flex-direction: column; gap: 2px; padding: 12px 6px; font-size: 12px" @click="quick('SE_OUT')">📤<span>{{ t('item.stockOut') }}</span></button>
+        <button v-if="master.menuOn('transfer')" class="btn" style="background: #ea580c; color: #fff; flex-direction: column; gap: 2px; padding: 12px 6px; font-size: 12px" @click="quick('SE_TRANSFER')">🔁<span>{{ t('item.transfer') }}</span></button>
       </div>
 
       <!-- Stok per gudang -->

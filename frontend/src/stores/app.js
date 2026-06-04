@@ -30,6 +30,7 @@ export const useApp = defineStore('app', {
         privatePhotos: true,
         autoSync: true,
         lang: 'id', // 'id' | 'en'
+        langUserSet: false, // true bila user pilih bahasa manual (abaikan default server)
         theme: 'system', // 'system' | 'light' | 'dark'
         design: isNative() ? 'erpnext' : 'classic', // native default = tema ERPNext
         ...(saved.settings || {})
@@ -105,6 +106,13 @@ export const useApp = defineStore('app', {
     },
     applyDesign() {
       document.documentElement.dataset.design = this.settings.design || 'classic'
+    },
+    // Bahasa default dari server — hanya dipakai bila user belum memilih manual.
+    applyServerLang(lang) {
+      if (this.settings.langUserSet) return
+      if ((lang === 'id' || lang === 'en') && lang !== this.settings.lang) {
+        this.saveSettings({ lang })
+      }
     },
     notify(message, kind = 'info') {
       this.toast = { message, kind, id: Date.now() }
