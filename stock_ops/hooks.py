@@ -10,16 +10,16 @@ app_license = "mit"
 
 # required_apps = []
 
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "stock_ops",
-# 		"logo": "/assets/stock_ops/logo.png",
-# 		"title": "Stock Ops",
-# 		"route": "/stock_ops",
-# 		"has_permission": "stock_ops.api.permission.has_app_permission"
-# 	}
-# ]
+# Tile di App Switcher (⊞) desk. route → Workspace desk; PWA tetap di /stock_ops.
+add_to_apps_screen = [
+	{
+		"name": "stock_ops",
+		"logo": "/assets/stock_ops/logo.png",
+		"title": "Stock Ops",
+		"route": "/desk/stock-ops",
+		"has_permission": "stock_ops.api.has_app_permission",
+	}
+]
 
 # Includes in <head>
 # ------------------

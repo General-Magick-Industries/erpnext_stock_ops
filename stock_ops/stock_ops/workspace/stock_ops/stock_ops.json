@@ -1,0 +1,88 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"so_hdr1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Stock Ops</b></span>\",\"col\":12}},{\"id\":\"so_sc1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Buka Aplikasi\",\"col\":3}},{\"id\":\"so_sc2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Pengaturan\",\"col\":3}},{\"id\":\"so_sc3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Stok Gudang\",\"col\":3}},{\"id\":\"so_hdr2\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Dokumen</b></span>\",\"col\":12}},{\"id\":\"so_cd1\",\"type\":\"card\",\"data\":{\"card_name\":\"Dokumen\",\"col\":4}}]",
+ "creation": "2026-06-05 00:00:00",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "stock",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "Stock Ops",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Dokumen",
+   "link_count": 3,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Material Request",
+   "link_count": 0,
+   "link_to": "Material Request",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Stock Entry",
+   "link_count": 0,
+   "link_to": "Stock Entry",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Stock Reconciliation",
+   "link_count": 0,
+   "link_to": "Stock Reconciliation",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-06-05 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Stock Ops",
+ "name": "Stock Ops",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "restrict_to_domain": "",
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "label": "Buka Aplikasi",
+   "type": "URL",
+   "url": "/stock_ops"
+  },
+  {
+   "color": "Grey",
+   "label": "Pengaturan",
+   "link_to": "Stock Ops Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "label": "Stok Gudang",
+   "link_to": "Bin",
+   "type": "DocType"
+  }
+ ],
+ "title": "Stock Ops",
+ "type": "Workspace"
+}
