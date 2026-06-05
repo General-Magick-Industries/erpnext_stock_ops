@@ -372,6 +372,14 @@ def get_app_settings():
 	return _app_settings()
 
 
+def has_app_permission():
+	"""Siapa yang melihat tile Stock Ops di App Switcher desk."""
+	if frappe.session.user == "Administrator":
+		return True
+	roles = set(frappe.get_roles())
+	return any(r in roles for r in ("System Manager", "Stock Manager", "Stock User"))
+
+
 @frappe.whitelist()
 def get_bootstrap():
 	"""Master data untuk Stock Ops PWA dalam satu panggilan (untuk cache offline)."""
