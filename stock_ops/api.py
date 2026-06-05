@@ -373,11 +373,12 @@ def get_app_settings():
 
 
 def has_app_permission():
-	"""Siapa yang melihat tile Stock Ops di App Switcher desk."""
+	"""Siapa yang melihat tile Stock Ops di App Switcher desk.
+	Dibatasi ke manajer; Stock User biasa cukup pakai PWA (/stock_ops)."""
 	if frappe.session.user == "Administrator":
 		return True
 	roles = set(frappe.get_roles())
-	return any(r in roles for r in ("System Manager", "Stock Manager", "Stock User"))
+	return any(r in roles for r in ("System Manager", "Stock Manager"))
 
 
 @frappe.whitelist()
