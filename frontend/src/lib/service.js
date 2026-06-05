@@ -86,4 +86,9 @@ export const getStockLedger = (opts = {}) => {
   return call('stock_ops.api.get_stock_ledger', p)
 }
 
+// Notifikasi in-app (Notification Log, polling — tanpa Firebase)
+export const getNotifications = (limit = 20) => call('stock_ops.api.get_notifications', { limit })
+export const markNotificationsRead = (name) =>
+  call('stock_ops.api.mark_notifications_read', name ? { name } : {}, { post: true })
+
 export { uploadFile }

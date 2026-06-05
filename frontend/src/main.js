@@ -45,3 +45,12 @@ if (appStore.isLoggedIn && appStore.online) {
     .then(() => appStore.reconcileDefaults())
     .catch(() => {})
 }
+
+// Notifikasi in-app: poll saat login, tiap 60 detik, dan saat tab kembali aktif.
+if (appStore.isLoggedIn) {
+  appStore.loadNotifications()
+  setInterval(() => appStore.loadNotifications(), 60000)
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) appStore.loadNotifications()
+  })
+}

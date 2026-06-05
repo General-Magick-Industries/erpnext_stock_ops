@@ -22,6 +22,7 @@ const routes = [
   { path: '/sync', name: 'sync', component: () => import('../views/SyncView.vue'), meta: { tab: 'settings' } },
   { path: '/settings', name: 'settings', component: () => import('../views/SettingsView.vue'), meta: { tab: 'settings' } },
   { path: '/reports', name: 'reports', component: () => import('../views/ReportsView.vue'), meta: { tab: 'settings' } },
+  { path: '/notifications', name: 'notifications', component: () => import('../views/NotificationsView.vue'), meta: { tab: 'home' } },
   { path: '/balance', name: 'balance', component: () => import('../views/StockBalanceView.vue'), meta: { tab: 'home' } },
   { path: '/movement', name: 'movement', component: () => import('../views/StockMovementView.vue'), meta: { tab: 'home' } },
   { path: '/lookup', name: 'lookup', component: () => import('../views/ItemLookupView.vue'), meta: { tab: 'home' } },

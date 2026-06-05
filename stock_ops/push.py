@@ -108,10 +108,45 @@ def send_to_all(title, body, url="/stock_ops/"):
 	_dispatch({}, title, body, url)
 
 
+def _notify_log(doctype, name, subject, body):
+	"""Buat entri Notification Log (feed lonceng in-app) untuk para manajer stok.
+	Dipakai aplikasi via polling (tanpa Firebase)."""
+	users = frappe.get_all(
+		"Has Role",
+		filters={"role": ["in", ["Stock Manager", "System Manager"]], "parenttype": "User"},
+		pluck="parent",
+	)
+	users = [
+		u
+		for u in set(users)
+		if u not in ("Administrator", "Guest", frappe.session.user) and frappe.db.get_value("User", u, "enabled")
+	]
+	if not users:
+		return
+	from frappe.desk.doctype.notification_log.notification_log import enqueue_create_notification
+
+	enqueue_create_notification(
+		users,
+		{
+			"type": "Alert",
+			"document_type": doctype,
+			"document_name": name,
+			"subject": subject,
+			"email_content": body,
+			"from_user": frappe.session.user,
+		},
+	)
+
+
 def notify_doc_submit(doc, method=None):
-	"""doc_event on_submit untuk Material Request & Stock Entry → push ke semua subscriber."""
+	"""doc_event on_submit untuk Material Request & Stock Entry →
+	(1) Notification Log in-app (polling), (2) web push ke semua subscriber."""
 	label = {"Material Request": "Permintaan Barang", "Stock Entry": "Stok Barang"}.get(doc.doctype, doc.doctype)
 	subtype = getattr(doc, "material_request_type", None) or getattr(doc, "stock_entry_type", "") or ""
 	title = f"{doc.name} disubmit"
 	body = f"{label} · {subtype} · oleh {frappe.session.user}"
+	try:
+		_notify_log(doc.doctype, doc.name, title, body)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Stock Ops notify_log")
 	frappe.enqueue("stock_ops.push.send_to_all", queue="short", title=title, body=body)

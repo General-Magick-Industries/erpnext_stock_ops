@@ -31,7 +31,7 @@ function goBack() {
       <span v-else>{{ title }}</span>
     </div>
 
-    <button v-if="bell" class="bell-btn" @click="router.push('/low')" aria-label="alerts">
+    <button v-if="bell" class="bell-btn" @click="router.push('/notifications')" aria-label="notifications">
       🔔
       <span v-if="bellCount" class="bell-badge">{{ bellCount > 99 ? '99+' : bellCount }}</span>
     </button>

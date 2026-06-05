@@ -35,6 +35,7 @@ const messages = {
       menu: { lookup: 'Cari / Scan', balance: 'Stok', movement: 'Mutasi', low: 'Menipis', transfer: 'Transfer', opname: 'Opname' }
     },
     create: { title: 'Buat Dokumen' },
+    notif: { title: 'Notifikasi', empty: 'Belum ada notifikasi', markAll: 'Tandai semua dibaca' },
     form: {
       newSuffix: 'Baru', company: 'Perusahaan', date: 'Tanggal', supplier: 'Supplier',
       sourceWh: 'Gudang Asal', targetWh: 'Gudang Tujuan', noItems: 'Belum ada item',
@@ -165,6 +166,7 @@ const messages = {
       menu: { lookup: 'Find / Scan', balance: 'Stock', movement: 'Moves', low: 'Low Stock', transfer: 'Transfer', opname: 'Count' }
     },
     create: { title: 'Create Document' },
+    notif: { title: 'Notifications', empty: 'No notifications', markAll: 'Mark all read' },
     form: {
       newSuffix: 'New', company: 'Company', date: 'Date', supplier: 'Supplier',
       sourceWh: 'Source Warehouse', targetWh: 'Target Warehouse', noItems: 'No items yet',

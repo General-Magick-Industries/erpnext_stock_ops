@@ -66,7 +66,7 @@ const dateStr = computed(() =>
 </script>
 
 <template>
-  <AppBar logo bell :bell-count="lowCount" />
+  <AppBar logo bell :bell-count="app.notifUnread" />
   <div class="content">
     <!-- Hero -->
     <div class="hero" style="position: relative; overflow: hidden">
