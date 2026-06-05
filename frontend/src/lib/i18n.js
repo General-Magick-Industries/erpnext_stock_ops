@@ -109,6 +109,9 @@ const messages = {
       autoSync: 'Auto-sync', autoSyncDesc: 'Kirim otomatis saat online',
       saveSettings: 'Simpan Pengaturan', syncOutbox: 'Sync / Outbox', syncOutboxDesc: 'Antrian & status sinkronisasi',
       reports: 'Laporan', reportsDesc: 'Ringkasan dokumen bulan ini',
+      getApp: 'Unduh Aplikasi', downloadApk: 'Unduh Android (APK)', downloadApkDesc: 'Aplikasi native untuk Android',
+      installPwa: 'Install Web App (PWA)', installPwaDesc: 'Pasang ke layar utama perangkat',
+      apkUnavailable: 'Tautan APK belum diatur di Stock Ops Settings', pwaUnavailable: 'Install belum tersedia (buka di Chrome/Android atau sudah terpasang)',
       other: 'Lainnya', backend: 'Backend (P1)', mockVersion: 'Versi mock',
       clearData: '🧹 Bersihkan data lokal', confirmClear: 'Hapus semua dokumen lokal (mock)?'
     },
@@ -236,6 +239,9 @@ const messages = {
       autoSync: 'Auto-sync', autoSyncDesc: 'Send automatically when online',
       saveSettings: 'Save Settings', syncOutbox: 'Sync / Outbox', syncOutboxDesc: 'Queue & sync status',
       reports: 'Reports', reportsDesc: "This month's document summary",
+      getApp: 'Get the App', downloadApk: 'Download Android (APK)', downloadApkDesc: 'Native app for Android',
+      installPwa: 'Install Web App (PWA)', installPwaDesc: 'Add to your home screen',
+      apkUnavailable: 'APK link not set in Stock Ops Settings', pwaUnavailable: 'Install not available (open in Chrome/Android or already installed)',
       other: 'Other', backend: 'Backend (P1)', mockVersion: 'Mock version',
       clearData: '🧹 Clear local data', confirmClear: 'Delete all local documents (mock)?'
     },

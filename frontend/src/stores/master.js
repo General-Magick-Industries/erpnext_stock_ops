@@ -26,6 +26,7 @@ export const useMaster = defineStore('master', {
       defaults: s.defaults || null,
       menu: s.menu || {}, // visibilitas menu dari Stock Ops Settings
       defaultLang: s.defaultLang || 'id',
+      flutterApkUrl: s.flutterApkUrl || '',
       loadedAt: s.loadedAt || null,
       loading: false
     }
@@ -61,6 +62,7 @@ export const useMaster = defineStore('master', {
           defaults: this.defaults,
           menu: this.menu,
           defaultLang: this.defaultLang,
+          flutterApkUrl: this.flutterApkUrl,
           loadedAt: this.loadedAt
         })
       )
@@ -84,6 +86,7 @@ export const useMaster = defineStore('master', {
         this.defaults = b.defaults || null
         this.menu = b.menu || {}
         this.defaultLang = b.default_lang || 'id'
+        this.flutterApkUrl = b.flutter_apk_url || ''
         this.loadedAt = new Date().toISOString()
         this.persist()
         // Terapkan bahasa default server (kecuali user sudah memilih manual)

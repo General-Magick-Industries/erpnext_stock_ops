@@ -86,6 +86,20 @@ async function testNotif() {
   }
 }
 
+function downloadApk() {
+  if (!master.flutterApkUrl) {
+    app.notify(t('settings.apkUnavailable'), 'warn')
+    return
+  }
+  window.open(master.flutterApkUrl, '_blank')
+}
+async function installPwa() {
+  if (!app.installPrompt) {
+    app.notify(t('settings.pwaUnavailable'), 'info')
+    return
+  }
+  await app.promptInstall()
+}
 function logout() {
   app.logout()
   router.replace('/login')
@@ -213,6 +227,27 @@ function clearData() {
     </div>
 
     <button class="btn brand block mt16" @click="save">{{ t('settings.saveSettings') }}</button>
+
+    <div class="section-title">{{ t('settings.getApp') }}</div>
+    <div class="card">
+      <button v-if="master.flutterApkUrl" class="list-item" style="width: 100%; text-align: left; border: 0; cursor: pointer" @click="downloadApk">
+        <span class="lead-icon" style="background: #16a34a">⬇️</span>
+        <div class="grow">
+          <div style="font-weight: 700">{{ t('settings.downloadApk') }}</div>
+          <div class="tiny muted">{{ t('settings.downloadApkDesc') }}</div>
+        </div>
+        <span style="font-size: 22px; color: var(--muted)">›</span>
+      </button>
+      <hr v-if="master.flutterApkUrl" style="border: 0; border-top: 1px solid var(--line); margin: 10px 0" />
+      <button class="list-item" style="width: 100%; text-align: left; border: 0; cursor: pointer" @click="installPwa">
+        <span class="lead-icon" style="background: var(--brand)">📲</span>
+        <div class="grow">
+          <div style="font-weight: 700">{{ t('settings.installPwa') }}</div>
+          <div class="tiny muted">{{ t('settings.installPwaDesc') }}</div>
+        </div>
+        <span style="font-size: 22px; color: var(--muted)">›</span>
+      </button>
+    </div>
 
     <div class="section-title">{{ t('settings.other') }}</div>
     <div class="card">
