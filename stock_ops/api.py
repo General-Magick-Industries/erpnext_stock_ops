@@ -373,6 +373,34 @@ def get_app_settings():
 	return _app_settings()
 
 
+@frappe.whitelist()
+def get_notifications(limit=20):
+	"""Notifikasi in-app (Notification Log) untuk user login — dipoll aplikasi (tanpa Firebase)."""
+	user = frappe.session.user
+	items = frappe.get_all(
+		"Notification Log",
+		filters={"for_user": user},
+		fields=["name", "subject", "type", "document_type", "document_name", "read", "creation", "from_user"],
+		order_by="creation desc",
+		limit_page_length=int(limit),
+	)
+	unread = frappe.db.count("Notification Log", {"for_user": user, "read": 0})
+	return {"items": items, "unread": unread}
+
+
+@frappe.whitelist()
+def mark_notifications_read(name=None):
+	"""Tandai satu (name) atau semua notifikasi user sebagai sudah dibaca."""
+	user = frappe.session.user
+	if name:
+		if frappe.db.get_value("Notification Log", name, "for_user") == user:
+			frappe.db.set_value("Notification Log", name, "read", 1)
+	else:
+		frappe.db.sql("UPDATE `tabNotification Log` SET `read`=1 WHERE for_user=%s AND `read`=0", user)
+	frappe.db.commit()
+	return {"ok": True}
+
+
 def has_app_permission():
 	"""Siapa yang melihat tile Stock Ops di App Switcher desk.
 	Dibatasi ke manajer; Stock User biasa cukup pakai PWA (/stock_ops)."""

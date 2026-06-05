@@ -38,7 +38,10 @@ export const useApp = defineStore('app', {
       // toast sederhana
       toast: null,
       // event beforeinstallprompt (runtime, tidak dipersist) untuk install PWA
-      installPrompt: null
+      installPrompt: null,
+      // notifikasi in-app (polling Notification Log)
+      notifications: [],
+      notifUnread: 0
     }
   },
   getters: {
@@ -115,6 +118,26 @@ export const useApp = defineStore('app', {
       if ((lang === 'id' || lang === 'en') && lang !== this.settings.lang) {
         this.saveSettings({ lang })
       }
+    },
+    async loadNotifications() {
+      if (!this.isLoggedIn || !this.online) return
+      try {
+        const { getNotifications } = await import('../lib/service')
+        const r = await getNotifications(20)
+        this.notifications = r.items || []
+        this.notifUnread = r.unread || 0
+      } catch {
+        // diam saja (mis. offline)
+      }
+    },
+    async markNotificationsRead(name) {
+      try {
+        const { markNotificationsRead } = await import('../lib/service')
+        await markNotificationsRead(name)
+      } catch {
+        // ignore
+      }
+      await this.loadNotifications()
     },
     async promptInstall() {
       if (!this.installPrompt) return false
