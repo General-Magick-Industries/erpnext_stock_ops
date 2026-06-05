@@ -363,7 +363,8 @@ def _app_settings():
 	except Exception:
 		s = None
 	default_lang = (getattr(s, "default_language", None) or "id") if s else "id"
-	return {"menu": _menu_settings(s), "default_lang": default_lang}
+	apk_url = (getattr(s, "flutter_apk_url", None) or "") if s else ""
+	return {"menu": _menu_settings(s), "default_lang": default_lang, "flutter_apk_url": apk_url}
 
 
 @frappe.whitelist()
@@ -433,6 +434,7 @@ def get_bootstrap():
 		"user_warehouses": get_user_warehouses(),
 		"menu": _app["menu"],
 		"default_lang": _app["default_lang"],
+		"flutter_apk_url": _app["flutter_apk_url"],
 		"server_time": frappe.utils.now(),
 	}
 

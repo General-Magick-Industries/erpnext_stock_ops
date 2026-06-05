@@ -36,7 +36,9 @@ export const useApp = defineStore('app', {
         ...(saved.settings || {})
       },
       // toast sederhana
-      toast: null
+      toast: null,
+      // event beforeinstallprompt (runtime, tidak dipersist) untuk install PWA
+      installPrompt: null
     }
   },
   getters: {
@@ -113,6 +115,13 @@ export const useApp = defineStore('app', {
       if ((lang === 'id' || lang === 'en') && lang !== this.settings.lang) {
         this.saveSettings({ lang })
       }
+    },
+    async promptInstall() {
+      if (!this.installPrompt) return false
+      this.installPrompt.prompt()
+      const { outcome } = await this.installPrompt.userChoice
+      this.installPrompt = null
+      return outcome === 'accepted'
     },
     notify(message, kind = 'info') {
       this.toast = { message, kind, id: Date.now() }

@@ -23,6 +23,15 @@ if (servedByBench) {
 
 app.mount('#app')
 
+// Tangkap event install PWA (Android/Chrome) agar bisa dipicu dari tombol di Setelan.
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault()
+  appStore.installPrompt = e
+})
+window.addEventListener('appinstalled', () => {
+  appStore.installPrompt = null
+})
+
 // Service worker (PWA installable + offline app-shell) hanya saat disajikan bench di /stock_ops/.
 if (servedByBench && 'serviceWorker' in navigator) {
   navigator.serviceWorker.register('/stock_ops/sw.js', { scope: '/stock_ops/' }).catch(() => {})

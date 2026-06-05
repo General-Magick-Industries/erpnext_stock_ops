@@ -7,6 +7,7 @@
  "field_order": [
   "general_section",
   "default_language",
+  "flutter_apk_url",
   "nav_section",
   "show_stock_balance",
   "show_movement",
@@ -32,6 +33,7 @@
  "fields": [
   {"fieldname": "general_section", "fieldtype": "Section Break", "label": "Umum"},
   {"fieldname": "default_language", "fieldtype": "Select", "label": "Bahasa Default", "options": "id\nen", "default": "id", "description": "Bahasa awal aplikasi (id = Indonesia, en = English). Pengguna tetap bisa menggantinya di app."},
+  {"fieldname": "flutter_apk_url", "fieldtype": "Data", "label": "URL APK Flutter (Android)", "description": "Tautan unduhan APK Android, mis. /files/StockOps.apk atau URL lengkap. Kosongkan untuk menyembunyikan tombol unduh di PWA."},
   {"fieldname": "nav_section", "fieldtype": "Section Break", "label": "Navigasi & Umum"},
   {"fieldname": "show_stock_balance", "fieldtype": "Check", "label": "Stok Gudang (tab Stok)", "default": "1"},
   {"fieldname": "show_movement", "fieldtype": "Check", "label": "Pergerakan Stok (tab Mutasi)", "default": "1"},
