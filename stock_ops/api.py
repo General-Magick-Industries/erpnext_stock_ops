@@ -50,43 +50,109 @@ def get_user_employee(user=None):
 
 @frappe.whitelist()
 def get_user_context():
-	"""Konteks user untuk aplikasi: Employee, perusahaan (read-only bila dari Employee),
-	dan default gudang sumber. Dipakai untuk mengunci field Company di form."""
-	emp = get_user_employee()
-	company, read_only = _user_company(emp)
+	"""Konteks user untuk aplikasi: Employee, perusahaan, status read-only, dan
+	daftar gudang/perusahaan yang boleh diakses. Dipakai untuk mengunci field
+	Company dan memfilter picker gudang."""
+	scope = _user_scope()
 	return {
-		"employee": emp or None,
-		"company": company,
-		"company_read_only": read_only,
-		"default_source_warehouse": _default_source_warehouse(),
-		"warehouses": get_user_warehouses(),
+		"employee": scope["employee"] or None,
+		"company": scope["company"],
+		"company_read_only": scope["company_read_only"],
+		"restricted": scope["restricted"],
+		"allowed_warehouses": scope["user_whs"],
+		"allowed_companies": scope["allowed_companies"],
+		"default_source_warehouse": scope["default_source_warehouse"],
 	}
 
 
-def _user_company(emp=None):
-	"""Perusahaan untuk user login + apakah harus read-only.
+def _warehouse_companies(whs):
+	"""Perusahaan (distinct, urut stabil) dari sejumlah gudang."""
+	if not whs:
+		return []
+	rows = frappe.get_all("Warehouse", filters={"name": ["in", whs]}, fields=["company"])
+	return list(dict.fromkeys([r.company for r in rows if r.company]))
 
-	Prioritas: Employee.company (read-only) → Stock Ops Settings.default_company →
-	default user → perusahaan pertama. Hanya kasus Employee yang read-only.
+
+def _settings_default_company():
+	try:
+		s = frappe.get_cached_doc("Stock Ops Settings")
+		return getattr(s, "default_company", None) or ""
+	except Exception:
+		return ""
+
+
+def _user_scope(emp=None):
+	"""Lingkup akses user login.
+
+	- `user_whs` = get_user_warehouses() (dari Employee.stock_ops_warehouses ATAU
+	  User Permission Warehouse). KOSONG = tidak dibatasi → lihat semua gudang &
+	  semua perusahaan (untuk segelintir user/manajer yang dibuka penuh).
+	- Bila dibatasi: gudang yang terlihat = `user_whs`; perusahaan = perusahaan
+	  gudang tsb; Company dikunci (read-only) bila lingkupnya satu perusahaan.
 	"""
 	if emp is None:
 		emp = get_user_employee()
+	user_whs = get_user_warehouses()
+	restricted = bool(user_whs)
+	allowed_companies = _warehouse_companies(user_whs) if restricted else []
+
 	if emp and emp.get("company"):
-		return emp["company"], True
+		company = emp["company"]
+	elif allowed_companies:
+		company = allowed_companies[0]
+	else:
+		company = _settings_default_company() or frappe.defaults.get_user_default("Company")
+		if not company:
+			first = frappe.get_all("Company", pluck="name", limit_page_length=1)
+			company = first[0] if first else None
 
-	try:
-		s = frappe.get_cached_doc("Stock Ops Settings")
-		dc = getattr(s, "default_company", None)
-	except Exception:
-		dc = None
-	if dc:
-		return dc, False
+	# Pastikan perusahaan default berada dalam lingkup saat dibatasi.
+	if restricted and allowed_companies and company not in allowed_companies:
+		company = allowed_companies[0]
 
-	fallback = frappe.defaults.get_user_default("Company")
-	if fallback:
-		return fallback, False
-	first = frappe.get_all("Company", pluck="name", limit_page_length=1)
-	return (first[0] if first else None), False
+	# Kunci Company hanya bila lingkup tepat satu perusahaan.
+	company_read_only = bool(restricted and len(allowed_companies) == 1 and company)
+
+	# Gudang sumber default — pakai Settings; bila dibatasi & tak valid, gudang pertama user.
+	src = _default_source_warehouse()
+	if restricted and (not src or src not in user_whs):
+		src = user_whs[0] if user_whs else ""
+
+	return {
+		"employee": emp,
+		"user_whs": user_whs,
+		"restricted": restricted,
+		"allowed_companies": allowed_companies,
+		"company": company,
+		"company_read_only": company_read_only,
+		"default_source_warehouse": src,
+	}
+
+
+def _collect_warehouses(data):
+	"""Kumpulkan semua nilai gudang dari sebuah payload dokumen (top-level + item)."""
+	keys = ("from_warehouse", "to_warehouse", "s_warehouse", "t_warehouse", "set_warehouse", "warehouse")
+	whs = set()
+	for k in keys:
+		v = data.get(k)
+		if v:
+			whs.add(v)
+	for it in (data.get("items") or []):
+		for k in ("warehouse", "s_warehouse", "t_warehouse"):
+			v = it.get(k)
+			if v:
+				whs.add(v)
+	return whs
+
+
+def _assert_warehouses_allowed(whs):
+	"""Tolak bila ada gudang di luar lingkup user (saat user dibatasi). Aman bila tak dibatasi."""
+	allowed = get_user_warehouses()
+	if not allowed:
+		return
+	bad = sorted(w for w in whs if w and w not in allowed)
+	if bad:
+		frappe.throw(_("Anda tidak punya akses ke gudang: {0}").format(", ".join(bad)))
 
 
 def _default_source_warehouse():
@@ -191,6 +257,8 @@ def create_opname(warehouse, items, company=None, external_localid=None):
 	if not items:
 		frappe.throw(_("Tidak ada item untuk direkonsiliasi"))
 
+	_assert_warehouses_allowed({warehouse})
+
 	if external_localid:
 		existing = frappe.db.get_value("Stock Reconciliation", {"external_localid": external_localid}, "name")
 		if existing:
@@ -230,6 +298,8 @@ def bulk_purchase_request(items, company=None, external_localid=None):
 	items = [i for i in items if i.get("item_code") and float(i.get("qty") or 0) > 0]
 	if not items:
 		frappe.throw(_("Tidak ada item untuk diminta"))
+
+	_assert_warehouses_allowed({i.get("warehouse") for i in items if i.get("warehouse")})
 
 	if external_localid:
 		existing = frappe.db.get_value("Material Request", {"external_localid": external_localid}, "name")
@@ -497,6 +567,8 @@ def get_bootstrap():
 	"""Master data untuk Stock Ops PWA dalam satu panggilan (untuk cache offline)."""
 	user = frappe.session.user
 
+	scope = _user_scope()
+
 	companies = frappe.get_all("Company", fields=["name", "default_currency", "abbr"], order_by="name")
 	warehouses = frappe.get_all(
 		"Warehouse",
@@ -507,6 +579,15 @@ def get_bootstrap():
 	)
 	# hanya warehouse non-group yang bisa dipakai transaksi
 	warehouses = [w for w in warehouses if not w.get("is_group")]
+
+	# Batasi daftar gudang & perusahaan sesuai lingkup user (Employee.stock_ops_warehouses
+	# / User Permission). User tanpa batasan tetap melihat semua.
+	if scope["restricted"]:
+		allowed_wh = set(scope["user_whs"])
+		warehouses = [w for w in warehouses if w["name"] in allowed_wh]
+		if scope["allowed_companies"]:
+			allowed_co = set(scope["allowed_companies"])
+			companies = [c for c in companies if c["name"] in allowed_co]
 
 	items = frappe.get_all(
 		"Item",
@@ -530,16 +611,12 @@ def get_bootstrap():
 	except frappe.PermissionError:
 		suppliers = []
 
-	emp = get_user_employee()
-	company, company_ro = _user_company(emp)
-	# Fallback terakhir bila benar-benar tak ada perusahaan apa pun.
-	if not company:
-		company = companies[0]["name"] if companies else None
+	company = scope["company"] or (companies[0]["name"] if companies else None)
 	_app = _app_settings()
 
 	return {
 		"user": {"name": user, "full_name": frappe.utils.get_fullname(user)},
-		"employee": emp or None,
+		"employee": scope["employee"] or None,
 		"companies": companies,
 		"warehouses": warehouses,
 		"items": items,
@@ -547,10 +624,11 @@ def get_bootstrap():
 		"suppliers": suppliers,
 		"defaults": {
 			"company": company,
-			"company_read_only": company_ro,
-			"source_warehouse": _app["default_source_warehouse"],
+			"company_read_only": scope["company_read_only"],
+			"source_warehouse": scope["default_source_warehouse"],
 		},
-		"user_warehouses": get_user_warehouses(),
+		"restricted": scope["restricted"],
+		"user_warehouses": scope["user_whs"],
 		"menu": _app["menu"],
 		"default_lang": _app["default_lang"],
 		"flutter_apk_url": _app["flutter_apk_url"],
@@ -572,6 +650,8 @@ def create_transaction(data):
 	doctype = data.get("doctype")
 	if doctype not in ALLOWED_DOCTYPES:
 		frappe.throw(_("Doctype tidak diizinkan: {0}").format(doctype))
+
+	_assert_warehouses_allowed(_collect_warehouses(data))
 
 	localid = data.get("external_localid")
 	if localid:
