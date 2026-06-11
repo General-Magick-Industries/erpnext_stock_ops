@@ -11,11 +11,9 @@ defineProps({
   bell: { type: Boolean, default: false },
   bellCount: { type: Number, default: 0 }
 })
-import { computed } from 'vue'
 const router = useRouter()
 const app = useApp()
 const { t } = useI18n()
-const lightHead = computed(() => ['v2', 'erpnext'].includes(app.settings.design))
 function goBack() {
   if (window.history.length > 1) router.back()
   else router.push('/')
@@ -26,8 +24,7 @@ function goBack() {
   <header class="appbar">
     <button v-if="back" class="back" @click="goBack" :aria-label="t('common.back')">‹</button>
     <div class="title">
-      <span v-if="logo && lightHead" class="wordmark">◆ RMI Stock</span>
-      <img v-else-if="logo" src="/rmi-logo.png" class="logo" alt="RMI" />
+      <img v-if="logo" src="/rmi-logo.png" class="logo" alt="RMI" />
       <span v-else>{{ title }}</span>
     </div>
 

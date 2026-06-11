@@ -42,11 +42,9 @@ function setDesign(v) {
   app.saveSettings({ design: v })
 }
 const designs = computed(() => [
-  { v: 'erpnext', label: t('settings.designErp') },
-  { v: 'v2', label: t('settings.designV2') },
+  { v: 'blue', label: t('settings.designBlue') },
   { v: 'classic', label: t('settings.designClassic') },
-  { v: 'a', label: t('settings.designA') },
-  { v: 'b', label: t('settings.designB') }
+  { v: 'compact', label: t('settings.designCompact') }
 ])
 function save() {
   app.saveSettings({ ...form })
