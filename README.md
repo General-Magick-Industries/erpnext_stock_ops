@@ -156,6 +156,51 @@ The PWA assets are already inside the image (Option B.2), so no extra build step
 
 ---
 
+## What gets created on install (checklist)
+
+`bench install-app stock_ops` runs `after_install`; `bench migrate` syncs DocTypes and runs `after_migrate`
+(self-heal). After that the site automatically has:
+
+**DocTypes** (module *Stock Ops*)
+- [x] **Stock Ops Settings** (Single) — app configuration
+- [x] **Stock Ops Menu Override** (child) — per-role menu visibility rows
+- [x] **Stock Ops Employee Warehouse** (child) — per-employee warehouse list
+
+**Custom Fields**
+- [x] Material Request → `external_localid`, `stock_ops_geolocation`
+- [x] Stock Entry → `external_localid`, `stock_ops_geolocation`
+- [x] Stock Reconciliation → `external_localid`
+- [x] Employee → **`stock_ops_warehouses`** (Table MultiSelect — limits which warehouses the employee sees)
+
+**Roles + permissions** (existing standard role perms are preserved)
+- [x] **Stock Ops User** — create / write / submit on Material Request, Stock Entry, Stock Reconciliation;
+      read on Item, Bin, Warehouse, UOM, Company, Supplier, …; **no cancel/delete**; no Desk access
+- [x] **Stock Ops Manager** — the above **+ cancel / delete / amend** + edit Stock Ops Settings + Desk access
+
+**Stock Ops Settings fields** (ready to edit)
+- [x] Default Language (id/en) · Flutter APK URL · **Default Company** · **Default Source Warehouse**
+- [x] 13 menu-visibility toggles (Stock, Movement, Documents, Notifications, Scan, Transfer, Low Stock,
+      Opname, MR, PR, Stock In/Out/Transfer)
+- [x] Per-role menu override table
+
+**Desk integration**
+- [x] App Switcher (⊞) tile **Stock Ops** → `/desk/stock-ops` (managers only)
+- [x] **Stock Ops** Workspace (shortcuts: Open App, Settings, Stock; cards: Documents, Configuration)
+
+**Backend**
+- [x] Whitelisted API `stock_ops.api.*` (bootstrap, settings, user context, notifications, transactions, …)
+- [x] VAPID keys for Web Push
+- [x] On submit of Material Request / Stock Entry → in-app Notification Log entry for managers
+
+**Not automatic — manual follow-up (see below)**
+- [ ] Build the PWA bundle (`npm run build:frappe`, or the Docker overlay) so `/stock_ops` is served
+- [ ] Assign **Stock Ops User / Manager** roles to users (or via a Role Profile)
+- [ ] Configure **Stock Ops Settings** (language, default company/warehouse, menu visibility, APK URL)
+- [ ] Restrict warehouses per employee (Employee → *Stock Ops Warehouses*) where needed
+- [ ] Upload the APK and set **Flutter APK URL**
+
+---
+
 ## Post-install configuration (all install methods)
 
 1. **Stock Ops Settings** (`/app/stock-ops-settings`, or App Switcher ⊞ → Stock Ops):
