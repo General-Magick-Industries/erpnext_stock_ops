@@ -1,0 +1,29 @@
+# Overlay image: bakes the Stock Ops PWA bundle into a frappe_docker custom image.
+#
+# The PWA is built by a custom Vite script (`npm run build:frappe`) and its output is
+# git-ignored, so it must be built inside the image. This overlay runs that build on top
+# of a base custom image that already contains frappe + erpnext + stock_ops (see README
+# Option B.1, built from docker/apps.json).
+#
+# Usage:
+#   docker build \
+#     --build-arg=BASE_IMAGE=ghcr.io/<your-org>/stockops-erpnext:base \
+#     --tag=ghcr.io/<your-org>/stockops-erpnext:latest \
+#     --file=docker/Containerfile .
+#
+# Requires Node >= 20 in the base image (frappe_docker v16 images ship Node 20).
+
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+USER frappe
+WORKDIR /home/frappe/frappe-bench
+
+# Build the PWA and collect it into the bench's site assets.
+RUN cd apps/stock_ops/frontend \
+    && npm install --no-audit --no-fund \
+    && npm run build:frappe \
+    && cd /home/frappe/frappe-bench \
+    && bench build --app stock_ops
+
+# (install-app is run against a live site at deploy time, not during image build)
