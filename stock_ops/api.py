@@ -37,6 +37,66 @@ def get_user_warehouses(user=None):
 	return list(dict.fromkeys([w for w in whs if w]))
 
 
+def get_user_employee(user=None):
+	"""Employee yang tertaut ke user (via Employee.user_id). None bila tidak ada."""
+	user = user or frappe.session.user
+	return frappe.db.get_value(
+		"Employee",
+		{"user_id": user},
+		["name", "employee_name", "company", "department", "designation"],
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def get_user_context():
+	"""Konteks user untuk aplikasi: Employee, perusahaan (read-only bila dari Employee),
+	dan default gudang sumber. Dipakai untuk mengunci field Company di form."""
+	emp = get_user_employee()
+	company, read_only = _user_company(emp)
+	return {
+		"employee": emp or None,
+		"company": company,
+		"company_read_only": read_only,
+		"default_source_warehouse": _default_source_warehouse(),
+		"warehouses": get_user_warehouses(),
+	}
+
+
+def _user_company(emp=None):
+	"""Perusahaan untuk user login + apakah harus read-only.
+
+	Prioritas: Employee.company (read-only) → Stock Ops Settings.default_company →
+	default user → perusahaan pertama. Hanya kasus Employee yang read-only.
+	"""
+	if emp is None:
+		emp = get_user_employee()
+	if emp and emp.get("company"):
+		return emp["company"], True
+
+	try:
+		s = frappe.get_cached_doc("Stock Ops Settings")
+		dc = getattr(s, "default_company", None)
+	except Exception:
+		dc = None
+	if dc:
+		return dc, False
+
+	fallback = frappe.defaults.get_user_default("Company")
+	if fallback:
+		return fallback, False
+	first = frappe.get_all("Company", pluck="name", limit_page_length=1)
+	return (first[0] if first else None), False
+
+
+def _default_source_warehouse():
+	try:
+		s = frappe.get_cached_doc("Stock Ops Settings")
+		return getattr(s, "default_source_warehouse", None) or ""
+	except Exception:
+		return ""
+
+
 def _resolve_warehouses(warehouse=None, company=None):
 	user_whs = get_user_warehouses()
 	if warehouse:
@@ -384,6 +444,7 @@ def _app_settings():
 		"menu": _menu_settings(s),
 		"default_lang": default_lang,
 		"flutter_apk_url": apk_url,
+		"default_source_warehouse": (getattr(s, "default_source_warehouse", None) or "") if s else "",
 		"caps": _user_caps(),
 	}
 
@@ -469,17 +530,26 @@ def get_bootstrap():
 	except frappe.PermissionError:
 		suppliers = []
 
-	default_company = frappe.defaults.get_user_default("Company") or (companies[0]["name"] if companies else None)
+	emp = get_user_employee()
+	company, company_ro = _user_company(emp)
+	# Fallback terakhir bila benar-benar tak ada perusahaan apa pun.
+	if not company:
+		company = companies[0]["name"] if companies else None
 	_app = _app_settings()
 
 	return {
 		"user": {"name": user, "full_name": frappe.utils.get_fullname(user)},
+		"employee": emp or None,
 		"companies": companies,
 		"warehouses": warehouses,
 		"items": items,
 		"uoms": uoms,
 		"suppliers": suppliers,
-		"defaults": {"company": default_company},
+		"defaults": {
+			"company": company,
+			"company_read_only": company_ro,
+			"source_warehouse": _app["default_source_warehouse"],
+		},
 		"user_warehouses": get_user_warehouses(),
 		"menu": _app["menu"],
 		"default_lang": _app["default_lang"],

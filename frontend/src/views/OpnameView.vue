@@ -13,8 +13,10 @@ const app = useApp()
 const master = useMaster()
 const { t } = useI18n()
 
+// Perusahaan dari server (Employee/Settings) bila ada; jika tidak, default lokal.
+const company = computed(() => (master.defaults && master.defaults.company) || app.settings.company)
 const whOptions = computed(() =>
-  master.userWarehouses.length ? master.userWarehouses : master.warehousesForCompany(app.settings.company)
+  master.userWarehouses.length ? master.userWarehouses : master.warehousesForCompany(company.value)
 )
 const warehouse = ref('')
 const rows = ref([])
@@ -33,7 +35,7 @@ async function load() {
   if (!warehouse.value) return
   loading.value = true
   try {
-    const res = await getOpnameSheet(warehouse.value, app.settings.company)
+    const res = await getOpnameSheet(warehouse.value, company.value)
     rows.value = (res.items || []).map((i) => ({
       item_code: i.item_code,
       item_name: i.item_name,
@@ -65,7 +67,7 @@ async function submit() {
   saving.value = true
   try {
     const items = changed.value.map((r) => ({ item_code: r.item_code, qty: Number(r.counted), valuation_rate: r.valuation_rate }))
-    const res = await createOpname(warehouse.value, items, app.settings.company, uuid())
+    const res = await createOpname(warehouse.value, items, company.value, uuid())
     app.notify(t('opname.created', { name: res.name, n: res.count || items.length }), 'success')
     await load()
   } catch (e) {

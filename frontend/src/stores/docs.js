@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { DOC_TYPES } from '../data/mock'
 import { uuid, todayStr } from '../lib/util'
 import { useApp } from './app'
+import { useMaster } from './master'
 import { useI18n } from '../lib/i18n'
 import { buildPayload } from '../lib/payload'
 import { createTransaction, submitTransaction, cancelTransaction, uploadFile } from '../lib/service'
@@ -41,13 +42,18 @@ export const useDocs = defineStore('docs', {
     newDraft(typeKey) {
       const cfg = DOC_TYPES[typeKey]
       const app = useApp()
+      const master = useMaster()
+      // Company dari server (Employee/Settings) bila ada; jika tidak, default lokal.
+      const company = (master.defaults && master.defaults.company) || app.settings.company
+      // Gudang sumber default dari Stock Ops Settings; jika kosong, default lokal.
+      const srcDefault = (master.defaults && master.defaults.source_warehouse) || app.settings.defaultSourceWarehouse
       return {
         localId: uuid(),
         type: typeKey,
         doctype: cfg.doctype,
-        company: app.settings.company,
+        company,
         date: todayStr(),
-        sourceWarehouse: cfg.source ? app.settings.defaultSourceWarehouse : '',
+        sourceWarehouse: cfg.source ? srcDefault : '',
         targetWarehouse: cfg.target ? app.settings.defaultTargetWarehouse : '',
         supplier: '',
         remark: '',

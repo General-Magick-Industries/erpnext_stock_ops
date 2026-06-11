@@ -20,6 +20,8 @@ const { t } = useI18n()
 
 const COMPANIES = computed(() => master.companyNames)
 const SUPPLIERS = computed(() => master.supplierNames)
+// Company dikunci bila berasal dari Employee user (server). Lihat get_user_context.
+const companyReadOnly = computed(() => !!(master.defaults && master.defaults.company_read_only))
 
 const typeKey = route.params.type
 const cfg = DOC_TYPES[typeKey]
@@ -109,9 +111,10 @@ async function save() {
 
       <div class="field">
         <label>{{ t('form.company') }}</label>
-        <select v-model="doc.company">
+        <select v-model="doc.company" :disabled="companyReadOnly">
           <option v-for="c in COMPANIES" :key="c">{{ c }}</option>
         </select>
+        <div v-if="companyReadOnly" class="tiny muted" style="margin-top: 4px">{{ t('form.companyFromAccount') }}</div>
       </div>
 
       <div class="field">

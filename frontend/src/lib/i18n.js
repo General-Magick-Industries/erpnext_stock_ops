@@ -38,6 +38,7 @@ const messages = {
     notif: { title: 'Notifikasi', empty: 'Belum ada notifikasi', markAll: 'Tandai semua dibaca' },
     form: {
       newSuffix: 'Baru', company: 'Perusahaan', date: 'Tanggal', supplier: 'Supplier',
+      companyFromAccount: 'Mengikuti perusahaan akun Anda',
       sourceWh: 'Gudang Asal', targetWh: 'Gudang Tujuan', noItems: 'Belum ada item',
       totalQty: 'Total Qty', photos: 'Foto Barang', addPhoto: 'Tambah foto',
       processing: 'Memproses…', notePlaceholder: 'Keterangan (opsional)',
@@ -169,6 +170,7 @@ const messages = {
     notif: { title: 'Notifications', empty: 'No notifications', markAll: 'Mark all read' },
     form: {
       newSuffix: 'New', company: 'Company', date: 'Date', supplier: 'Supplier',
+      companyFromAccount: 'Follows your account company',
       sourceWh: 'Source Warehouse', targetWh: 'Target Warehouse', noItems: 'No items yet',
       totalQty: 'Total Qty', photos: 'Item Photos', addPhoto: 'Add photo',
       processing: 'Processing…', notePlaceholder: 'Remark (optional)',
