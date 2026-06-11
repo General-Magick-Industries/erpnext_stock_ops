@@ -18,7 +18,6 @@ const router = useRouter()
 const { t, locale } = useI18n()
 
 const recent = computed(() => docs.sorted.slice(0, 4))
-const synced = computed(() => docs.docs.filter((d) => d.status === 'synced').length)
 
 // Menu peluncur (semua tile identik → pasti seragam). `key` = flag Stock Ops Settings.
 const menuAll = [
@@ -70,7 +69,6 @@ const dateStr = computed(() =>
   <div class="content">
     <!-- Hero -->
     <div class="hero" style="position: relative; overflow: hidden">
-      <span v-if="app.settings.design === 'v2'" style="position: absolute; right: 14px; bottom: 8px; font-size: 52px; opacity: 0.85">📦</span>
       <div class="row between">
         <div>
           <div class="small" style="opacity: 0.9">{{ t('home.hello', { name: app.user?.name }) }}</div>
@@ -82,20 +80,6 @@ const dateStr = computed(() =>
       </div>
       <div class="hero-clock">{{ clock }}</div>
       <div class="small" style="opacity: 0.9; text-transform: capitalize">{{ dateStr }}</div>
-    </div>
-
-    <!-- Kartu stat berwarna (Desain v2) -->
-    <div v-if="app.settings.design === 'v2'" class="v2-stats mt12">
-      <div class="v2-stat" style="background: #d98a3d"><div class="n">{{ docs.docs.length }}</div><div class="l">{{ t('home.totalDocs') }}</div></div>
-      <div class="v2-stat" style="background: #7fa6a0"><div class="n">{{ docs.pendingCount }}</div><div class="l">{{ t('home.pendingSync') }}</div></div>
-      <div class="v2-stat" style="background: var(--brand)"><div class="n">{{ synced }}</div><div class="l">{{ t('home.synced') }}</div></div>
-    </div>
-
-    <!-- KPI hanya Desain A -->
-    <div v-if="app.settings.design === 'a'" class="kpi-grid mt12">
-      <div class="kpi"><div class="n">{{ docs.docs.length }}</div><div class="l">{{ t('home.totalDocs') }}</div></div>
-      <div class="kpi"><div class="n">{{ docs.pendingCount }}</div><div class="l">{{ t('home.pendingSync') }}</div></div>
-      <div class="kpi"><div class="n">{{ synced }}</div><div class="l">{{ t('home.synced') }}</div></div>
     </div>
 
     <div v-if="!app.online" class="banner-offline mt12">{{ t('home.offlineBanner') }}</div>

@@ -32,7 +32,7 @@ export const useApp = defineStore('app', {
         lang: 'id', // 'id' | 'en'
         langUserSet: false, // true bila user pilih bahasa manual (abaikan default server)
         theme: 'system', // 'system' | 'light' | 'dark'
-        design: isNative() ? 'erpnext' : 'classic', // native default = tema ERPNext
+        design: isNative() ? 'blue' : 'classic', // native default = tema biru ERPNext
         ...(saved.settings || {})
       },
       // toast sederhana
@@ -158,6 +158,13 @@ export const useApp = defineStore('app', {
         this.autoSyncOnReconnect()
       })
       window.addEventListener('offline', () => (this.browserOnline = false))
+      // Migrasi nama desain lama → 3 desain saat ini (blue/classic/compact)
+      const validDesigns = ['blue', 'classic', 'compact']
+      if (!validDesigns.includes(this.settings.design)) {
+        const map = { erpnext: 'blue', b: 'compact' }
+        this.settings.design = map[this.settings.design] || 'classic'
+        this.persist()
+      }
       this.applyTheme()
       this.applyDesign()
       window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {

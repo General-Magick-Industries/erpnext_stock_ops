@@ -128,9 +128,8 @@ a { color: inherit; text-decoration: none; }
 .launch-tile:active { transform: scale(0.95); }
 .launch-tile .li { width: 50px; height: 50px; border-radius: 16px; display: grid; place-items: center; font-size: 24px; color: #fff; flex: none; }
 .launch-tile .lt { font-size: 11px; font-weight: 700; color: var(--ink); text-align: center; line-height: 1.2; }
-:root[data-design='a'] .launch-tile { border-radius: 22px; }
-:root[data-design='b'] .launch-tile { box-shadow: none; border: 1px solid var(--line); border-radius: 10px; }
-:root[data-design='b'] .launch-tile .li { width: 42px; height: 42px; border-radius: 10px; font-size: 20px; }
+:root[data-design='compact'] .launch-tile { box-shadow: none; border: 1px solid var(--line); border-radius: 10px; }
+:root[data-design='compact'] .launch-tile .li { width: 42px; height: 42px; border-radius: 10px; font-size: 20px; }
 
 /* ===== Home shortcut tiles (lama, ukuran seragam) ===== */
 .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: stretch; }
@@ -239,102 +238,42 @@ a { color: inherit; text-decoration: none; }
 .alert-low:active { transform: scale(0.99); }
 
 /* ============================================================
-   VARIAN DESAIN — diatur via <html data-design="a|b">
+   VARIAN DESAIN — diatur via <html data-design="blue|classic|compact">
+   classic = bawaan (tanpa selector khusus). blue & compact di bawah.
    ============================================================ */
 
-/* ===== Desain A — Dashboard berwarna (lega, rounded, vibran) ===== */
-:root[data-design='a'] {
-  --radius: 22px;
-  --shadow: 0 2px 8px rgba(42, 34, 24, 0.10), 0 16px 34px rgba(42, 34, 24, 0.10);
-}
-:root[data-design='a'] .appbar { background: var(--grad); }
-:root[data-design='a'] .card { padding: 18px; border-radius: 22px; }
-:root[data-design='a'] .list-item { padding: 14px 16px; border-radius: 18px; }
-:root[data-design='a'] .lead-icon { width: 50px; height: 50px; border-radius: 16px; font-size: 24px; }
-:root[data-design='a'] .quick-tile { border-radius: 20px; font-size: 15px; box-shadow: 0 8px 22px color-mix(in srgb, var(--ink) 12%, transparent); }
-:root[data-design='a'] .kpi-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-:root[data-design='a'] .kpi { background: var(--card); border-radius: 18px; box-shadow: var(--shadow); padding: 14px; text-align: center; }
-:root[data-design='a'] .kpi .n { font-size: 24px; font-weight: 800; color: var(--brand); }
-:root[data-design='a'] .kpi .l { font-size: 11px; color: var(--muted); font-weight: 600; }
-:root[data-design='a'] .section-title { font-size: 14px; }
-
-/* ===== Desain B — Kompak profesional (flat, padat, border) ===== */
-:root[data-design='b'] {
+/* ===== Desain Compact — kompak profesional (flat, padat, border) ===== */
+:root[data-design='compact'] {
   --radius: 10px;
   --shadow: none;
 }
-:root[data-design='b'] .content { font-size: 14px; }
-:root[data-design='b'] .appbar { box-shadow: none; border-bottom: 1px solid color-mix(in srgb, #000 12%, var(--appbar-bg)); }
-:root[data-design='b'] .card { box-shadow: none; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
-:root[data-design='b'] .card + .card { margin-top: 8px; }
-:root[data-design='b'] .list-item { box-shadow: none; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; }
-:root[data-design='b'] .list-item + .list-item { margin-top: 6px; }
-:root[data-design='b'] .lead-icon { width: 34px; height: 34px; border-radius: 8px; font-size: 16px; }
-:root[data-design='b'] .section-title { margin: 12px 4px 6px; font-size: 12px; }
-:root[data-design='b'] .item-line { padding: 8px 0; }
-:root[data-design='b'] .thumb { width: 38px; height: 38px; border-radius: 8px; }
-:root[data-design='b'] .search { box-shadow: none; border-radius: 10px; }
-:root[data-design='b'] .chip { border-radius: 8px; }
-:root[data-design='b'] .btn { border-radius: 8px; }
-/* Beranda B: aksi cepat jadi daftar 1 kolom yang padat */
-:root[data-design='b'] .quick-grid { grid-template-columns: 1fr; gap: 6px; }
-:root[data-design='b'] .quick-tile { aspect-ratio: auto; min-height: 0; padding: 13px 14px; justify-content: flex-start; text-align: left; border-radius: 8px; font-size: 14px; }
-
-/* ===== Desain v2 — modern (RMI warm, rounded, lega) ===== */
-:root[data-design='v2'] {
-  --radius: 24px;
-  --shadow: 0 2px 10px rgba(42, 34, 24, 0.07), 0 18px 40px rgba(42, 34, 24, 0.10);
-}
-/* header transparan menyatu dengan konten (tanpa seam/gap) */
-:root[data-design='v2'] .app-shell { background: linear-gradient(180deg, var(--brand-soft), var(--bg) 26%); }
-:root[data-design='v2'] .content { background: transparent; }
-:root[data-design='v2'] .appbar { background: transparent; color: var(--ink); box-shadow: none; }
-:root[data-design='v2'] .appbar .wordmark { color: var(--brand); font-weight: 800; font-size: 18px; }
-:root[data-design='v2'] .appbar .back { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
-:root[data-design='v2'] .net-pill,
-:root[data-design='v2'] .bell-btn { background: var(--card); color: var(--ink); box-shadow: var(--shadow); }
-:root[data-design='v2'] .bell-badge { border-color: var(--bg); }
-:root[data-design='v2'] .toolbar { background: color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter: blur(10px); border-radius: 0 0 14px 14px; }
-:root[data-design='v2'] .card { border-radius: 24px; padding: 16px; }
-:root[data-design='v2'] .list-item { border-radius: 18px; padding: 13px 14px; }
-:root[data-design='v2'] .lead-icon { border-radius: 15px; }
-:root[data-design='v2'] .thumb { border-radius: 14px; }
-:root[data-design='v2'] .btn { border-radius: 14px; }
-:root[data-design='v2'] .btn.block { border-radius: 16px; }
-:root[data-design='v2'] .launch-tile { border-radius: 22px; }
-:root[data-design='v2'] .launch-tile .li { border-radius: 18px; }
-:root[data-design='v2'] .hero { border-radius: 28px; padding: 18px; }
-:root[data-design='v2'] .quick-tile { border-radius: 20px; }
-:root[data-design='v2'] .search { border-radius: 999px; }
-:root[data-design='v2'] .chip { border-radius: 999px; }
-
-/* kartu statistik berwarna (dipakai di Beranda saat v2) */
-.v2-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-.v2-stat { border-radius: 18px; padding: 14px 10px; color: #fff; box-shadow: var(--shadow); }
-.v2-stat .n { font-size: 22px; font-weight: 800; line-height: 1; }
-.v2-stat .l { font-size: 10px; opacity: .95; margin-top: 4px; font-weight: 600; }
-
-/* bottom-nav FAB tengah (v2) */
-.tabbar-v2 .navfab { flex: 0 0 64px; display: flex; align-items: center; justify-content: center; }
-.tabbar-v2 .navfab .fabbtn {
-  width: 58px; height: 58px; border-radius: 50%; background: var(--grad); color: #fff;
-  display: grid; place-items: center; font-size: 30px; margin-top: -26px;
-  box-shadow: 0 12px 24px color-mix(in srgb, var(--brand) 45%, transparent);
-}
-.tabbar-v2 .navfab .fabbtn:active { transform: scale(0.94); }
+:root[data-design='compact'] .content { font-size: 14px; }
+:root[data-design='compact'] .appbar { box-shadow: none; border-bottom: 1px solid color-mix(in srgb, #000 12%, var(--appbar-bg)); }
+:root[data-design='compact'] .card { box-shadow: none; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+:root[data-design='compact'] .card + .card { margin-top: 8px; }
+:root[data-design='compact'] .list-item { box-shadow: none; border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; }
+:root[data-design='compact'] .list-item + .list-item { margin-top: 6px; }
+:root[data-design='compact'] .lead-icon { width: 34px; height: 34px; border-radius: 8px; font-size: 16px; }
+:root[data-design='compact'] .section-title { margin: 12px 4px 6px; font-size: 12px; }
+:root[data-design='compact'] .item-line { padding: 8px 0; }
+:root[data-design='compact'] .thumb { width: 38px; height: 38px; border-radius: 8px; }
+:root[data-design='compact'] .search { box-shadow: none; border-radius: 10px; }
+:root[data-design='compact'] .chip { border-radius: 8px; }
+:root[data-design='compact'] .btn { border-radius: 8px; }
+/* Beranda compact: aksi cepat jadi daftar 1 kolom yang padat */
+:root[data-design='compact'] .quick-grid { grid-template-columns: 1fr; gap: 6px; }
+:root[data-design='compact'] .quick-tile { aspect-ratio: auto; min-height: 0; padding: 13px 14px; justify-content: flex-start; text-align: left; border-radius: 8px; font-size: 14px; }
 
 /* progress bar qty (list stok) */
 .qbar { height: 6px; border-radius: 99px; background: var(--line); margin-top: 6px; overflow: hidden; }
 .qbar i { display: block; height: 100%; border-radius: 99px; background: var(--brand); }
 
-/* gambar detail item — besar di v2 */
+/* gambar detail item */
 .idv-img { width: 64px; height: 64px; border-radius: 14px; object-fit: cover; flex: none; }
-:root[data-design='v2'] .idv-img { width: 100%; height: 150px; border-radius: 22px; }
-:root[data-design='v2'] .idv-head { flex-direction: column; align-items: flex-start; gap: 10px; }
 
-/* ===== Tema ERPNext (biru Frappe, flat) — light & dark ===== */
-:root[data-design='erpnext'] { --radius: 10px; }
-:root[data-design='erpnext'][data-theme='light'] {
+/* ===== Desain Blue (biru Frappe/ERPNext, flat) — light & dark ===== */
+:root[data-design='blue'] { --radius: 10px; }
+:root[data-design='blue'][data-theme='light'] {
   --bg: #f4f5f6; --card: #ffffff; --ink: #1f272e; --muted: #6b7280; --line: #e2e4e9;
   --brand: #2490ef; --brand-ink: #ffffff; --brand-soft: #e7f1fd;
   --appbar-bg: #ffffff; --appbar-ink: #1f272e;
@@ -342,7 +281,7 @@ a { color: inherit; text-decoration: none; }
   --grad: linear-gradient(135deg, #2490ef, #1170cf);
   --input-bg: #ffffff;
 }
-:root[data-design='erpnext'][data-theme='dark'] {
+:root[data-design='blue'][data-theme='dark'] {
   --bg: #141a1f; --card: #1f262d; --ink: #e8edf2; --muted: #8d99a6; --line: #2b343d;
   --brand: #4aa3f0; --brand-ink: #08111a; --brand-soft: #15273a;
   --appbar-bg: #1f262d; --appbar-ink: #e8edf2;
@@ -350,19 +289,18 @@ a { color: inherit; text-decoration: none; }
   --input-bg: #11171c;
 }
 /* bentuk flat ala desk */
-:root[data-design='erpnext'] .card { border: 1px solid var(--line); border-radius: 10px; }
-:root[data-design='erpnext'] .list-item { border: 1px solid var(--line); box-shadow: none; border-radius: 10px; }
-:root[data-design='erpnext'] .lead-icon { border-radius: 8px; }
-:root[data-design='erpnext'] .thumb { border-radius: 8px; }
-:root[data-design='erpnext'] .btn { border-radius: 8px; }
-:root[data-design='erpnext'] .appbar { box-shadow: 0 1px 0 var(--line); }
-:root[data-design='erpnext'] .appbar .wordmark { color: var(--brand); font-weight: 800; font-size: 18px; }
-:root[data-design='erpnext'] .net-pill,
-:root[data-design='erpnext'] .bell-btn,
-:root[data-design='erpnext'] .appbar .back { background: var(--brand-soft); color: var(--ink); }
-:root[data-design='erpnext'] .bell-badge { border-color: var(--appbar-bg); }
-:root[data-design='erpnext'] .quick-tile { border-radius: 10px; }
-:root[data-design='erpnext'] .launch-tile { border-radius: 12px; border: 1px solid var(--line); box-shadow: none; }
+:root[data-design='blue'] .card { border: 1px solid var(--line); border-radius: 10px; }
+:root[data-design='blue'] .list-item { border: 1px solid var(--line); box-shadow: none; border-radius: 10px; }
+:root[data-design='blue'] .lead-icon { border-radius: 8px; }
+:root[data-design='blue'] .thumb { border-radius: 8px; }
+:root[data-design='blue'] .btn { border-radius: 8px; }
+:root[data-design='blue'] .appbar { box-shadow: 0 1px 0 var(--line); }
+:root[data-design='blue'] .net-pill,
+:root[data-design='blue'] .bell-btn,
+:root[data-design='blue'] .appbar .back { background: var(--brand-soft); color: var(--ink); }
+:root[data-design='blue'] .bell-badge { border-color: var(--appbar-bg); }
+:root[data-design='blue'] .quick-tile { border-radius: 10px; }
+:root[data-design='blue'] .launch-tile { border-radius: 12px; border: 1px solid var(--line); box-shadow: none; }
 
 .switch { position: relative; display: inline-block; width: 48px; height: 28px; }
 .switch input { display: none; }
