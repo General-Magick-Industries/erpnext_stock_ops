@@ -17,7 +17,10 @@ const { t } = useI18n()
 const form = reactive({ ...app.settings })
 const pending = computed(() => docs.pendingCount)
 const COMPANIES = computed(() => master.companyNames)
-const WAREHOUSES = computed(() => master.warehousesForCompany(form.company))
+// Company dikunci bila berasal dari Employee user (server-driven).
+const companyReadOnly = computed(() => !!(master.defaults && master.defaults.company_read_only))
+const serverCompany = computed(() => (master.defaults && master.defaults.company) || form.company)
+const WAREHOUSES = computed(() => master.warehousesForCompany(companyReadOnly.value ? serverCompany.value : form.company))
 
 const themes = computed(() => [
   { v: 'system', label: t('settings.themeSystem') },
@@ -187,7 +190,11 @@ function clearData() {
     <div class="card">
       <div class="field">
         <label>{{ t('settings.companyDefault') }}</label>
-        <select v-model="form.company"><option v-for="c in COMPANIES" :key="c">{{ c }}</option></select>
+        <template v-if="companyReadOnly">
+          <input type="text" :value="serverCompany" readonly disabled />
+          <div class="tiny muted" style="margin-top: 4px">{{ t('form.companyFromAccount') }}</div>
+        </template>
+        <select v-else v-model="form.company"><option v-for="c in COMPANIES" :key="c">{{ c }}</option></select>
       </div>
       <div class="field">
         <label>{{ t('settings.srcDefault') }}</label>

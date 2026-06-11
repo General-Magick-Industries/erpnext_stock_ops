@@ -15,7 +15,8 @@ const docs = useDocs()
 const master = useMaster()
 const { t } = useI18n()
 
-const company = ref(app.settings.company)
+// Perusahaan dari server (Employee/Settings) bila ada; jika tidak, default lokal.
+const company = ref((master.defaults && master.defaults.company) || app.settings.company)
 const warehouseOptions = computed(() => master.warehousesForCompany(company.value))
 
 const form = reactive({
