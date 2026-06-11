@@ -25,6 +25,7 @@ export const useMaster = defineStore('master', {
       userWarehouses: s.userWarehouses || [],
       defaults: s.defaults || null,
       menu: s.menu || {}, // visibilitas menu dari Stock Ops Settings
+      caps: s.caps || {}, // kemampuan user (mis. can_cancel) — dari Role Permission
       defaultLang: s.defaultLang || 'id',
       flutterApkUrl: s.flutterApkUrl || '',
       loadedAt: s.loadedAt || null,
@@ -35,6 +36,10 @@ export const useMaster = defineStore('master', {
     hasData: (s) => s.items.length > 0,
     // Menu tampil? default true bila belum dimuat / tak diset di server.
     menuOn: (s) => (key) => s.menu[key] !== false,
+    // Boleh cancel dokumen di server? default true bila caps belum dimuat
+    // (penegakan sebenarnya tetap di server; ini hanya menyembunyikan tombol).
+    canCancel: (s) => s.caps.can_cancel !== false,
+    isManager: (s) => s.caps.is_manager === true,
     // Item siap pakai untuk picker (normalisasi field + fallback gambar)
     itemList: (s) => (s.items.length ? s.items : ITEMS),
     warehouseNames: (s) => (s.warehouses.length ? s.warehouses.map((w) => w.name) : WAREHOUSES),
@@ -61,6 +66,7 @@ export const useMaster = defineStore('master', {
           userWarehouses: this.userWarehouses,
           defaults: this.defaults,
           menu: this.menu,
+          caps: this.caps,
           defaultLang: this.defaultLang,
           flutterApkUrl: this.flutterApkUrl,
           loadedAt: this.loadedAt
@@ -85,6 +91,7 @@ export const useMaster = defineStore('master', {
         this.userWarehouses = b.user_warehouses || []
         this.defaults = b.defaults || null
         this.menu = b.menu || {}
+        this.caps = b.caps || {}
         this.defaultLang = b.default_lang || 'id'
         this.flutterApkUrl = b.flutter_apk_url || ''
         this.loadedAt = new Date().toISOString()

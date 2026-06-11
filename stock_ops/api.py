@@ -357,6 +357,22 @@ def _menu_settings(settings=None):
 	return out
 
 
+def _user_caps():
+	"""Kemampuan user (untuk UI sembunyikan aksi yang tak diizinkan).
+
+	Penegakan tetap di server (API patuh izin standar); ini hanya supaya tombol
+	cancel/hapus tak ditampilkan ke Stock Ops User biasa.
+	"""
+	roles = set(frappe.get_roles(frappe.session.user))
+	is_manager = frappe.session.user == "Administrator" or any(
+		r in roles for r in ("System Manager", "Stock Manager", "Stock Ops Manager")
+	)
+	can_cancel = is_manager or any(
+		frappe.has_permission(dt, ptype="cancel") for dt in ("Material Request", "Stock Entry")
+	)
+	return {"is_manager": is_manager, "can_cancel": bool(can_cancel)}
+
+
 def _app_settings():
 	try:
 		s = frappe.get_cached_doc("Stock Ops Settings")
@@ -364,7 +380,12 @@ def _app_settings():
 		s = None
 	default_lang = (getattr(s, "default_language", None) or "id") if s else "id"
 	apk_url = (getattr(s, "flutter_apk_url", None) or "") if s else ""
-	return {"menu": _menu_settings(s), "default_lang": default_lang, "flutter_apk_url": apk_url}
+	return {
+		"menu": _menu_settings(s),
+		"default_lang": default_lang,
+		"flutter_apk_url": apk_url,
+		"caps": _user_caps(),
+	}
 
 
 @frappe.whitelist()
@@ -403,11 +424,11 @@ def mark_notifications_read(name=None):
 
 def has_app_permission():
 	"""Siapa yang melihat tile Stock Ops di App Switcher desk.
-	Dibatasi ke manajer; Stock User biasa cukup pakai PWA (/stock_ops)."""
+	Dibatasi ke manajer; Stock Ops User biasa cukup pakai PWA (/stock_ops)."""
 	if frappe.session.user == "Administrator":
 		return True
 	roles = set(frappe.get_roles())
-	return any(r in roles for r in ("System Manager", "Stock Manager"))
+	return any(r in roles for r in ("System Manager", "Stock Manager", "Stock Ops Manager"))
 
 
 @frappe.whitelist()
@@ -463,6 +484,7 @@ def get_bootstrap():
 		"menu": _app["menu"],
 		"default_lang": _app["default_lang"],
 		"flutter_apk_url": _app["flutter_apk_url"],
+		"caps": _app["caps"],
 		"server_time": frappe.utils.now(),
 	}
 

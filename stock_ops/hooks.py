@@ -260,8 +260,11 @@ add_to_apps_screen = [
 # Stock Ops PWA
 # ============================================================
 
-# Buat custom field external_localid + kunci VAPID saat install
+# Buat custom field external_localid + kunci VAPID + role aplikasi saat install
 after_install = "stock_ops.setup.install.after_install"
+
+# Self-heal role & izin Stock Ops tiap `bench migrate` (idempoten)
+after_migrate = "stock_ops.setup.install.after_migrate"
 
 # Push notification saat dokumen disubmit
 doc_events = {
