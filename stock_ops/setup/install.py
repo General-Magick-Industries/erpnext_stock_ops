@@ -55,11 +55,13 @@ def after_install():
 
 
 def after_migrate():
-	"""Self-heal saat tiap `bench migrate`: pastikan role & izin aplikasi ada.
+	"""Self-heal saat tiap `bench migrate`: pastikan custom field + role aplikasi ada.
 
-	Aman dijalankan berulang (idempoten) — tak menghapus izin yang sudah ada,
-	hanya memastikan role Stock Ops dan pemetaan izinnya tetap terpasang.
+	Aman dijalankan berulang (idempoten). Custom field DocType (mis. Employee →
+	stock_ops_warehouses) ikut dipastikan agar install lama yang hanya `migrate`
+	tetap memperoleh field baru tanpa perlu reinstall.
 	"""
+	setup_custom_fields()
 	setup_roles_and_permissions()
 
 
