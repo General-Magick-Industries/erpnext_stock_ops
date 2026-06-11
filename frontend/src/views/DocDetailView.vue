@@ -3,6 +3,7 @@ import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useDocs } from '../stores/docs'
 import { useApp } from '../stores/app'
+import { useMaster } from '../stores/master'
 import { useI18n } from '../lib/i18n'
 import { DOC_TYPES } from '../data/mock'
 import { getPhotosByLocalId } from '../lib/idb'
@@ -14,6 +15,7 @@ const route = useRoute()
 const router = useRouter()
 const docs = useDocs()
 const app = useApp()
+const master = useMaster()
 const { t } = useI18n()
 
 const doc = computed(() => docs.byLocalId(route.params.localId))
@@ -118,7 +120,7 @@ function confirmCancel() {
     </button>
 
     <button
-      v-if="doc.submitted"
+      v-if="doc.submitted && master.canCancel"
       class="btn block mt12"
       @click="confirmCancel"
     >
