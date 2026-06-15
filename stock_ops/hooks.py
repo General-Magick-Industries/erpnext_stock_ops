@@ -16,7 +16,7 @@ add_to_apps_screen = [
 		"name": "stock_ops",
 		"logo": "/assets/stock_ops/logo.png",
 		"title": "Stock Ops",
-		"route": "/desk/stock-ops",
+		"route": "/app/stock-ops",
 		"has_permission": "stock_ops.api.has_app_permission",
 	}
 ]
