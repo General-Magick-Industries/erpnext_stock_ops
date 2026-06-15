@@ -50,6 +50,20 @@ There is **no shared API token** and **no dedicated "app user"**:
 
 ---
 
+## Quick install (script)
+
+From inside your `frappe-bench` directory (run as the bench user):
+
+```bash
+# fetch the app first if you don't have it yet
+bench get-app stock_ops https://github.com/denzizzy966/stock_ops --branch new-develop
+# then run the installer (idempotent: install + migrate + build PWA + verify)
+bash apps/stock_ops/scripts/install.sh <site>
+```
+
+It detects Python/Node, installs + migrates, builds the PWA when Node ≥ 20 (otherwise prints the exact
+command to run after upgrading Node), restarts, and prints the URLs. Or follow the manual steps below.
+
 ## Option A — Install on a bench (VM / bare-metal)
 
 ```bash
