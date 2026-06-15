@@ -9,6 +9,7 @@ one repo (same pattern as Frappe HR / HRMS). A companion **Android app (Flutter)
 - **Branch:** `new-develop`
 - **Requires:** Frappe **v16** + ERPNext **v16** (ERPNext doctypes such as Material Request, Stock Entry,
   Warehouse, Bin are used).
+- **Python:** **≥ 3.10** (works on the early-v16 / Python 3.11 benches too).
 - **Node:** **≥ 20** to build the PWA (vite + workbox).
 
 > **Built PWA assets are git-ignored** (`stock_ops/public/stock_ops/`, `stock_ops/www/stock_ops/index.html`).
@@ -184,7 +185,7 @@ The PWA assets are already inside the image (Option B.2), so no extra build step
 - [x] Per-role menu override table
 
 **Desk integration**
-- [x] App Switcher (⊞) tile **Stock Ops** → `/desk/stock-ops` (managers only)
+- [x] App Switcher (⊞) tile **Stock Ops** → `/app/stock-ops` (managers only)
 - [x] **Stock Ops** Workspace (shortcuts: Open App, Settings, Stock; cards: Documents, Configuration)
 
 **Backend**
@@ -233,6 +234,19 @@ npm run dev        # http://localhost:5173
 ```
 
 ---
+
+## Troubleshooting
+
+- **Install fails on Python 3.11** (`requires a different Python`): use the latest code — `requires-python`
+  is now `>=3.10`. Re-run `bench get-app`.
+- **Opening the *Stock Ops* Workspace shows "Not Found"**: the App Switcher tile now points to
+  **`/app/stock-ops`** (the standard Frappe workspace URL). Older builds used `/desk/stock-ops`, which only
+  worked where `/desk` redirects to `/app`; early v16 has no such redirect. Pull the latest, `bench migrate`
+  (or `bench --site <site> clear-cache`) and `bench restart`. The workspace lives at `https://<site>/app/stock-ops`.
+- **"Buka Aplikasi" / `/stock_ops` shows "Not Found"**: the **PWA bundle was not built**. Run
+  `cd apps/stock_ops/frontend && npm run build:frappe` (or use the Docker overlay in `docker/Containerfile`),
+  then `bench restart`. The PWA is served from `stock_ops/www/stock_ops/` + `stock_ops/public/stock_ops/`,
+  which are git-ignored and must be built on the server/image.
 
 ## Notes
 
