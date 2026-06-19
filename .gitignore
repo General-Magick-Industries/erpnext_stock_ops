@@ -19,8 +19,9 @@ __pycache__/
 *.pyo
 
 # Built frontend (di-generate oleh `npm run build:frappe`)
-# Intentionally NOT gitignored — committed like other Frappe apps (HRMS, ERPNext).
-# Run `cd frontend && npm run build:frappe` before pushing frontend changes.
+# bench build --run-build-command triggers the build via root package.json, same as HRMS.
+stock_ops/public/stock_ops/
+stock_ops/www/stock_ops/index.html
 
 # Capacitor native projects (regenerate dgn `npx cap add android`)
 frontend/android/
