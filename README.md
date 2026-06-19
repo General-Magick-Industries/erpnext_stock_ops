@@ -10,10 +10,14 @@ one repo (same pattern as Frappe HR / HRMS). A companion **Android app (Flutter)
 - **Requires:** Frappe **v16** + ERPNext **v16** (ERPNext doctypes such as Material Request, Stock Entry,
   Warehouse, Bin are used).
 - **Python:** **≥ 3.10** (works on the early-v16 / Python 3.11 benches too).
-- **Node:** **≥ 20** to build the PWA (vite + workbox).
+- **Node:** **≥ 20** only if you *rebuild* the PWA (vite). Plain installs need no Node — see below.
 
-> **Built PWA assets are git-ignored** (`stock_ops/public/stock_ops/`, `stock_ops/www/stock_ops/index.html`).
-> They must be **built on the server / inside the image** with `npm run build:frappe` — never committed.
+> **The built PWA bundle is committed to this repo** (`stock_ops/public/stock_ops/`,
+> `stock_ops/www/stock_ops/index.html`), so `/stock_ops` ("Buka Aplikasi") works on **any** install path —
+> `bench get-app`, a vanilla `frappe_docker` `apps.json` image, etc. — **without** running a Node/Vite build.
+> You only need Node to *change* the frontend: rebuild with `cd frontend && npm run build:frappe` and commit
+> the regenerated bundle. (Earlier versions git-ignored this bundle, which caused a `/stock_ops` 404 on
+> Docker images built from `apps.json`.)
 
 ---
 
@@ -78,16 +82,14 @@ bench --site <site> install-app stock_ops
 # 3. Migrate (sync DocTypes, Workspace; runs after_migrate self-heal for roles)
 bench --site <site> migrate
 
-# 4. Build the PWA bundle (Node >= 20) → emitted into stock_ops/public + www
-cd apps/stock_ops/frontend
-npm install --no-audit --no-fund
-npm run build:frappe
-
-# 5. Restart + clear cache
-cd ~/frappe-bench
+# 4. Collect assets + restart  (the PWA bundle ships in the repo — no Node/Vite step needed)
 bench build --app stock_ops
 bench restart
 bench --site <site> clear-cache
+
+# (Optional) only if you changed the frontend and want to rebuild the bundle (needs Node >= 20):
+#   cd apps/stock_ops/frontend && npm install --no-audit --no-fund && npm run build:frappe
+#   cd ~/frappe-bench && bench build --app stock_ops && bench restart
 ```
 
 Open **`https://<site>/stock_ops`** (log in with an ERPNext account). Managers also get a Desk Workspace via
@@ -98,9 +100,10 @@ the App Switcher (⊞ → **Stock Ops**).
 ## Option B — Docker (frappe_docker custom image)
 
 Stock Ops is a normal Frappe app, so the standard
-[frappe_docker custom-apps](https://github.com/frappe/frappe_docker/blob/main/docs/custom-apps.md) flow applies.
-The **only** app-specific step is building the PWA bundle (see note above) — the provided overlay
-`docker/Containerfile` does that for you.
+[frappe_docker custom-apps](https://github.com/frappe/frappe_docker/blob/main/docs/custom-apps.md) flow applies
+**with no app-specific steps** — the PWA bundle is committed to the repo, so the base image built from
+`docker/apps.json` (step B.1) already contains everything `/stock_ops` needs. Step B.2 (the
+`docker/Containerfile` overlay) is **optional**, only for rebuilding the frontend from source.
 
 ### B.1 — Build a base image that contains the apps
 
@@ -120,7 +123,10 @@ docker build \
   --file=images/layered/Containerfile .
 ```
 
-### B.2 — Bake the PWA assets into the image
+### B.2 — (Optional) rebuild the PWA from source
+
+Only needed if you changed the frontend and did **not** commit the regenerated bundle. The committed bundle
+already covers a normal install, so most users skip this. The overlay re-runs `npm run build:frappe`:
 
 ```bash
 cd /path/to/stock_ops
@@ -208,7 +214,6 @@ The PWA assets are already inside the image (Option B.2), so no extra build step
 - [x] On submit of Material Request / Stock Entry → in-app Notification Log entry for managers
 
 **Not automatic — manual follow-up (see below)**
-- [ ] Build the PWA bundle (`npm run build:frappe`, or the Docker overlay) so `/stock_ops` is served
 - [ ] Assign **Stock Ops User / Manager** roles to users (or via a Role Profile)
 - [ ] Configure **Stock Ops Settings** (language, default company/warehouse, menu visibility, APK URL)
 - [ ] Restrict warehouses per employee (Employee → *Stock Ops Warehouses*) where needed
@@ -257,10 +262,12 @@ npm run dev        # http://localhost:5173
   **`/app/stock-ops`** (the standard Frappe workspace URL). Older builds used `/desk/stock-ops`, which only
   worked where `/desk` redirects to `/app`; early v16 has no such redirect. Pull the latest, `bench migrate`
   (or `bench --site <site> clear-cache`) and `bench restart`. The workspace lives at `https://<site>/app/stock-ops`.
-- **"Buka Aplikasi" / `/stock_ops` shows "Not Found"**: the **PWA bundle was not built**. Run
-  `cd apps/stock_ops/frontend && npm run build:frappe` (or use the Docker overlay in `docker/Containerfile`),
-  then `bench restart`. The PWA is served from `stock_ops/www/stock_ops/` + `stock_ops/public/stock_ops/`,
-  which are git-ignored and must be built on the server/image.
+- **"Buka Aplikasi" / `/stock_ops` shows "Not Found"**: the **PWA bundle is missing from the install**. The
+  bundle (`stock_ops/www/stock_ops/index.html` + `stock_ops/public/stock_ops/`) is now **committed to the
+  repo**, so a fresh `bench get-app` / `apps.json` image includes it — just run `bench build --app stock_ops`
+  and `bench restart` so the assets are collected. If you're on an **older image** built before the bundle was
+  committed, either re-pull `new-develop` and rebuild the image, or build in place:
+  `cd apps/stock_ops/frontend && npm install && npm run build:frappe` → `cd ~/frappe-bench && bench build --app stock_ops && bench restart`.
 
 ## Notes
 
