@@ -26,6 +26,10 @@ stock_ops/www/stock_ops/index.html
 frontend/android/
 frontend/ios/
 
+# Build artifacts
+*.apk
+*.aab
+
 # OS / editor
 .DS_Store
 Thumbs.db
