@@ -64,7 +64,7 @@ function fmt(n) {
   return Number(n || 0).toLocaleString()
 }
 function dt(e) {
-  return fmtDateTime(`${e.posting_date}T${(e.posting_time || '00:00:00').split('.')[0]}`)
+  return fmtDateTime(`${String(e.posting_date).slice(0, 10)}T${(e.posting_time || '00:00:00').split('.')[0]}`)
 }
 </script>
 

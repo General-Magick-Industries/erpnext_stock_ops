@@ -15,7 +15,10 @@ export function todayStr() {
 
 export function fmtDateTime(iso) {
   if (!iso) return '-'
-  const d = new Date(iso)
+  // Tolerate "YYYY-MM-DD HH:mm:ss[.ffffff]" (space-separated) and stray concatenations;
+  // never render "NaN/NaN/NaN" — fall back to the raw date on an unparseable input.
+  const d = new Date(String(iso).replace(' ', 'T'))
+  if (isNaN(d.getTime())) return String(iso).slice(0, 16).replace('T', ' ')
   const p = (n) => String(n).padStart(2, '0')
   return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()} ${p(d.getHours())}:${p(d.getMinutes())}`
 }
