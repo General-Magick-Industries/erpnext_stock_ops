@@ -32,6 +32,7 @@ CUSTOM_FIELDS = {
 	"Material Request": [dict(LOCALID_FIELD), dict(GEO_FIELD)],
 	"Stock Entry": [dict(LOCALID_FIELD), dict(GEO_FIELD)],
 	"Stock Reconciliation": [dict(LOCALID_FIELD)],
+	"Purchase Receipt": [dict(LOCALID_FIELD), dict(GEO_FIELD)],
 	# Pengaitan gudang per employee (dipakai Stock Ops untuk membatasi stok/pergerakan)
 	"Employee": [
 		{
@@ -93,7 +94,7 @@ ROLE_USER = "Stock Ops User"
 ROLE_MANAGER = "Stock Ops Manager"
 
 # Doctype transaksi yang dioperasikan aplikasi (submittable).
-TXN_DOCTYPES = ("Material Request", "Stock Entry", "Stock Reconciliation")
+TXN_DOCTYPES = ("Material Request", "Stock Entry", "Stock Reconciliation", "Purchase Receipt")
 
 # Master data yang cukup dibaca (read-only) oleh aplikasi.
 READ_DOCTYPES = (

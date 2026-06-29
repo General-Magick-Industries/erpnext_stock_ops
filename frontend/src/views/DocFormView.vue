@@ -10,6 +10,7 @@ import { getGeolocation } from '../lib/util'
 import AppBar from '../components/AppBar.vue'
 import ItemPickerSheet from '../components/ItemPickerSheet.vue'
 import PhotoUploader from '../components/PhotoUploader.vue'
+import WarehouseSelect from '../components/WarehouseSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -81,6 +82,7 @@ function removeLine(code) {
 function valid() {
   if (!doc.items.length) return t('form.vItems')
   if (doc.items.some((i) => !i.qty || i.qty <= 0)) return t('form.vQty')
+  if (cfg.supplierRequired && !doc.supplier) return t('form.vSupplier')
   if (cfg.source && !doc.sourceWarehouse) return t('form.vSrc')
   if (cfg.target && !doc.targetWarehouse) return t('form.vTgt')
   if (cfg.source && cfg.target && doc.sourceWarehouse === doc.targetWarehouse) return t('form.vSame')
@@ -123,7 +125,7 @@ async function save() {
       </div>
 
       <div v-if="cfg.supplier" class="field">
-        <label>{{ t('form.supplier') }} ({{ t('common.optional') }})</label>
+        <label>{{ t('form.supplier') }}<span v-if="!cfg.supplierRequired"> ({{ t('common.optional') }})</span></label>
         <select v-model="doc.supplier">
           <option value="">—</option>
           <option v-for="s in SUPPLIERS" :key="s">{{ s }}</option>
@@ -133,15 +135,11 @@ async function save() {
       <div class="field-row">
         <div v-if="cfg.source" class="field">
           <label>{{ t('form.sourceWh') }}</label>
-          <select v-model="doc.sourceWarehouse">
-            <option v-for="w in warehouseOptions" :key="w">{{ w }}</option>
-          </select>
+          <WarehouseSelect v-model="doc.sourceWarehouse" :options="warehouseOptions" :placeholder="t('form.sourceWh')" />
         </div>
         <div v-if="cfg.target" class="field">
           <label>{{ t('form.targetWh') }}</label>
-          <select v-model="doc.targetWarehouse">
-            <option v-for="w in warehouseOptions" :key="w">{{ w }}</option>
-          </select>
+          <WarehouseSelect v-model="doc.targetWarehouse" :options="warehouseOptions" :placeholder="t('form.targetWh')" />
         </div>
       </div>
     </div>

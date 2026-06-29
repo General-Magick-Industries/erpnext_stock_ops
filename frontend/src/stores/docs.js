@@ -54,7 +54,9 @@ export const useDocs = defineStore('docs', {
         company,
         date: todayStr(),
         sourceWarehouse: cfg.source ? srcDefault : '',
-        targetWarehouse: cfg.target ? app.settings.defaultTargetWarehouse : '',
+        // Untuk dokumen penerimaan (hanya target: Stock In / Purchase Receipt) default-kan
+        // gudang penerima ke gudang default bila target khusus belum diset.
+        targetWarehouse: cfg.target ? app.settings.defaultTargetWarehouse || (cfg.source ? '' : srcDefault) : '',
         supplier: '',
         remark: '',
         geo: '',

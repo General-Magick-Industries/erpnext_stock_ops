@@ -66,6 +66,11 @@ export const DOC_TYPES = {
     key: 'SE_TRANSFER', short: 'TRF', label: 'Stock Transfer — Material Transfer',
     doctype: 'Stock Entry', meta: 'stock_entry_type=Material Transfer',
     icon: '🔁', color: '#ea580c', source: true, target: true
+  },
+  GRN: {
+    key: 'GRN', short: 'GRN', label: 'Goods Receipt — Purchase Receipt',
+    doctype: 'Purchase Receipt', meta: 'penerimaan barang dari supplier',
+    icon: '📦', color: '#0891b2', source: false, target: true, supplier: true, supplierRequired: true
   }
 }
 

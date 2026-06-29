@@ -30,6 +30,7 @@
   "col_3",
   "show_se_out",
   "show_se_transfer",
+  "show_purchase_receipt",
   "override_section",
   "menu_overrides"
  ],
@@ -59,6 +60,7 @@
   {"fieldname": "col_3", "fieldtype": "Column Break"},
   {"fieldname": "show_se_out", "fieldtype": "Check", "label": "Stock Out (Barang Keluar)", "default": "1"},
   {"fieldname": "show_se_transfer", "fieldtype": "Check", "label": "Transfer Barang", "default": "1"},
+  {"fieldname": "show_purchase_receipt", "fieldtype": "Check", "label": "Penerimaan Barang (Purchase Receipt)", "default": "1"},
   {"fieldname": "override_section", "fieldtype": "Section Break", "label": "Override per Role", "description": "Atur tampil/sembunyi menu khusus per role. Bila sebuah menu punya baris untuk role yang dimiliki user, nilai role dipakai (tampil bila salah satu role mengizinkan); selain itu memakai default di atas."},
   {"fieldname": "menu_overrides", "fieldtype": "Table", "label": "Menu per Role", "options": "Stock Ops Menu Override"}
  ],

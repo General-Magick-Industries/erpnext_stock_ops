@@ -3,7 +3,34 @@ import { DOC_TYPES } from '../data/mock'
 // Ubah objek dokumen app → payload Frappe sesuai DocType.
 export function buildPayload(doc) {
   const cfg = DOC_TYPES[doc.type]
-  return cfg.doctype === 'Material Request' ? buildMR(doc, cfg) : buildSE(doc, cfg)
+  if (cfg.doctype === 'Material Request') return buildMR(doc, cfg)
+  if (cfg.doctype === 'Purchase Receipt') return buildPR(doc, cfg)
+  return buildSE(doc, cfg)
+}
+
+// Purchase Receipt — penerimaan barang dari supplier (menambah stok saat submit).
+function buildPR(doc) {
+  return clean({
+    doctype: 'Purchase Receipt',
+    company: doc.company,
+    posting_date: doc.date,
+    supplier: doc.supplier || undefined,
+    set_warehouse: doc.targetWarehouse || undefined, // gudang penerimaan default
+    external_localid: doc.localId,
+    stock_ops_geolocation: doc.geo || undefined,
+    items: doc.items.map((i) =>
+      clean({
+        item_code: i.item_code,
+        qty: i.qty,
+        received_qty: i.qty,
+        uom: i.uom,
+        warehouse: doc.targetWarehouse || undefined,
+        rate: Number(i.rate) || 0,
+        // hindari error "valuation/incoming rate" untuk penerimaan tanpa harga
+        allow_zero_valuation_rate: 1
+      })
+    )
+  })
 }
 
 function clean(obj) {
