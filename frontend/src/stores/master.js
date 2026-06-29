@@ -22,6 +22,7 @@ export const useMaster = defineStore('master', {
       items: s.items || [],
       uoms: s.uoms || [],
       suppliers: s.suppliers || [],
+      locations: s.locations || [],
       userWarehouses: s.userWarehouses || [],
       defaults: s.defaults || null,
       menu: s.menu || {}, // visibilitas menu dari Stock Ops Settings
@@ -51,7 +52,8 @@ export const useMaster = defineStore('master', {
     },
     companyNames: (s) => (s.companies.length ? s.companies.map((c) => c.name) : COMPANIES),
     uomList: (s) => (s.uoms.length ? s.uoms : UOMS),
-    supplierNames: (s) => (s.suppliers.length ? s.suppliers.map((x) => x.supplier) : SUPPLIERS)
+    supplierNames: (s) => (s.suppliers.length ? s.suppliers.map((x) => x.supplier) : SUPPLIERS),
+    locationNames: (s) => s.locations || []
   },
   actions: {
     persist() {
@@ -63,6 +65,7 @@ export const useMaster = defineStore('master', {
           items: this.items,
           uoms: this.uoms,
           suppliers: this.suppliers,
+          locations: this.locations,
           userWarehouses: this.userWarehouses,
           defaults: this.defaults,
           menu: this.menu,
@@ -84,10 +87,12 @@ export const useMaster = defineStore('master', {
           item_name: it.item_name || it.item_code,
           stock_uom: it.stock_uom || 'Nos',
           image: it.image || '',
-          barcode: it.barcode || ''
+          barcode: it.barcode || '',
+          is_fixed_asset: it.is_fixed_asset ? 1 : 0
         }))
         this.uoms = b.uoms || []
         this.suppliers = b.suppliers || []
+        this.locations = b.locations || []
         this.userWarehouses = b.user_warehouses || []
         this.defaults = b.defaults || null
         this.menu = b.menu || {}

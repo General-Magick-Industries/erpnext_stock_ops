@@ -73,6 +73,12 @@ export const bulkPurchaseRequest = (items, company, externalLocalid) =>
 // Detail item (info + stok per gudang + mutasi)
 export const getItemDetail = (itemCode, company) => call('stock_ops.api.get_item_detail', { item_code: itemCode, company })
 
+// Purchase Order terbuka (untuk Penerimaan Barang) + item PO untuk auto-isi
+export const listOpenPurchaseOrders = (company, supplier, search) =>
+  call('stock_ops.api.list_open_purchase_orders', { company, supplier, search })
+export const getPurchaseOrderItems = (purchaseOrder) =>
+  call('stock_ops.api.get_purchase_order_items', { purchase_order: purchaseOrder })
+
 // Resolve kode (barcode/item_code/nama) → item_code (untuk hasil scan)
 export const resolveItem = (code) => call('stock_ops.api.resolve_item', { code })
 

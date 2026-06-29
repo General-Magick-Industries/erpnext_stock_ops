@@ -58,6 +58,10 @@ export const useDocs = defineStore('docs', {
         // gudang penerima ke gudang default bila target khusus belum diset.
         targetWarehouse: cfg.target ? app.settings.defaultTargetWarehouse || (cfg.source ? '' : srcDefault) : '',
         supplier: '',
+        // Penerimaan Barang (Purchase Receipt): referensi PO + gudang tolak + lokasi aset
+        purchaseOrder: '',
+        rejectedWarehouse: '',
+        assetLocation: '',
         remark: '',
         geo: '',
         items: [],
