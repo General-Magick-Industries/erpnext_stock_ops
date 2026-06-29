@@ -228,6 +228,63 @@ def get_item_detail(item_code, company=None):
 
 
 @frappe.whitelist()
+def list_open_purchase_orders(company=None, supplier=None, search=None, limit=50):
+	"""Purchase Order yang masih bisa diterima (belum 100% diterima) — untuk Penerimaan Barang."""
+	filters = {
+		"docstatus": 1,
+		"status": ["not in", ["Closed", "Completed", "Cancelled", "On Hold"]],
+		"per_received": ["<", 100],
+	}
+	if company:
+		filters["company"] = company
+	if supplier:
+		filters["supplier"] = supplier
+	if search:
+		filters["name"] = ["like", "%" + search + "%"]
+	return frappe.get_all(
+		"Purchase Order",
+		filters=filters,
+		fields=["name", "supplier", "supplier_name", "transaction_date", "status", "company", "per_received", "grand_total", "currency"],
+		order_by="transaction_date desc, modified desc",
+		limit_page_length=int(limit),
+	)
+
+
+@frappe.whitelist()
+def get_purchase_order_items(purchase_order):
+	"""Item PO yang belum diterima penuh → untuk auto-isi form Penerimaan Barang.
+
+	Tiap baris membawa purchase_order + purchase_order_item (po_detail) agar Purchase
+	Receipt ter-link ke PO; ERPNext memvalidasi qty terima terhadap qty pesan.
+	"""
+	po = frappe.get_doc("Purchase Order", purchase_order)
+	out = []
+	for it in po.items:
+		remaining = (it.qty or 0) - (it.received_qty or 0)
+		if remaining <= 0:
+			continue
+		out.append({
+			"item_code": it.item_code,
+			"item_name": it.item_name,
+			"uom": it.uom or it.stock_uom,
+			"qty": remaining,
+			"rate": it.rate,
+			"warehouse": it.warehouse,
+			"is_fixed_asset": int(frappe.db.get_value("Item", it.item_code, "is_fixed_asset") or 0),
+			"purchase_order": po.name,
+			"purchase_order_item": it.name,
+		})
+	return {
+		"name": po.name,
+		"supplier": po.supplier,
+		"supplier_name": po.supplier_name,
+		"company": po.company,
+		"set_warehouse": po.get("set_warehouse"),
+		"items": out,
+	}
+
+
+@frappe.whitelist()
 def get_opname_sheet(warehouse, company=None):
 	"""Lembar opname: stok sistem saat ini di sebuah gudang (untuk dihitung fisik)."""
 	whs, restricted = _resolve_warehouses(None, company)
@@ -602,8 +659,9 @@ def get_bootstrap():
 
 	items = frappe.get_all(
 		"Item",
-		filters={"disabled": 0, "is_stock_item": 1},
-		fields=["name as item_code", "item_name", "stock_uom", "image", "item_group"],
+		filters={"disabled": 0},
+		or_filters=[{"is_stock_item": 1}, {"is_fixed_asset": 1}],
+		fields=["name as item_code", "item_name", "stock_uom", "image", "item_group", "is_fixed_asset"],
 		order_by="item_name",
 		limit_page_length=0,
 	)
@@ -622,6 +680,12 @@ def get_bootstrap():
 	except frappe.PermissionError:
 		suppliers = []
 
+	# Lokasi aset (untuk penerimaan barang yang berupa fixed asset). Modul/akses bisa tak ada.
+	try:
+		locations = frappe.get_all("Location", filters={"is_group": 0}, pluck="name", order_by="name", limit_page_length=0)
+	except Exception:
+		locations = []
+
 	company = scope["company"] or (companies[0]["name"] if companies else None)
 	_app = _app_settings()
 
@@ -633,6 +697,7 @@ def get_bootstrap():
 		"items": items,
 		"uoms": uoms,
 		"suppliers": suppliers,
+		"locations": locations,
 		"defaults": {
 			"company": company,
 			"company_read_only": scope["company_read_only"],

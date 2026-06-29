@@ -70,7 +70,8 @@ export const DOC_TYPES = {
   GRN: {
     key: 'GRN', short: 'GRN', label: 'Goods Receipt — Purchase Receipt',
     doctype: 'Purchase Receipt', meta: 'penerimaan barang dari supplier',
-    icon: '📦', color: '#0891b2', source: false, target: true, supplier: true, supplierRequired: true
+    icon: '📦', color: '#0891b2', source: false, target: true, supplier: true, supplierRequired: true,
+    purchaseOrder: true, acceptReject: true
   }
 }
 

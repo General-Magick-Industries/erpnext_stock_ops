@@ -13,7 +13,11 @@ const messages = {
       online: 'Online', offline: 'Offline', save: 'Simpan', saving: 'Menyimpan…',
       close: 'Tutup', add: 'Tambah', delete: 'Hapus', cancel: 'Batal', total: 'Total',
       items: 'item', note: 'Catatan', optional: 'opsional', all: 'Semua', search: 'Cari',
-      logout: 'Keluar', yes: 'Ya', viewAll: 'Lihat semua', back: 'Kembali'
+      logout: 'Keluar', yes: 'Ya', viewAll: 'Lihat semua', back: 'Kembali', loading: 'Memuat…', clear: 'Hapus'
+    },
+    po: {
+      title: 'Pilih Purchase Order', label: 'Purchase Order', choose: 'Pilih Purchase Order',
+      searchPlaceholder: 'Cari nomor PO…', none: 'Tidak ada PO terbuka', loaded: '{n} item dari {po} dimuat'
     },
     nav: { home: 'Beranda', list: 'Daftar', create: 'Buat', settings: 'Setelan', sync: 'Sync', balance: 'Stok', movement: 'Mutasi' },
     docType: {
@@ -50,7 +54,10 @@ const messages = {
       saveSync: 'Simpan & Sync (draft)', saveOutbox: 'Simpan ke Outbox',
       vItems: 'Tambahkan minimal 1 item', vQty: 'Qty item tidak boleh 0',
       vSrc: 'Pilih gudang asal', vTgt: 'Pilih gudang tujuan', vSame: 'Gudang asal & tujuan tidak boleh sama',
-      vSupplier: 'Pilih supplier', whSearch: 'Cari gudang…', whEmpty: 'Gudang tidak ditemukan'
+      vSupplier: 'Pilih supplier', whSearch: 'Cari gudang…', whEmpty: 'Gudang tidak ditemukan',
+      acceptedWh: 'Gudang Terima', rejectedWh: 'Gudang Tolak', assetLocation: 'Lokasi Aset',
+      accepted: 'Terima', rejected: 'Tolak', asset: 'Aset',
+      vRejWh: 'Pilih gudang tolak (ada qty ditolak)', vAssetLoc: 'Pilih lokasi aset (ada item aset)'
     },
     list: { title: 'Daftar Dokumen', empty: 'Tidak ada dokumen pada filter ini', local: 'Lokal', server: 'Server', openErp: 'Buka di ERPNext' },
     detail: {
@@ -148,7 +155,11 @@ const messages = {
       online: 'Online', offline: 'Offline', save: 'Save', saving: 'Saving…',
       close: 'Close', add: 'Add', delete: 'Delete', cancel: 'Cancel', total: 'Total',
       items: 'items', note: 'Note', optional: 'optional', all: 'All', search: 'Search',
-      logout: 'Log out', yes: 'Yes', viewAll: 'View all', back: 'Back'
+      logout: 'Log out', yes: 'Yes', viewAll: 'View all', back: 'Back', loading: 'Loading…', clear: 'Clear'
+    },
+    po: {
+      title: 'Select Purchase Order', label: 'Purchase Order', choose: 'Select Purchase Order',
+      searchPlaceholder: 'Search PO number…', none: 'No open POs', loaded: '{n} items from {po} loaded'
     },
     nav: { home: 'Home', list: 'Docs', create: 'New', settings: 'Settings', sync: 'Sync', balance: 'Stock', movement: 'Moves' },
     docType: {
@@ -185,7 +196,10 @@ const messages = {
       saveSync: 'Save & Sync (draft)', saveOutbox: 'Save to Outbox',
       vItems: 'Add at least 1 item', vQty: 'Item qty cannot be 0',
       vSrc: 'Select source warehouse', vTgt: 'Select target warehouse', vSame: 'Source & target warehouse must differ',
-      vSupplier: 'Select a supplier', whSearch: 'Search warehouse…', whEmpty: 'No warehouse found'
+      vSupplier: 'Select a supplier', whSearch: 'Search warehouse…', whEmpty: 'No warehouse found',
+      acceptedWh: 'Accepted Warehouse', rejectedWh: 'Rejected Warehouse', assetLocation: 'Asset Location',
+      accepted: 'Accepted', rejected: 'Rejected', asset: 'Asset',
+      vRejWh: 'Select rejected warehouse (some qty rejected)', vAssetLoc: 'Select asset location (asset items present)'
     },
     list: { title: 'Documents', empty: 'No documents for this filter', local: 'Local', server: 'Server', openErp: 'Open in ERPNext' },
     detail: {
