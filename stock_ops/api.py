@@ -470,10 +470,20 @@ def _menu_settings(settings=None):
 		except Exception:
 			s = None
 
+	# Pakai nilai yang BENAR-BENAR tersimpan (tabSingles). Field yang belum pernah
+	# diset (mis. menu baru ditambah lewat migrate ke doc lama) TIDAK muncul di sini,
+	# sehingga default-nya "tampil" (True) — bukan 0/hidden akibat Check di-load jadi 0.
+	try:
+		stored = frappe.db.get_singles_dict("Stock Ops Settings") or {}
+	except Exception:
+		stored = {}
+
 	base = {}
 	for key, field in MENU_FIELDS.items():
-		val = getattr(s, field, None) if s else None
-		base[key] = True if val is None else bool(val)
+		if field in stored:
+			base[key] = bool(int(stored[field] or 0))
+		else:
+			base[key] = True  # belum diset → tampil secara default
 
 	# Kumpulkan override yang berlaku untuk role user
 	roles = set(frappe.get_roles(frappe.session.user))
