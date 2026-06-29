@@ -83,6 +83,7 @@ async function selectPO(po) {
   try {
     const res = await getPurchaseOrderItems(po.name)
     doc.purchaseOrder = res.name
+    if (res.company) doc.company = res.company // receipt harus seperusahaan dengan PO
     if (res.supplier) doc.supplier = res.supplier
     if (res.set_warehouse) doc.targetWarehouse = res.set_warehouse
     doc.items = (res.items || []).map((i) => ({
