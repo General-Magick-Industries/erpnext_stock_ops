@@ -22,8 +22,10 @@ const messages = {
       SE_IN: 'Stock In (Barang Masuk)',
       SE_OUT: 'Stock Out (Barang Keluar)',
       SE_TRANSFER: 'Transfer Barang',
+      GRN: 'Penerimaan Barang (Purchase Receipt)',
       groupMR: 'Permintaan Barang',
-      groupSE: 'Stok Barang'
+      groupSE: 'Stok Barang',
+      groupPR: 'Penerimaan Barang'
     },
     home: {
       hello: 'Halo, {name} 👋', pendingSync: 'Menunggu sync', synced: 'Tersinkron',
@@ -47,7 +49,8 @@ const messages = {
       location: 'Lokasi', tagLocation: 'Tag Lokasi', locating: 'Mengambil lokasi…', locationOff: 'Lokasi tidak tersedia', viewMap: 'Lihat peta',
       saveSync: 'Simpan & Sync (draft)', saveOutbox: 'Simpan ke Outbox',
       vItems: 'Tambahkan minimal 1 item', vQty: 'Qty item tidak boleh 0',
-      vSrc: 'Pilih gudang asal', vTgt: 'Pilih gudang tujuan', vSame: 'Gudang asal & tujuan tidak boleh sama'
+      vSrc: 'Pilih gudang asal', vTgt: 'Pilih gudang tujuan', vSame: 'Gudang asal & tujuan tidak boleh sama',
+      vSupplier: 'Pilih supplier', whSearch: 'Cari gudang…', whEmpty: 'Gudang tidak ditemukan'
     },
     list: { title: 'Daftar Dokumen', empty: 'Tidak ada dokumen pada filter ini', local: 'Lokal', server: 'Server', openErp: 'Buka di ERPNext' },
     detail: {
@@ -154,8 +157,10 @@ const messages = {
       SE_IN: 'Stock In (Receipt)',
       SE_OUT: 'Stock Out (Issue)',
       SE_TRANSFER: 'Stock Transfer',
+      GRN: 'Goods Receipt (Purchase Receipt)',
       groupMR: 'Material Requests',
-      groupSE: 'Stock Entries'
+      groupSE: 'Stock Entries',
+      groupPR: 'Goods Receipt'
     },
     home: {
       hello: 'Hi, {name} 👋', pendingSync: 'Pending sync', synced: 'Synced',
@@ -179,7 +184,8 @@ const messages = {
       location: 'Location', tagLocation: 'Tag Location', locating: 'Getting location…', locationOff: 'Location unavailable', viewMap: 'View map',
       saveSync: 'Save & Sync (draft)', saveOutbox: 'Save to Outbox',
       vItems: 'Add at least 1 item', vQty: 'Item qty cannot be 0',
-      vSrc: 'Select source warehouse', vTgt: 'Select target warehouse', vSame: 'Source & target warehouse must differ'
+      vSrc: 'Select source warehouse', vTgt: 'Select target warehouse', vSame: 'Source & target warehouse must differ',
+      vSupplier: 'Select a supplier', whSearch: 'Search warehouse…', whEmpty: 'No warehouse found'
     },
     list: { title: 'Documents', empty: 'No documents for this filter', local: 'Local', server: 'Server', openErp: 'Open in ERPNext' },
     detail: {

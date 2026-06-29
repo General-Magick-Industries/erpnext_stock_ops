@@ -12,7 +12,7 @@ const ROUTE_MENU = {
   'quick-transfer': 'transfer',
   opname: 'opname'
 }
-const CREATE_KEYS = ['mr', 'pr', 'se_in', 'se_out', 'se_transfer']
+const CREATE_KEYS = ['mr', 'pr', 'se_in', 'se_out', 'se_transfer', 'grn']
 
 const routes = [
   { path: '/login', name: 'login', component: () => import('../views/LoginView.vue'), meta: { public: true } },

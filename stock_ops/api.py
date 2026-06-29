@@ -3,7 +3,7 @@ import json
 import frappe
 from frappe import _
 
-ALLOWED_DOCTYPES = ("Material Request", "Stock Entry")
+ALLOWED_DOCTYPES = ("Material Request", "Stock Entry", "Purchase Receipt")
 
 
 def get_user_warehouses(user=None):
@@ -452,6 +452,7 @@ MENU_FIELDS = {
 	"se_in": "show_se_in",
 	"se_out": "show_se_out",
 	"se_transfer": "show_se_transfer",
+	"grn": "show_purchase_receipt",
 }
 
 
@@ -712,6 +713,15 @@ def list_recent(company=None, limit=20):
 		limit_page_length=limit,
 	):
 		out.append({"doctype": "Stock Entry", "status": None, **d})
+
+	for d in frappe.get_all(
+		"Purchase Receipt",
+		filters=({"company": company} if company else {}),
+		fields=["name", "supplier as subtype", "posting_date as date", "status", "docstatus", "modified"],
+		order_by="modified desc",
+		limit_page_length=limit,
+	):
+		out.append({"doctype": "Purchase Receipt", **d})
 
 	out.sort(key=lambda x: x.get("modified") or "", reverse=True)
 	for d in out:
