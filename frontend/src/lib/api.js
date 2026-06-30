@@ -68,7 +68,10 @@ export async function call(method, params = {}, { post = false } = {}) {
     opts.body = JSON.stringify(params)
   } else {
     const qs = new URLSearchParams()
-    for (const [k, v] of Object.entries(params)) qs.append(k, typeof v === 'object' ? JSON.stringify(v) : v)
+    for (const [k, v] of Object.entries(params)) {
+      if (v === undefined || v === null) continue // jangan kirim "undefined"/"null" sebagai nilai filter
+      qs.append(k, typeof v === 'object' ? JSON.stringify(v) : v)
+    }
     const s = qs.toString()
     if (s) url += `?${s}`
   }
