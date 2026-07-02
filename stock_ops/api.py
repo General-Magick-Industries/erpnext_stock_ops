@@ -929,6 +929,52 @@ def cancel_transaction(doctype, name):
 
 
 @frappe.whitelist()
+def get_workflow_transitions(doctype, name):
+	"""Aksi workflow yang tersedia untuk user saat ini pada dokumen (seperti Desk)."""
+	from frappe.model.workflow import get_transitions
+
+	doc = frappe.get_doc(doctype, name)
+	return get_transitions(doc)
+
+
+@frappe.whitelist()
+def apply_workflow_action(doctype, name, action, note=None):
+	"""Terapkan aksi workflow (Approve/Reject/dll). Server memverifikasi approver."""
+	from frappe.model.workflow import apply_workflow
+
+	doc = frappe.get_doc(doctype, name)
+	roles = set(frappe.get_roles())
+	is_approver = getattr(doc, "stock_ops_approver", None) == frappe.session.user
+	if not (is_approver or {"Stock Ops Manager", "Purchase Manager", "System Manager"} & roles):
+		frappe.throw(_("Anda tidak berwenang mengubah status dokumen ini."), frappe.PermissionError)
+	if note:
+		doc.stock_ops_approval_note = note
+		doc.save(ignore_permissions=True)
+		doc.reload()
+	apply_workflow(doc, action)
+	frappe.db.commit()
+	doc.reload()
+	return {"name": doc.name, "workflow_state": getattr(doc, "workflow_state", None), "docstatus": doc.docstatus}
+
+
+@frappe.whitelist()
+def list_pending_approvals(limit=50):
+	"""Material Request yang menunggu persetujuan user saat ini."""
+	if not frappe.get_meta("Material Request").get_field("workflow_state"):
+		return []
+	rows = frappe.get_all(
+		"Material Request",
+		filters={"stock_ops_approver": frappe.session.user, "workflow_state": "Pending Approval"},
+		fields=["name", "transaction_date", "material_request_type", "owner", "company", "workflow_state"],
+		order_by="transaction_date desc, modified desc",
+		limit_page_length=int(limit),
+	)
+	for r in rows:
+		r["item_count"] = frappe.db.count("Material Request Item", {"parent": r["name"]})
+	return rows
+
+
+@frappe.whitelist()
 def list_recent(company=None, limit=20):
 	"""Dokumen terbaru dari server (MR + Stock Entry) — untuk tab 'Server' di Daftar."""
 	limit = int(limit)
