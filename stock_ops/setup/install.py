@@ -28,8 +28,31 @@ GEO_FIELD = {
 	"description": "Koordinat 'lat,lng' saat transaksi dibuat dari Stock Ops PWA.",
 }
 
+APPROVER_FIELD = {
+	"fieldname": "stock_ops_approver",
+	"label": "Approver (Stock Ops)",
+	"fieldtype": "Link",
+	"options": "User",
+	"read_only": 1,
+	"no_copy": 1,
+	"print_hide": 1,
+	"insert_after": "stock_ops_geolocation",
+	"description": "Line manager (leave approver) yang menyetujui permintaan pembelian.",
+}
+
+APPROVAL_NOTE_FIELD = {
+	"fieldname": "stock_ops_approval_note",
+	"label": "Approval Note (Stock Ops)",
+	"fieldtype": "Small Text",
+	"read_only": 1,
+	"no_copy": 1,
+	"print_hide": 1,
+	"insert_after": "stock_ops_approver",
+	"description": "Catatan persetujuan/penolakan dari aplikasi Stock Ops.",
+}
+
 CUSTOM_FIELDS = {
-	"Material Request": [dict(LOCALID_FIELD), dict(GEO_FIELD)],
+	"Material Request": [dict(LOCALID_FIELD), dict(GEO_FIELD), dict(APPROVER_FIELD), dict(APPROVAL_NOTE_FIELD)],
 	"Stock Entry": [dict(LOCALID_FIELD), dict(GEO_FIELD)],
 	"Stock Reconciliation": [dict(LOCALID_FIELD)],
 	"Purchase Receipt": [dict(LOCALID_FIELD), dict(GEO_FIELD)],
@@ -50,6 +73,7 @@ CUSTOM_FIELDS = {
 def after_install():
 	setup_custom_fields()
 	setup_roles_and_permissions()
+	setup_approval_workflow()
 	from stock_ops.push import ensure_vapid_keys
 
 	ensure_vapid_keys()
@@ -64,6 +88,7 @@ def after_migrate():
 	"""
 	setup_custom_fields()
 	setup_roles_and_permissions()
+	setup_approval_workflow()
 
 
 def setup_custom_fields():
@@ -160,3 +185,95 @@ def _grant(doctype, role, ptypes):
 		add_permission(doctype, role, 0)
 	for ptype, value in ptypes.items():
 		update_permission_property(doctype, role, 0, ptype, value, validate=False)
+
+
+# ============================================================
+# Approval Workflow (Material Request — Purchase)
+# ============================================================
+#
+# Workflow ERPNext mengikat SELURUH Material Request. Tipe Purchase digerbang
+# persetujuan line manager (leave approver); tipe lain (Transfer, dst.) langsung
+# submit lewat transition "Submit" berkondisi. Dibuat idempoten saat install/migrate.
+
+WORKFLOW_NAME = "Stock Ops MR Approval"
+
+_WF_STATES = [
+	# (state, docstatus, allow_edit, style)
+	("Draft", "0", ROLE_USER, ""),
+	("Pending Approval", "0", ROLE_MANAGER, "Warning"),
+	("Approved", "1", ROLE_MANAGER, "Success"),
+	("Rejected", "0", ROLE_USER, "Danger"),
+]
+
+_WF_ACTIONS = ["Submit for Approval", "Submit", "Approve", "Reject", "Reopen"]
+
+_WF_TRANSITIONS = [
+	# (from_state, action, next_state, allowed_role, condition)
+	("Draft", "Submit for Approval", "Pending Approval", ROLE_USER, "doc.material_request_type == 'Purchase'"),
+	("Draft", "Submit", "Approved", ROLE_USER, "doc.material_request_type != 'Purchase'"),
+	("Pending Approval", "Approve", "Approved", "Employee", "doc.stock_ops_approver == frappe.session.user"),
+	("Pending Approval", "Reject", "Rejected", "Employee", "doc.stock_ops_approver == frappe.session.user"),
+	("Rejected", "Reopen", "Draft", ROLE_USER, ""),
+]
+
+
+def setup_approval_workflow():
+	"""Buat/perbaiki Workflow persetujuan MR Purchase + notifikasi (idempoten).
+
+	Hanya aktif bila role 'Purchase Manager' ada (erpnext buying terpasang) dan
+	DocType Material Request ada.
+	"""
+	if not frappe.db.exists("DocType", "Material Request"):
+		return
+	if not frappe.db.exists("Role", "Purchase Manager"):
+		return
+
+	for state, _ds, _ae, style in _WF_STATES:
+		if not frappe.db.exists("Workflow State", state):
+			frappe.get_doc(
+				{"doctype": "Workflow State", "workflow_state_name": state, "style": style or ""}
+			).insert(ignore_permissions=True)
+	for action in _WF_ACTIONS:
+		if not frappe.db.exists("Workflow Action Master", action):
+			frappe.get_doc(
+				{"doctype": "Workflow Action Master", "workflow_action_name": action}
+			).insert(ignore_permissions=True)
+
+	if frappe.db.exists("Workflow", WORKFLOW_NAME):
+		wf = frappe.get_doc("Workflow", WORKFLOW_NAME)
+		wf.set("states", [])
+		wf.set("transitions", [])
+	else:
+		wf = frappe.new_doc("Workflow")
+		wf.workflow_name = WORKFLOW_NAME
+
+	wf.document_type = "Material Request"
+	wf.is_active = 1
+	wf.override_status = 0
+	wf.workflow_state_field = "workflow_state"
+	wf.send_email_alert = 0
+
+	for state, docstatus, allow_edit, _style in _WF_STATES:
+		wf.append("states", {"state": state, "doc_status": docstatus, "allow_edit": allow_edit})
+	for from_state, action, next_state, allowed, condition in _WF_TRANSITIONS:
+		row = wf.append(
+			"transitions",
+			{
+				"state": from_state,
+				"action": action,
+				"next_state": next_state,
+				"allowed": allowed,
+				"allow_self_approval": 1,
+			},
+		)
+		if condition:
+			row.condition = condition
+
+	wf.save(ignore_permissions=True)
+	_ensure_notifications()
+	frappe.db.commit()
+
+
+def _ensure_notifications():
+	"""Placeholder — diisi di Task 3 (notifikasi persetujuan)."""
+	pass
