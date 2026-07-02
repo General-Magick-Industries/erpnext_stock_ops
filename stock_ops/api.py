@@ -913,10 +913,13 @@ def submit_transaction(doctype, name):
 
 	if get_workflow_name(doctype):
 		# MR Purchase wajib punya approver (leave approver) sebelum diajukan — blokir bila kosong.
+		# PENTING: apply_workflow() melakukan load_from_db() sehingga perubahan in-memory hilang;
+		# maka approver DITULIS ke DB (db_set) dulu agar terbawa saat workflow di-apply + saat
+		# Notification "Pending Approval" mengevaluasi penerima (field stock_ops_approver).
 		if doctype == "Material Request" and getattr(doc, "material_request_type", None) == "Purchase":
 			from stock_ops.approval import resolve_approver
 
-			doc.stock_ops_approver = resolve_approver(doc.owner)
+			doc.db_set("stock_ops_approver", resolve_approver(doc.owner))
 		transitions = get_transitions(doc)
 		if not transitions:
 			frappe.throw(_("Tidak ada aksi workflow yang tersedia untuk dokumen ini."))
