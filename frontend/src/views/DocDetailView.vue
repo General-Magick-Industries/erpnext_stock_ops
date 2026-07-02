@@ -34,6 +34,8 @@ const submitLabel = computed(() => (doc.value && doc.value.type === 'PR' ? t('ap
 const photoViews = ref([])
 onMounted(async () => {
   if (!doc.value) return
+  // Sinkronkan status terkini dari server (mis. sudah di-approve/reject oleh line manager).
+  docs.refreshState(doc.value.localId)
   try {
     const recs = await getPhotosByLocalId(doc.value.localId)
     photoViews.value = recs.map((r) => ({ id: r.id, url: URL.createObjectURL(r.blob) }))
@@ -140,7 +142,7 @@ function confirmCancel() {
       {{ submitLabel }}
     </button>
 
-    <div v-if="inWorkflow && !doc.submitted" class="card mt12 tiny muted" style="text-align: center">
+    <div v-if="doc.workflowState === 'Pending Approval'" class="card mt12 tiny muted" style="text-align: center">
       {{ t('approval.waiting') }}
     </div>
 
@@ -152,7 +154,10 @@ function confirmCancel() {
       {{ t('detail.cancel') }}
     </button>
 
-    <button class="btn danger block mt12" @click="del">{{ t('common.delete') }}</button>
+    <!-- Hapus hanya untuk dokumen yang belum masuk alur/submit di server (hapus lokal saja).
+         Dokumen Menunggu Persetujuan / Submitted tidak boleh dihapus dari perangkat agar tidak
+         menyisakan dokumen "yatim" di server. -->
+    <button v-if="!inWorkflow && !doc.submitted" class="btn danger block mt12" @click="del">{{ t('common.delete') }}</button>
     <div style="height: 8px"></div>
   </div>
 

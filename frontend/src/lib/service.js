@@ -98,6 +98,10 @@ export const getWorkflowTransitions = (doctype, name) =>
   call('stock_ops.api.get_workflow_transitions', { doctype, name })
 export const applyWorkflowAction = (doctype, name, action, note) =>
   call('stock_ops.api.apply_workflow_action', { doctype, name, action, note }, { post: true })
+export const getApprovalDetail = (name) => call('stock_ops.api.get_approval_detail', { name })
+
+// Status terkini dokumen server (untuk sinkronkan tampilan lokal: docstatus + workflow_state)
+export const getDocState = (doctype, name) => call('stock_ops.api.get_doc_state', { doctype, name })
 
 // Resolve kode (barcode/item_code/nama) → item_code (untuk hasil scan)
 export const resolveItem = (code) => call('stock_ops.api.resolve_item', { code })

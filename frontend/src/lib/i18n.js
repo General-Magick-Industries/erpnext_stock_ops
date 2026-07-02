@@ -33,7 +33,8 @@ const messages = {
       approve: 'Setujui', reject: 'Tolak', applied: '{name}: {state}',
       pending: 'Menunggu Persetujuan', approved: 'Disetujui', rejected: 'Ditolak',
       menu: 'Persetujuan', submittedForApproval: 'Diajukan untuk persetujuan',
-      submitForApproval: 'Ajukan Persetujuan', waiting: 'Menunggu persetujuan line manager…'
+      submitForApproval: 'Ajukan Persetujuan', waiting: 'Menunggu persetujuan line manager…',
+      search: 'Cari nomor / pemohon…', reviewTitle: 'Tinjau Permintaan', requester: 'Pemohon'
     },
     nav: { home: 'Beranda', list: 'Daftar', create: 'Buat', settings: 'Setelan', sync: 'Sync', balance: 'Stok', movement: 'Mutasi' },
     docType: {
@@ -193,7 +194,8 @@ const messages = {
       approve: 'Approve', reject: 'Reject', applied: '{name}: {state}',
       pending: 'Pending Approval', approved: 'Approved', rejected: 'Rejected',
       menu: 'Approvals', submittedForApproval: 'Submitted for approval',
-      submitForApproval: 'Submit for Approval', waiting: 'Waiting for line manager approval…'
+      submitForApproval: 'Submit for Approval', waiting: 'Waiting for line manager approval…',
+      search: 'Search no. / requester…', reviewTitle: 'Review Request', requester: 'Requester'
     },
     nav: { home: 'Home', list: 'Docs', create: 'New', settings: 'Settings', sync: 'Sync', balance: 'Stock', movement: 'Moves' },
     docType: {
