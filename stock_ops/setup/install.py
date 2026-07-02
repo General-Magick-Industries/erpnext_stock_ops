@@ -274,6 +274,91 @@ def setup_approval_workflow():
 	frappe.db.commit()
 
 
+# (name, subject, event, value_changed, condition, channel, recipient, message)
+_NOTIFICATIONS = [
+	{
+		"name": "Stock Ops MR Pending (Email)",
+		"subject": "Persetujuan diperlukan: {{ doc.name }}",
+		"event": "Value Change",
+		"value_changed": "workflow_state",
+		"condition": "doc.workflow_state == 'Pending Approval' and doc.material_request_type == 'Purchase'",
+		"channel": "Email",
+		"recipient": {"receiver_by_document_field": "stock_ops_approver"},
+		"message": "Permintaan pembelian {{ doc.name }} oleh {{ doc.owner }} menunggu persetujuan Anda.",
+	},
+	{
+		"name": "Stock Ops MR Pending (System)",
+		"subject": "Persetujuan diperlukan: {{ doc.name }}",
+		"event": "Value Change",
+		"value_changed": "workflow_state",
+		"condition": "doc.workflow_state == 'Pending Approval' and doc.material_request_type == 'Purchase'",
+		"channel": "System Notification",
+		"recipient": {"receiver_by_document_field": "stock_ops_approver"},
+		"message": "Permintaan pembelian {{ doc.name }} menunggu persetujuan Anda.",
+	},
+	{
+		"name": "Stock Ops MR Approved PM (Email)",
+		"subject": "Permintaan pembelian disetujui: {{ doc.name }}",
+		"event": "Submit",
+		"value_changed": None,
+		"condition": "doc.material_request_type == 'Purchase'",
+		"channel": "Email",
+		"recipient": {"receiver_by_role": "Purchase Manager"},
+		"message": "Permintaan pembelian {{ doc.name }} telah disetujui dan siap diproses.",
+	},
+	{
+		"name": "Stock Ops MR Approved PM (System)",
+		"subject": "Permintaan pembelian disetujui: {{ doc.name }}",
+		"event": "Submit",
+		"value_changed": None,
+		"condition": "doc.material_request_type == 'Purchase'",
+		"channel": "System Notification",
+		"recipient": {"receiver_by_role": "Purchase Manager"},
+		"message": "Permintaan pembelian {{ doc.name }} telah disetujui.",
+	},
+	{
+		"name": "Stock Ops MR Outcome Requester (System)",
+		"subject": "Status permintaan {{ doc.name }}: {{ doc.workflow_state }}",
+		"event": "Value Change",
+		"value_changed": "workflow_state",
+		"condition": "doc.workflow_state in ('Approved','Rejected') and doc.material_request_type == 'Purchase'",
+		"channel": "System Notification",
+		"recipient": {"receiver_by_document_field": "owner"},
+		"message": "Permintaan {{ doc.name }} Anda: {{ doc.workflow_state }}. {{ doc.stock_ops_approval_note or '' }}",
+	},
+	{
+		"name": "Stock Ops MR Rejected Requester (Email)",
+		"subject": "Permintaan {{ doc.name }} ditolak",
+		"event": "Value Change",
+		"value_changed": "workflow_state",
+		"condition": "doc.workflow_state == 'Rejected' and doc.material_request_type == 'Purchase'",
+		"channel": "Email",
+		"recipient": {"receiver_by_document_field": "owner"},
+		"message": "Permintaan pembelian {{ doc.name }} ditolak. Alasan: {{ doc.stock_ops_approval_note or '-' }}",
+	},
+]
+
+
 def _ensure_notifications():
-	"""Placeholder — diisi di Task 3 (notifikasi persetujuan)."""
-	pass
+	"""Buat/perbaiki Notification persetujuan (Email + System) — idempoten by name."""
+	if not frappe.db.exists("DocType", "Notification"):
+		return
+	for cfg in _NOTIFICATIONS:
+		if frappe.db.exists("Notification", cfg["name"]):
+			doc = frappe.get_doc("Notification", cfg["name"])
+		else:
+			doc = frappe.new_doc("Notification")
+			doc.name = cfg["name"]
+		doc.subject = cfg["subject"]
+		doc.document_type = "Material Request"
+		doc.event = cfg["event"]
+		doc.value_changed = cfg["value_changed"]
+		doc.condition = cfg["condition"]
+		doc.channel = cfg["channel"]
+		doc.enabled = 1
+		doc.is_standard = 0
+		doc.message = cfg["message"]
+		doc.set("recipients", [])
+		doc.append("recipients", cfg["recipient"])
+		doc.flags.ignore_permissions = True
+		doc.save(ignore_permissions=True)
