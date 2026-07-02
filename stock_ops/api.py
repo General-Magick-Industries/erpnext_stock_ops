@@ -886,13 +886,35 @@ def create_transaction(data):
 
 @frappe.whitelist()
 def submit_transaction(doctype, name):
-	"""Submit dokumen (docstatus 1) — aksi terpisah, online."""
+	"""Finalkan dokumen — aksi terpisah, online.
+
+	Bila doctype punya Workflow aktif (mis. Material Request), TIDAK memanggil
+	doc.submit() langsung; melainkan menerapkan transition maju sesuai Workflow
+	(seperti Desk). Untuk MR Purchase → 'Submit for Approval' (tetap draft, menunggu
+	persetujuan); tipe lain → 'Submit' (docstatus 1). Doctype tanpa workflow → submit biasa.
+	"""
 	if doctype not in ALLOWED_DOCTYPES:
 		frappe.throw(_("Doctype tidak diizinkan: {0}").format(doctype))
 	doc = frappe.get_doc(doctype, name)
-	doc.submit()
+
+	from frappe.model.workflow import apply_workflow, get_transitions, get_workflow_name
+
+	if get_workflow_name(doctype):
+		# MR Purchase wajib punya approver (leave approver) sebelum diajukan — blokir bila kosong.
+		if doctype == "Material Request" and getattr(doc, "material_request_type", None) == "Purchase":
+			from stock_ops.approval import resolve_approver
+
+			doc.stock_ops_approver = resolve_approver(doc.owner)
+		transitions = get_transitions(doc)
+		if not transitions:
+			frappe.throw(_("Tidak ada aksi workflow yang tersedia untuk dokumen ini."))
+		apply_workflow(doc, transitions[0].get("action"))
+	else:
+		doc.submit()
+
 	frappe.db.commit()
-	return {"name": doc.name, "docstatus": doc.docstatus}
+	doc.reload()
+	return {"name": doc.name, "docstatus": doc.docstatus, "workflow_state": getattr(doc, "workflow_state", None)}
 
 
 @frappe.whitelist()
