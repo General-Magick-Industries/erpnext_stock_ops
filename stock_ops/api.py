@@ -325,6 +325,86 @@ def get_purchase_order_items(purchase_order):
 
 
 @frappe.whitelist()
+def list_returnable_receipts(company=None, supplier=None, search=None, limit=50):
+	"""Purchase Receipt yang sudah disubmit & bisa diretur (bukan dokumen retur)."""
+	filters = {"docstatus": 1, "is_return": 0}
+	if company:
+		filters["company"] = company
+	if supplier:
+		filters["supplier"] = supplier
+	if search:
+		filters["name"] = ["like", "%" + search + "%"]
+	return frappe.get_all(
+		"Purchase Receipt",
+		filters=filters,
+		fields=["name", "supplier", "supplier_name", "posting_date", "company", "per_returned", "grand_total", "currency"],
+		order_by="posting_date desc, modified desc",
+		limit_page_length=int(limit),
+	)
+
+
+@frappe.whitelist()
+def get_receipt_items_for_return(purchase_receipt):
+	"""Item Purchase Receipt untuk diretur — qty diterima jadi maksimum retur."""
+	pr = frappe.get_doc("Purchase Receipt", purchase_receipt)
+	out = []
+	for it in pr.items:
+		out.append({
+			"item_code": it.item_code,
+			"item_name": it.item_name,
+			"uom": it.uom,
+			"qty": it.qty,
+			"warehouse": it.warehouse,
+			"purchase_receipt_item": it.name,
+		})
+	return {"name": pr.name, "supplier": pr.supplier, "supplier_name": pr.supplier_name, "company": pr.company, "items": out}
+
+
+@frappe.whitelist()
+def create_purchase_return(purchase_receipt, items=None, external_localid=None):
+	"""Buat dokumen **retur barang** (Purchase Receipt is_return=1) atas sebuah Purchase
+	Receipt: qty negatif & return_against terisi (stok berkurang saat di-submit).
+
+	`items` opsional = [{item_code, qty}] untuk retur sebagian; kosong = retur penuh.
+	Idempoten via external_localid. Mengembalikan draft (submit lewat submit_transaction).
+	"""
+	if isinstance(items, str):
+		items = json.loads(items)
+	if external_localid:
+		existing = frappe.db.get_value("Purchase Receipt", {"external_localid": external_localid}, "name")
+		if existing:
+			return {"name": existing, "duplicate": True}
+
+	from erpnext.controllers.sales_and_purchase_return import make_return_doc
+
+	ret = make_return_doc("Purchase Receipt", purchase_receipt)
+
+	# Retur sebagian: sesuaikan qty per item (negatif) & buang item yang tak diretur.
+	if items:
+		want = {}
+		for i in items:
+			code = i.get("item_code")
+			qty = abs(float(i.get("qty") or 0))
+			if code and qty:
+				want[code] = qty
+		kept = []
+		for it in ret.items:
+			if it.item_code in want:
+				it.qty = -want[it.item_code]
+				it.received_qty = it.qty
+				it.rejected_qty = 0
+				kept.append(it)
+		if kept:
+			ret.set("items", kept)
+
+	if external_localid:
+		ret.external_localid = external_localid
+	ret.insert()
+	frappe.db.commit()
+	return {"name": ret.name, "duplicate": False}
+
+
+@frappe.whitelist()
 def get_opname_sheet(warehouse, company=None):
 	"""Lembar opname: stok sistem saat ini di sebuah gudang (untuk dihitung fisik)."""
 	whs, restricted = _resolve_warehouses(None, company)
