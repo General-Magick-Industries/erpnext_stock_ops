@@ -973,6 +973,45 @@ def apply_workflow_action(doctype, name, action, note=None):
 
 
 @frappe.whitelist()
+def get_doc_state(doctype, name):
+	"""Status terkini dokumen dari server (untuk refresh tampilan lokal): docstatus + workflow_state."""
+	if doctype not in ALLOWED_DOCTYPES:
+		frappe.throw(_("Doctype tidak diizinkan: {0}").format(doctype))
+	fields = ["docstatus"]
+	if frappe.get_meta(doctype).get_field("workflow_state"):
+		fields.append("workflow_state")
+	row = frappe.db.get_value(doctype, name, fields, as_dict=True) or {}
+	return {"docstatus": row.get("docstatus"), "workflow_state": row.get("workflow_state")}
+
+
+@frappe.whitelist()
+def get_approval_detail(name):
+	"""Detail Material Request untuk ditinjau approver sebelum menyetujui."""
+	doc = frappe.get_doc("Material Request", name)
+	return {
+		"name": doc.name,
+		"owner": doc.owner,
+		"material_request_type": doc.material_request_type,
+		"company": doc.company,
+		"transaction_date": str(doc.transaction_date or ""),
+		"schedule_date": str(getattr(doc, "schedule_date", "") or ""),
+		"workflow_state": getattr(doc, "workflow_state", None),
+		"stock_ops_approver": getattr(doc, "stock_ops_approver", None),
+		"items": [
+			{
+				"item_code": i.item_code,
+				"item_name": i.item_name,
+				"qty": i.qty,
+				"uom": i.uom,
+				"warehouse": i.warehouse,
+				"rate": i.rate,
+			}
+			for i in doc.items
+		],
+	}
+
+
+@frappe.whitelist()
 def list_pending_approvals(limit=50):
 	"""Material Request yang menunggu persetujuan user saat ini."""
 	if not frappe.get_meta("Material Request").get_field("workflow_state"):

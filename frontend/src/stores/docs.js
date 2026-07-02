@@ -5,7 +5,7 @@ import { useApp } from './app'
 import { useMaster } from './master'
 import { useI18n } from '../lib/i18n'
 import { buildPayload } from '../lib/payload'
-import { createTransaction, submitTransaction, cancelTransaction, createPurchaseReturn, uploadFile } from '../lib/service'
+import { createTransaction, submitTransaction, cancelTransaction, createPurchaseReturn, getDocState, uploadFile } from '../lib/service'
 import { getPhoto, deletePhotosByLocalId } from '../lib/idb'
 
 const LS = 'stockops.docs'
@@ -190,6 +190,24 @@ export const useDocs = defineStore('docs', {
         }
       } catch (e) {
         app.notify(e && e.message ? e.message : String(e), 'error')
+      }
+    },
+
+    // Sinkronkan status dari server (workflow_state + docstatus) — mis. setelah approver
+    // menyetujui, requester melihat "Disetujui" bukan "Menunggu Persetujuan" yang basi.
+    async refreshState(localId) {
+      const app = useApp()
+      const doc = this.byLocalId(localId)
+      if (!doc || !doc.remoteName || !app.online) return
+      try {
+        const s = await getDocState(doc.doctype, doc.remoteName)
+        if (!s) return
+        if (s.workflow_state) doc.workflowState = s.workflow_state
+        doc.submitted = s.docstatus === 1
+        doc.cancelled = s.docstatus === 2
+        this.persist()
+      } catch {
+        // diamkan — tampilan tetap pakai status lokal terakhir
       }
     },
 
