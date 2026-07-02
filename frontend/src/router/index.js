@@ -11,7 +11,8 @@ const ROUTE_MENU = {
   low: 'low_stock',
   'quick-transfer': 'transfer',
   opname: 'opname',
-  return: 'ret'
+  return: 'ret',
+  approvals: 'approvals'
 }
 const CREATE_KEYS = ['mr', 'pr', 'se_in', 'se_out', 'se_transfer', 'grn', 'ret']
 
@@ -33,6 +34,7 @@ const routes = [
   { path: '/opname', name: 'opname', component: () => import('../views/OpnameView.vue'), meta: { tab: 'home' } },
   { path: '/form/:type', name: 'form', component: () => import('../views/DocFormView.vue') },
   { path: '/return', name: 'return', component: () => import('../views/ReturnFormView.vue') },
+  { path: '/approvals', name: 'approvals', component: () => import('../views/ApprovalsView.vue'), meta: { tab: 'home' } },
   { path: '/doc/:localId', name: 'detail', component: () => import('../views/DocDetailView.vue') },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]

@@ -994,10 +994,13 @@ def list_recent(company=None, limit=20):
 	mr_filters = {"company": company} if company else {}
 	se_filters = {"company": company} if company else {}
 
+	mr_fields = ["name", "material_request_type as subtype", "transaction_date as date", "status", "docstatus", "modified"]
+	if frappe.get_meta("Material Request").get_field("workflow_state"):
+		mr_fields.append("workflow_state")
 	for d in frappe.get_all(
 		"Material Request",
 		filters=mr_filters,
-		fields=["name", "material_request_type as subtype", "transaction_date as date", "status", "docstatus", "modified"],
+		fields=mr_fields,
 		order_by="modified desc",
 		limit_page_length=limit,
 	):

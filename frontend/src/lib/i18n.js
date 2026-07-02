@@ -28,6 +28,12 @@ const messages = {
       vReceipt: 'Pilih penerimaan barang yang akan diretur', vQty: 'Isi qty retur minimal 1 item',
       vOver: 'Qty retur melebihi qty yang bisa diretur'
     },
+    approval: {
+      title: 'Persetujuan', none: 'Tidak ada permintaan menunggu persetujuan', note: 'Catatan (opsional)',
+      approve: 'Setujui', reject: 'Tolak', applied: '{name}: {state}',
+      pending: 'Menunggu Persetujuan', approved: 'Disetujui', rejected: 'Ditolak',
+      menu: 'Persetujuan', submittedForApproval: 'Diajukan untuk persetujuan'
+    },
     nav: { home: 'Beranda', list: 'Daftar', create: 'Buat', settings: 'Setelan', sync: 'Sync', balance: 'Stok', movement: 'Mutasi' },
     docType: {
       MR: 'Permintaan Transfer Barang',
@@ -180,6 +186,12 @@ const messages = {
       returnable: 'returnable', totalReturn: 'Total Return', notePlaceholder: 'Return reason (optional)',
       vReceipt: 'Select the purchase receipt to return', vQty: 'Enter return qty for at least 1 item',
       vOver: 'Return qty exceeds the returnable qty'
+    },
+    approval: {
+      title: 'Approvals', none: 'No requests awaiting approval', note: 'Note (optional)',
+      approve: 'Approve', reject: 'Reject', applied: '{name}: {state}',
+      pending: 'Pending Approval', approved: 'Approved', rejected: 'Rejected',
+      menu: 'Approvals', submittedForApproval: 'Submitted for approval'
     },
     nav: { home: 'Home', list: 'Docs', create: 'New', settings: 'Settings', sync: 'Sync', balance: 'Stock', movement: 'Moves' },
     docType: {

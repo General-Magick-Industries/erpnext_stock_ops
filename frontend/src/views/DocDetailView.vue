@@ -35,6 +35,14 @@ onMounted(async () => {
 })
 onBeforeUnmount(() => photoViews.value.forEach((p) => URL.revokeObjectURL(p.url)))
 
+function wfLabel(state) {
+  const map = { 'Pending Approval': 'approval.pending', Approved: 'approval.approved', Rejected: 'approval.rejected' }
+  return map[state] ? t(map[state]) : state
+}
+function wfClass(state) {
+  return { pending: state === 'Pending Approval', approved: state === 'Approved', rejected: state === 'Rejected' }
+}
+
 function del() {
   if (confirm(t('detail.confirmDelete'))) {
     docs.remove(doc.value.localId)
@@ -57,6 +65,10 @@ function confirmCancel() {
           <div class="tiny muted">{{ cfg.doctype }} · {{ cfg.meta }}</div>
         </div>
         <StatusBadge :status="doc.status" :submitted="doc.submitted" />
+      </div>
+
+      <div v-if="doc.workflowState" class="mt8">
+        <span class="wf-chip" :class="wfClass(doc.workflowState)">{{ wfLabel(doc.workflowState) }}</span>
       </div>
 
       <div class="mt12" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
@@ -136,3 +148,12 @@ function confirmCancel() {
     <div class="empty"><div class="big">❓</div>{{ t('detail.notFound') }}</div>
   </div>
 </template>
+
+<style scoped>
+.wf-chip {
+  display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+}
+.wf-chip.pending { background: #fef3c7; color: #92400e; }
+.wf-chip.approved { background: #dcfce7; color: #166534; }
+.wf-chip.rejected { background: #fee2e2; color: #991b1b; }
+</style>

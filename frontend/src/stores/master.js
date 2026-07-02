@@ -27,6 +27,8 @@ export const useMaster = defineStore('master', {
       defaults: s.defaults || null,
       menu: s.menu || {}, // visibilitas menu dari Stock Ops Settings
       caps: s.caps || {}, // kemampuan user (mis. can_cancel) — dari Role Permission
+      isApprover: s.isApprover || false, // user adalah approver (leave approver) MR Purchase
+      pendingApprovals: s.pendingApprovals || 0, // jumlah MR menunggu persetujuan user
       defaultLang: s.defaultLang || 'id',
       flutterApkUrl: s.flutterApkUrl || '',
       loadedAt: s.loadedAt || null,
@@ -70,6 +72,8 @@ export const useMaster = defineStore('master', {
           defaults: this.defaults,
           menu: this.menu,
           caps: this.caps,
+          isApprover: this.isApprover,
+          pendingApprovals: this.pendingApprovals,
           defaultLang: this.defaultLang,
           flutterApkUrl: this.flutterApkUrl,
           loadedAt: this.loadedAt
@@ -97,6 +101,8 @@ export const useMaster = defineStore('master', {
         this.defaults = b.defaults || null
         this.menu = b.menu || {}
         this.caps = b.caps || {}
+        this.isApprover = !!b.is_approver
+        this.pendingApprovals = b.pending_approvals || 0
         this.defaultLang = b.default_lang || 'id'
         this.flutterApkUrl = b.flutter_apk_url || ''
         this.loadedAt = new Date().toISOString()
