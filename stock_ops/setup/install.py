@@ -211,8 +211,10 @@ _WF_TRANSITIONS = [
 	# (from_state, action, next_state, allowed_role, condition)
 	("Draft", "Submit for Approval", "Pending Approval", ROLE_USER, "doc.material_request_type == 'Purchase'"),
 	("Draft", "Submit", "Approved", ROLE_USER, "doc.material_request_type != 'Purchase'"),
-	("Pending Approval", "Approve", "Approved", "Employee", "doc.stock_ops_approver == frappe.session.user"),
-	("Pending Approval", "Reject", "Rejected", "Employee", "doc.stock_ops_approver == frappe.session.user"),
+	# Approve/Reject: role kasar = Stock Ops User (PWA, tanpa Desk) supaya line manager cukup
+	# jadi user PWA; gerbang sebenarnya = kondisi stock_ops_approver == user yang login.
+	("Pending Approval", "Approve", "Approved", ROLE_USER, "doc.stock_ops_approver == frappe.session.user"),
+	("Pending Approval", "Reject", "Rejected", ROLE_USER, "doc.stock_ops_approver == frappe.session.user"),
 	("Rejected", "Reopen", "Draft", ROLE_USER, ""),
 ]
 
