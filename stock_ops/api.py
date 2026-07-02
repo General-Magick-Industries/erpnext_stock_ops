@@ -345,15 +345,32 @@ def list_returnable_receipts(company=None, supplier=None, search=None, limit=50)
 
 @frappe.whitelist()
 def get_receipt_items_for_return(purchase_receipt):
-	"""Item Purchase Receipt untuk diretur — qty diterima jadi maksimum retur."""
+	"""Item Purchase Receipt untuk diretur beserta **sisa qty yang masih bisa diretur**.
+
+	Sisa dihitung lewat `make_return_doc` (mengurangi qty yang sudah diretur pada
+	dokumen retur sebelumnya) — lebih andal daripada field `per_returned` yang bisa basi.
+	"""
+	from erpnext.controllers.sales_and_purchase_return import make_return_doc
+
 	pr = frappe.get_doc("Purchase Receipt", purchase_receipt)
+	remaining = {}
+	try:
+		ret = make_return_doc("Purchase Receipt", purchase_receipt)
+		for it in ret.items:
+			# make_return_doc memberi qty negatif = sisa yang masih bisa diretur
+			remaining[it.purchase_receipt_item] = abs(it.qty or 0)
+	except Exception:
+		remaining = {}
+
 	out = []
 	for it in pr.items:
+		max_qty = remaining.get(it.name, it.qty) if remaining else it.qty
 		out.append({
 			"item_code": it.item_code,
 			"item_name": it.item_name,
 			"uom": it.uom,
-			"qty": it.qty,
+			"qty": it.qty,  # qty diterima asli
+			"returnable_qty": max_qty,  # sisa yang masih bisa diretur
 			"warehouse": it.warehouse,
 			"purchase_receipt_item": it.name,
 		})
