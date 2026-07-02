@@ -91,6 +91,14 @@ export const createPurchaseReturn = (purchaseReceipt, items, externalLocalid) =>
     { post: true }
   )
 
+// Persetujuan (workflow-driven — mengikuti Workflow di server/Desk, tak hardcode aksi)
+export const listPendingApprovals = (limit = 50) =>
+  call('stock_ops.api.list_pending_approvals', { limit })
+export const getWorkflowTransitions = (doctype, name) =>
+  call('stock_ops.api.get_workflow_transitions', { doctype, name })
+export const applyWorkflowAction = (doctype, name, action, note) =>
+  call('stock_ops.api.apply_workflow_action', { doctype, name, action, note }, { post: true })
+
 // Resolve kode (barcode/item_code/nama) → item_code (untuk hasil scan)
 export const resolveItem = (code) => call('stock_ops.api.resolve_item', { code })
 

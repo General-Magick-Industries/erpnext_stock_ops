@@ -64,6 +64,8 @@ export const useDocs = defineStore('docs', {
         assetLocation: '',
         // Retur Barang (Purchase Return): Purchase Receipt asal yang diretur
         returnAgainst: '',
+        // Status workflow (mis. MR Purchase: Pending Approval / Approved / Rejected)
+        workflowState: null,
         remark: '',
         geo: '',
         items: [],
@@ -176,10 +178,16 @@ export const useDocs = defineStore('docs', {
         return
       }
       try {
-        await submitTransaction(doc.doctype, doc.remoteName)
-        doc.submitted = true
+        const res = await submitTransaction(doc.doctype, doc.remoteName)
+        doc.workflowState = (res && res.workflow_state) || null
+        // Purchase MR yang masuk workflow tetap docstatus 0 (Menunggu Persetujuan).
+        doc.submitted = res && res.docstatus === 1
         this.persist()
-        app.notify(t('toast.submitted', { doc: doc.remoteName }), 'success')
+        if (doc.workflowState === 'Pending Approval') {
+          app.notify(t('approval.submittedForApproval') + ' → ' + doc.remoteName, 'success')
+        } else {
+          app.notify(t('toast.submitted', { doc: doc.remoteName }), 'success')
+        }
       } catch (e) {
         app.notify(e && e.message ? e.message : String(e), 'error')
       }

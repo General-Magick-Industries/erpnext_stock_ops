@@ -95,12 +95,20 @@ const dateStr = computed(() =>
     </button>
 
     <!-- Menu peluncur seragam -->
-    <template v-if="menu.length">
+    <template v-if="menu.length || master.isApprover">
       <div class="section-title">{{ t('home.menuTitle') }}</div>
       <div class="launch-grid">
         <button v-for="m in menu" :key="m.to" class="launch-tile" @click="router.push(m.to)">
           <span class="li" :style="{ background: m.color }">{{ m.icon }}</span>
           <span class="lt">{{ t(m.label) }}</span>
+        </button>
+        <button v-if="master.isApprover" class="launch-tile" style="position: relative" @click="router.push('/approvals')">
+          <span class="li" style="background: #b45309">✅</span>
+          <span class="lt">{{ t('approval.menu') }}</span>
+          <span
+            v-if="master.pendingApprovals"
+            style="position: absolute; top: 6px; right: 10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--danger, #dc2626); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center"
+          >{{ master.pendingApprovals }}</span>
         </button>
       </div>
     </template>
