@@ -832,6 +832,16 @@ def get_bootstrap():
 	company = scope["company"] or (companies[0]["name"] if companies else None)
 	_app = _app_settings()
 
+	# Konteks persetujuan: apakah user seorang approver (leave approver) + jumlah antrean.
+	is_emp_approver = (
+		bool(frappe.db.exists("Employee", {"leave_approver": user})) if frappe.db.exists("DocType", "Employee") else False
+	)
+	pending_approvals = 0
+	if frappe.get_meta("Material Request").get_field("workflow_state"):
+		pending_approvals = frappe.db.count(
+			"Material Request", {"stock_ops_approver": user, "workflow_state": "Pending Approval"}
+		)
+
 	return {
 		"user": {"name": user, "full_name": frappe.utils.get_fullname(user)},
 		"employee": scope["employee"] or None,
@@ -852,6 +862,8 @@ def get_bootstrap():
 		"default_lang": _app["default_lang"],
 		"flutter_apk_url": _app["flutter_apk_url"],
 		"caps": _app["caps"],
+		"is_approver": bool(is_emp_approver or pending_approvals),
+		"pending_approvals": pending_approvals,
 		"server_time": frappe.utils.now(),
 	}
 
