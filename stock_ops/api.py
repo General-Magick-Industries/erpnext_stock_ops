@@ -37,6 +37,23 @@ def get_user_warehouses(user=None):
 	return list(dict.fromkeys([w for w in whs if w]))
 
 
+def get_user_companies(user=None):
+	"""Perusahaan yang diizinkan untuk user via **User Permission** (allow=Company).
+	Kosong = tidak dibatasi per-perusahaan. Dicek lebih dulu dari default Stock Ops Settings."""
+	user = user or frappe.session.user
+	return list(
+		dict.fromkeys(
+			[
+				p.for_value
+				for p in frappe.get_all(
+					"User Permission", filters={"user": user, "allow": "Company"}, fields=["for_value"]
+				)
+				if p.for_value
+			]
+		)
+	)
+
+
 def get_user_employee(user=None):
 	"""Employee yang tertaut ke user (via Employee.user_id). None bila tidak ada."""
 	user = user or frappe.session.user
@@ -92,11 +109,22 @@ def _user_scope(emp=None):
 	"""
 	if emp is None:
 		emp = get_user_employee()
+	# Prioritas: User Permission (Warehouse & Company). Bila kosong → default Stock Ops Settings.
 	user_whs = get_user_warehouses()
-	restricted = bool(user_whs)
-	allowed_companies = _warehouse_companies(user_whs) if restricted else []
+	up_companies = get_user_companies()
+	restricted = bool(user_whs) or bool(up_companies)
 
-	if emp and emp.get("company"):
+	# Perusahaan yang diizinkan: User Permission Company diutamakan; jika tidak ada tapi
+	# gudang dibatasi, pakai perusahaan gudang tsb; selain itu tak dibatasi.
+	if up_companies:
+		allowed_companies = up_companies
+	elif user_whs:
+		allowed_companies = _warehouse_companies(user_whs)
+	else:
+		allowed_companies = []
+
+	# Perusahaan default: Employee (bila dalam lingkup) → lingkup pertama → Settings → pertama.
+	if emp and emp.get("company") and (not allowed_companies or emp["company"] in allowed_companies):
 		company = emp["company"]
 	elif allowed_companies:
 		company = allowed_companies[0]
@@ -106,21 +134,21 @@ def _user_scope(emp=None):
 			first = frappe.get_all("Company", pluck="name", limit_page_length=1)
 			company = first[0] if first else None
 
-	# Pastikan perusahaan default berada dalam lingkup saat dibatasi.
 	if restricted and allowed_companies and company not in allowed_companies:
 		company = allowed_companies[0]
 
 	# Kunci Company hanya bila lingkup tepat satu perusahaan.
 	company_read_only = bool(restricted and len(allowed_companies) == 1 and company)
 
-	# Gudang sumber default — pakai Settings; bila dibatasi & tak valid, gudang pertama user.
+	# Gudang sumber default — pakai Settings; bila gudang dibatasi & tak valid, gudang pertama user.
 	src = _default_source_warehouse()
-	if restricted and (not src or src not in user_whs):
-		src = user_whs[0] if user_whs else ""
+	if user_whs and (not src or src not in user_whs):
+		src = user_whs[0]
 
 	return {
 		"employee": emp,
 		"user_whs": user_whs,
+		"up_companies": up_companies,
 		"restricted": restricted,
 		"allowed_companies": allowed_companies,
 		"company": company,
@@ -146,13 +174,22 @@ def _collect_warehouses(data):
 
 
 def _assert_warehouses_allowed(whs):
-	"""Tolak bila ada gudang di luar lingkup user (saat user dibatasi). Aman bila tak dibatasi."""
+	"""Tolak bila ada gudang di luar lingkup user (saat user dibatasi). Aman bila tak dibatasi.
+	Lingkup gudang (User Permission Warehouse / Employee) diutamakan; bila tak ada tapi user
+	dibatasi per-perusahaan (User Permission Company), tolak gudang di luar perusahaan itu."""
 	allowed = get_user_warehouses()
-	if not allowed:
+	if allowed:
+		bad = sorted(w for w in whs if w and w not in allowed)
+		if bad:
+			frappe.throw(_("Anda tidak punya akses ke gudang: {0}").format(", ".join(bad)))
 		return
-	bad = sorted(w for w in whs if w and w not in allowed)
-	if bad:
-		frappe.throw(_("Anda tidak punya akses ke gudang: {0}").format(", ".join(bad)))
+	up_companies = get_user_companies()
+	if up_companies:
+		wanted = [w for w in whs if w]
+		co = {r.name: r.company for r in frappe.get_all("Warehouse", filters={"name": ["in", wanted]}, fields=["name", "company"])} if wanted else {}
+		bad = sorted(w for w in wanted if co.get(w) not in up_companies)
+		if bad:
+			frappe.throw(_("Anda tidak punya akses ke gudang: {0}").format(", ".join(bad)))
 
 
 def _default_source_warehouse():
@@ -165,14 +202,17 @@ def _default_source_warehouse():
 
 def _resolve_warehouses(warehouse=None, company=None):
 	user_whs = get_user_warehouses()
+	up_companies = get_user_companies()
 	if warehouse:
-		return [warehouse], bool(user_whs)
+		return [warehouse], bool(user_whs) or bool(up_companies)
 	if user_whs:
 		return user_whs, True
 	wfilter = {"disabled": 0, "is_group": 0}
 	if company:
 		wfilter["company"] = company
-	return frappe.get_all("Warehouse", filters=wfilter, pluck="name"), False
+	elif up_companies:
+		wfilter["company"] = ["in", up_companies]
+	return frappe.get_all("Warehouse", filters=wfilter, pluck="name"), bool(up_companies)
 
 
 @frappe.whitelist()
@@ -651,11 +691,17 @@ def get_bootstrap():
 	# Batasi daftar gudang & perusahaan sesuai lingkup user (Employee.stock_ops_warehouses
 	# / User Permission). User tanpa batasan tetap melihat semua.
 	if scope["restricted"]:
-		allowed_wh = set(scope["user_whs"])
-		warehouses = [w for w in warehouses if w["name"] in allowed_wh]
 		if scope["allowed_companies"]:
 			allowed_co = set(scope["allowed_companies"])
 			companies = [c for c in companies if c["name"] in allowed_co]
+		if scope["user_whs"]:
+			# dibatasi per-gudang (User Permission Warehouse / Employee)
+			allowed_wh = set(scope["user_whs"])
+			warehouses = [w for w in warehouses if w["name"] in allowed_wh]
+		elif scope["allowed_companies"]:
+			# dibatasi per-perusahaan saja → tampilkan gudang perusahaan tsb
+			allowed_co = set(scope["allowed_companies"])
+			warehouses = [w for w in warehouses if w.get("company") in allowed_co]
 
 	items = frappe.get_all(
 		"Item",
