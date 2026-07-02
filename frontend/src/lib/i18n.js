@@ -19,6 +19,15 @@ const messages = {
       title: 'Pilih Purchase Order', label: 'Purchase Order', choose: 'Pilih Purchase Order',
       searchPlaceholder: 'Cari nomor PO…', none: 'Tidak ada PO terbuka', loaded: '{n} item dari {po} dimuat'
     },
+    ret: {
+      pickTitle: 'Pilih Penerimaan Barang', receipt: 'Penerimaan Barang (asal)', choose: 'Pilih Penerimaan Barang',
+      searchPlaceholder: 'Cari nomor penerimaan…', none: 'Tidak ada penerimaan yang bisa diretur',
+      partlyReturned: 'sudah diretur {pct}%', loaded: '{n} item dari {pr} dimuat',
+      itemsToReturn: 'Item yang Diretur', pickFirst: 'Pilih penerimaan barang dulu untuk memuat item',
+      returnable: 'bisa diretur', totalReturn: 'Total Retur', notePlaceholder: 'Alasan retur (opsional)',
+      vReceipt: 'Pilih penerimaan barang yang akan diretur', vQty: 'Isi qty retur minimal 1 item',
+      vOver: 'Qty retur melebihi qty yang bisa diretur'
+    },
     nav: { home: 'Beranda', list: 'Daftar', create: 'Buat', settings: 'Setelan', sync: 'Sync', balance: 'Stok', movement: 'Mutasi' },
     docType: {
       MR: 'Permintaan Transfer Barang',
@@ -27,9 +36,11 @@ const messages = {
       SE_OUT: 'Stock Out (Barang Keluar)',
       SE_TRANSFER: 'Transfer Barang',
       GRN: 'Penerimaan Barang (Purchase Receipt)',
+      RET: 'Retur Barang (Purchase Return)',
       groupMR: 'Permintaan Barang',
       groupSE: 'Stok Barang',
-      groupPR: 'Penerimaan Barang'
+      groupPR: 'Penerimaan Barang',
+      groupRET: 'Retur Barang'
     },
     home: {
       hello: 'Halo, {name} 👋', pendingSync: 'Menunggu sync', synced: 'Tersinkron',
@@ -161,6 +172,15 @@ const messages = {
       title: 'Select Purchase Order', label: 'Purchase Order', choose: 'Select Purchase Order',
       searchPlaceholder: 'Search PO number…', none: 'No open POs', loaded: '{n} items from {po} loaded'
     },
+    ret: {
+      pickTitle: 'Select Purchase Receipt', receipt: 'Purchase Receipt (source)', choose: 'Select Purchase Receipt',
+      searchPlaceholder: 'Search receipt number…', none: 'No returnable receipts',
+      partlyReturned: '{pct}% returned', loaded: '{n} items from {pr} loaded',
+      itemsToReturn: 'Items to Return', pickFirst: 'Select a purchase receipt first to load items',
+      returnable: 'returnable', totalReturn: 'Total Return', notePlaceholder: 'Return reason (optional)',
+      vReceipt: 'Select the purchase receipt to return', vQty: 'Enter return qty for at least 1 item',
+      vOver: 'Return qty exceeds the returnable qty'
+    },
     nav: { home: 'Home', list: 'Docs', create: 'New', settings: 'Settings', sync: 'Sync', balance: 'Stock', movement: 'Moves' },
     docType: {
       MR: 'Goods Transfer Request',
@@ -169,9 +189,11 @@ const messages = {
       SE_OUT: 'Stock Out (Issue)',
       SE_TRANSFER: 'Stock Transfer',
       GRN: 'Goods Receipt (Purchase Receipt)',
+      RET: 'Goods Return (Purchase Return)',
       groupMR: 'Material Requests',
       groupSE: 'Stock Entries',
-      groupPR: 'Goods Receipt'
+      groupPR: 'Goods Receipt',
+      groupRET: 'Goods Return'
     },
     home: {
       hello: 'Hi, {name} 👋', pendingSync: 'Pending sync', synced: 'Synced',
