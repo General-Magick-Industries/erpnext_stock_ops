@@ -32,7 +32,8 @@ const messages = {
       title: 'Persetujuan', none: 'Tidak ada permintaan menunggu persetujuan', note: 'Catatan (opsional)',
       approve: 'Setujui', reject: 'Tolak', applied: '{name}: {state}',
       pending: 'Menunggu Persetujuan', approved: 'Disetujui', rejected: 'Ditolak',
-      menu: 'Persetujuan', submittedForApproval: 'Diajukan untuk persetujuan'
+      menu: 'Persetujuan', submittedForApproval: 'Diajukan untuk persetujuan',
+      submitForApproval: 'Ajukan Persetujuan', waiting: 'Menunggu persetujuan line manager…'
     },
     nav: { home: 'Beranda', list: 'Daftar', create: 'Buat', settings: 'Setelan', sync: 'Sync', balance: 'Stok', movement: 'Mutasi' },
     docType: {
@@ -191,7 +192,8 @@ const messages = {
       title: 'Approvals', none: 'No requests awaiting approval', note: 'Note (optional)',
       approve: 'Approve', reject: 'Reject', applied: '{name}: {state}',
       pending: 'Pending Approval', approved: 'Approved', rejected: 'Rejected',
-      menu: 'Approvals', submittedForApproval: 'Submitted for approval'
+      menu: 'Approvals', submittedForApproval: 'Submitted for approval',
+      submitForApproval: 'Submit for Approval', waiting: 'Waiting for line manager approval…'
     },
     nav: { home: 'Home', list: 'Docs', create: 'New', settings: 'Settings', sync: 'Sync', balance: 'Stock', movement: 'Moves' },
     docType: {

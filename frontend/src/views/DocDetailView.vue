@@ -21,6 +21,14 @@ const { t } = useI18n()
 const doc = computed(() => docs.byLocalId(route.params.localId))
 const cfg = computed(() => (doc.value ? DOC_TYPES[doc.value.type] : null))
 const totalQty = computed(() => (doc.value ? doc.value.items.reduce((s, i) => s + (Number(i.qty) || 0), 0) : 0))
+// Dokumen sudah masuk alur workflow (Pending/Approved/Rejected) → tombol Submit tidak berlaku;
+// requester tinggal menunggu keputusan approver (aksi ada di layar Persetujuan approver).
+const inWorkflow = computed(() => {
+  const w = doc.value && doc.value.workflowState
+  return !!w && w !== 'Draft'
+})
+// Label tombol finalisasi: untuk MR Purchase = "Ajukan Persetujuan", lainnya = "Submit".
+const submitLabel = computed(() => (doc.value && doc.value.type === 'PR' ? t('approval.submitForApproval') : t('detail.submit')))
 
 // Foto dimuat dari IndexedDB sebagai object URL
 const photoViews = ref([])
@@ -125,12 +133,16 @@ function confirmCancel() {
     </button>
 
     <button
-      v-if="doc.status === 'synced' && !doc.submitted && !doc.cancelled"
+      v-if="doc.status === 'synced' && !doc.submitted && !doc.cancelled && !inWorkflow"
       class="btn ok block mt12"
       @click="docs.submit(doc.localId)"
     >
-      {{ t('detail.submit') }}
+      {{ submitLabel }}
     </button>
+
+    <div v-if="inWorkflow && !doc.submitted" class="card mt12 tiny muted" style="text-align: center">
+      {{ t('approval.waiting') }}
+    </div>
 
     <button
       v-if="doc.submitted && master.canCancel"
