@@ -72,6 +72,12 @@ export const DOC_TYPES = {
     doctype: 'Purchase Receipt', meta: 'penerimaan barang dari supplier',
     icon: '📦', color: '#0891b2', source: false, target: true, supplier: true, supplierRequired: true,
     purchaseOrder: true, acceptReject: true
+  },
+  RET: {
+    key: 'RET', short: 'RET', label: 'Goods Return — Purchase Return',
+    doctype: 'Purchase Receipt', meta: 'retur barang ke supplier',
+    icon: '↩️', color: '#b45309', source: false, target: false, supplier: true,
+    isReturn: true
   }
 }
 

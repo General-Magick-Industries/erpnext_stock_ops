@@ -79,6 +79,18 @@ export const listOpenPurchaseOrders = (company, supplier, search) =>
 export const getPurchaseOrderItems = (purchaseOrder) =>
   call('stock_ops.api.get_purchase_order_items', { purchase_order: purchaseOrder })
 
+// Retur Barang: Purchase Receipt yang bisa diretur + item + sisa qty, lalu buat retur (is_return)
+export const listReturnableReceipts = (company, supplier, search) =>
+  call('stock_ops.api.list_returnable_receipts', { company, supplier, search })
+export const getReceiptItemsForReturn = (purchaseReceipt) =>
+  call('stock_ops.api.get_receipt_items_for_return', { purchase_receipt: purchaseReceipt })
+export const createPurchaseReturn = (purchaseReceipt, items, externalLocalid) =>
+  call(
+    'stock_ops.api.create_purchase_return',
+    { purchase_receipt: purchaseReceipt, items, external_localid: externalLocalid },
+    { post: true }
+  )
+
 // Resolve kode (barcode/item_code/nama) → item_code (untuk hasil scan)
 export const resolveItem = (code) => call('stock_ops.api.resolve_item', { code })
 

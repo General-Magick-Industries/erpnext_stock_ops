@@ -5,7 +5,7 @@ import { useApp } from './app'
 import { useMaster } from './master'
 import { useI18n } from '../lib/i18n'
 import { buildPayload } from '../lib/payload'
-import { createTransaction, submitTransaction, cancelTransaction, uploadFile } from '../lib/service'
+import { createTransaction, submitTransaction, cancelTransaction, createPurchaseReturn, uploadFile } from '../lib/service'
 import { getPhoto, deletePhotosByLocalId } from '../lib/idb'
 
 const LS = 'stockops.docs'
@@ -62,6 +62,8 @@ export const useDocs = defineStore('docs', {
         purchaseOrder: '',
         rejectedWarehouse: '',
         assetLocation: '',
+        // Retur Barang (Purchase Return): Purchase Receipt asal yang diretur
+        returnAgainst: '',
         remark: '',
         geo: '',
         items: [],
@@ -104,7 +106,15 @@ export const useDocs = defineStore('docs', {
       try {
         // 1) buat dokumen (server cek external_localid → cegah duplikat saat retry)
         if (!doc.remoteName) {
-          const res = await createTransaction(buildPayload(doc))
+          const cfg = DOC_TYPES[doc.type]
+          let res
+          if (cfg && cfg.isReturn) {
+            // Retur barang: make_return_doc (qty negatif) atas Purchase Receipt asal
+            const items = doc.items.map((i) => ({ item_code: i.item_code, qty: Number(i.qty) || 0 }))
+            res = await createPurchaseReturn(doc.returnAgainst, items, doc.localId)
+          } else {
+            res = await createTransaction(buildPayload(doc))
+          }
           doc.remoteName = res.name
           this.persist()
         }
