@@ -22,10 +22,13 @@ export const useMaster = defineStore('master', {
       items: s.items || [],
       uoms: s.uoms || [],
       suppliers: s.suppliers || [],
+      locations: s.locations || [],
       userWarehouses: s.userWarehouses || [],
       defaults: s.defaults || null,
       menu: s.menu || {}, // visibilitas menu dari Stock Ops Settings
       caps: s.caps || {}, // kemampuan user (mis. can_cancel) — dari Role Permission
+      isApprover: s.isApprover || false, // user adalah approver (leave approver) MR Purchase
+      pendingApprovals: s.pendingApprovals || 0, // jumlah MR menunggu persetujuan user
       defaultLang: s.defaultLang || 'id',
       flutterApkUrl: s.flutterApkUrl || '',
       loadedAt: s.loadedAt || null,
@@ -51,7 +54,8 @@ export const useMaster = defineStore('master', {
     },
     companyNames: (s) => (s.companies.length ? s.companies.map((c) => c.name) : COMPANIES),
     uomList: (s) => (s.uoms.length ? s.uoms : UOMS),
-    supplierNames: (s) => (s.suppliers.length ? s.suppliers.map((x) => x.supplier) : SUPPLIERS)
+    supplierNames: (s) => (s.suppliers.length ? s.suppliers.map((x) => x.supplier) : SUPPLIERS),
+    locationNames: (s) => s.locations || []
   },
   actions: {
     persist() {
@@ -63,10 +67,13 @@ export const useMaster = defineStore('master', {
           items: this.items,
           uoms: this.uoms,
           suppliers: this.suppliers,
+          locations: this.locations,
           userWarehouses: this.userWarehouses,
           defaults: this.defaults,
           menu: this.menu,
           caps: this.caps,
+          isApprover: this.isApprover,
+          pendingApprovals: this.pendingApprovals,
           defaultLang: this.defaultLang,
           flutterApkUrl: this.flutterApkUrl,
           loadedAt: this.loadedAt
@@ -84,14 +91,18 @@ export const useMaster = defineStore('master', {
           item_name: it.item_name || it.item_code,
           stock_uom: it.stock_uom || 'Nos',
           image: it.image || '',
-          barcode: it.barcode || ''
+          barcode: it.barcode || '',
+          is_fixed_asset: it.is_fixed_asset ? 1 : 0
         }))
         this.uoms = b.uoms || []
         this.suppliers = b.suppliers || []
+        this.locations = b.locations || []
         this.userWarehouses = b.user_warehouses || []
         this.defaults = b.defaults || null
         this.menu = b.menu || {}
         this.caps = b.caps || {}
+        this.isApprover = !!b.is_approver
+        this.pendingApprovals = b.pending_approvals || 0
         this.defaultLang = b.default_lang || 'id'
         this.flutterApkUrl = b.flutter_apk_url || ''
         this.loadedAt = new Date().toISOString()

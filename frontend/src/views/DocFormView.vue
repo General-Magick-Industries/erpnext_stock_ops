@@ -10,6 +10,9 @@ import { getGeolocation } from '../lib/util'
 import AppBar from '../components/AppBar.vue'
 import ItemPickerSheet from '../components/ItemPickerSheet.vue'
 import PhotoUploader from '../components/PhotoUploader.vue'
+import WarehouseSelect from '../components/WarehouseSelect.vue'
+import PurchaseOrderSheet from '../components/PurchaseOrderSheet.vue'
+import { getPurchaseOrderItems } from '../lib/service'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,6 +23,7 @@ const { t } = useI18n()
 
 const COMPANIES = computed(() => master.companyNames)
 const SUPPLIERS = computed(() => master.supplierNames)
+const LOCATIONS = computed(() => master.locationNames)
 // Company dikunci bila berasal dari Employee user (server). Lihat get_user_context.
 const companyReadOnly = computed(() => !!(master.defaults && master.defaults.company_read_only))
 
@@ -41,8 +45,14 @@ watch(
   }
 )
 const showPicker = ref(false)
+const showPO = ref(false)
+const loadingPO = ref(false)
 const saving = ref(false)
 const locating = ref(false)
+
+// GRN (Purchase Receipt): tampilkan gudang-tolak bila ada qty ditolak, lokasi aset bila ada item aset.
+const hasRejected = computed(() => doc.items.some((i) => Number(i.rejectedQty) > 0))
+const hasAsset = computed(() => doc.items.some((i) => i.is_fixed_asset))
 
 async function tagLocation() {
   locating.value = true
@@ -62,8 +72,44 @@ function addItem(it) {
   const exist = doc.items.find((x) => x.item_code === it.item_code)
   if (exist) exist.qty += 1
   else
-    doc.items.push({ item_code: it.item_code, item_name: it.item_name, image: it.image, uom: it.stock_uom, qty: 1 })
+    doc.items.push({ item_code: it.item_code, item_name: it.item_name, image: it.image, uom: it.stock_uom, qty: 1, rejectedQty: 0, is_fixed_asset: it.is_fixed_asset ? 1 : 0 })
   showPicker.value = false
+}
+
+// Penerimaan Barang: pilih PO → tarik item PO yang belum diterima (auto-isi + link).
+async function selectPO(po) {
+  showPO.value = false
+  loadingPO.value = true
+  try {
+    const res = await getPurchaseOrderItems(po.name)
+    doc.purchaseOrder = res.name
+    if (res.company) doc.company = res.company // receipt harus seperusahaan dengan PO
+    if (res.supplier) doc.supplier = res.supplier
+    if (res.set_warehouse) doc.targetWarehouse = res.set_warehouse
+    doc.items = (res.items || []).map((i) => ({
+      item_code: i.item_code,
+      item_name: i.item_name,
+      uom: i.uom,
+      qty: Number(i.qty) || 0,
+      rejectedQty: 0,
+      rate: i.rate,
+      is_fixed_asset: i.is_fixed_asset ? 1 : 0,
+      purchase_order: i.purchase_order,
+      purchase_order_item: i.purchase_order_item
+    }))
+    app.notify(t('po.loaded', { n: doc.items.length, po: res.name }), 'success')
+  } catch (e) {
+    app.notify(e && e.message ? e.message : String(e), 'error')
+  } finally {
+    loadingPO.value = false
+  }
+}
+function clearPO() {
+  doc.purchaseOrder = ''
+  doc.items.forEach((i) => {
+    delete i.purchase_order
+    delete i.purchase_order_item
+  })
 }
 
 // Prefill item bila dibuka dari Detail Item (?item=CODE)
@@ -80,7 +126,15 @@ function removeLine(code) {
 
 function valid() {
   if (!doc.items.length) return t('form.vItems')
-  if (doc.items.some((i) => !i.qty || i.qty <= 0)) return t('form.vQty')
+  if (cfg.acceptReject) {
+    // GRN: tiap baris harus punya (terima + tolak) > 0
+    if (doc.items.some((i) => (Number(i.qty) || 0) + (Number(i.rejectedQty) || 0) <= 0)) return t('form.vQty')
+    if (hasRejected.value && !doc.rejectedWarehouse) return t('form.vRejWh')
+    if (hasAsset.value && !doc.assetLocation) return t('form.vAssetLoc')
+  } else if (doc.items.some((i) => !i.qty || i.qty <= 0)) {
+    return t('form.vQty')
+  }
+  if (cfg.supplierRequired && !doc.supplier) return t('form.vSupplier')
   if (cfg.source && !doc.sourceWarehouse) return t('form.vSrc')
   if (cfg.target && !doc.targetWarehouse) return t('form.vTgt')
   if (cfg.source && cfg.target && doc.sourceWarehouse === doc.targetWarehouse) return t('form.vSame')
@@ -122,8 +176,19 @@ async function save() {
         <input type="date" v-model="doc.date" />
       </div>
 
+      <div v-if="cfg.purchaseOrder" class="field">
+        <label>{{ t('po.label') }} <span class="muted">({{ t('common.optional') }})</span></label>
+        <div v-if="doc.purchaseOrder" class="row between" style="gap: 8px; align-items: center">
+          <span class="po-chip">🧾 {{ doc.purchaseOrder }}</span>
+          <button class="btn sm" @click="clearPO">{{ t('common.clear') }}</button>
+        </div>
+        <button v-else class="btn block" :disabled="loadingPO" @click="showPO = true">
+          {{ loadingPO ? t('common.loading') : t('po.choose') }}
+        </button>
+      </div>
+
       <div v-if="cfg.supplier" class="field">
-        <label>{{ t('form.supplier') }} ({{ t('common.optional') }})</label>
+        <label>{{ t('form.supplier') }}<span v-if="!cfg.supplierRequired"> ({{ t('common.optional') }})</span></label>
         <select v-model="doc.supplier">
           <option value="">—</option>
           <option v-for="s in SUPPLIERS" :key="s">{{ s }}</option>
@@ -133,16 +198,21 @@ async function save() {
       <div class="field-row">
         <div v-if="cfg.source" class="field">
           <label>{{ t('form.sourceWh') }}</label>
-          <select v-model="doc.sourceWarehouse">
-            <option v-for="w in warehouseOptions" :key="w">{{ w }}</option>
-          </select>
+          <WarehouseSelect v-model="doc.sourceWarehouse" :options="warehouseOptions" :placeholder="t('form.sourceWh')" />
         </div>
         <div v-if="cfg.target" class="field">
-          <label>{{ t('form.targetWh') }}</label>
-          <select v-model="doc.targetWarehouse">
-            <option v-for="w in warehouseOptions" :key="w">{{ w }}</option>
-          </select>
+          <label>{{ cfg.acceptReject ? t('form.acceptedWh') : t('form.targetWh') }}</label>
+          <WarehouseSelect v-model="doc.targetWarehouse" :options="warehouseOptions" :placeholder="cfg.acceptReject ? t('form.acceptedWh') : t('form.targetWh')" />
         </div>
+      </div>
+
+      <div v-if="cfg.acceptReject && hasRejected" class="field">
+        <label>{{ t('form.rejectedWh') }}</label>
+        <WarehouseSelect v-model="doc.rejectedWarehouse" :options="warehouseOptions" :placeholder="t('form.rejectedWh')" />
+      </div>
+      <div v-if="cfg.acceptReject && hasAsset" class="field">
+        <label>{{ t('form.assetLocation') }}</label>
+        <WarehouseSelect v-model="doc.assetLocation" :options="LOCATIONS" :placeholder="t('form.assetLocation')" />
       </div>
     </div>
 
@@ -163,15 +233,26 @@ async function save() {
           {{ (line.item_name || '?').charAt(0).toUpperCase() }}
         </span>
         <div class="grow" style="min-width: 0">
-          <div class="truncate" style="font-weight: 600">{{ line.item_name }}</div>
-          <div class="tiny muted">{{ line.item_code }} · {{ line.uom }}</div>
+          <div class="truncate" style="font-weight: 600">
+            {{ line.item_name }}
+            <span v-if="line.is_fixed_asset" class="asset-tag">{{ t('form.asset') }}</span>
+          </div>
+          <div class="tiny muted truncate">{{ line.item_code }} · {{ line.uom }}<span v-if="line.purchase_order"> · {{ line.purchase_order }}</span></div>
+          <div v-if="cfg.acceptReject" class="row" style="gap: 12px; margin-top: 8px; align-items: center">
+            <label class="tiny muted" style="display: flex; align-items: center; gap: 5px">{{ t('form.accepted') }}
+              <input type="number" inputmode="decimal" min="0" v-model.number="line.qty" class="mini-num" />
+            </label>
+            <label class="tiny muted" style="display: flex; align-items: center; gap: 5px">{{ t('form.rejected') }}
+              <input type="number" inputmode="decimal" min="0" v-model.number="line.rejectedQty" class="mini-num" />
+            </label>
+          </div>
         </div>
-        <div class="qty-box">
+        <div v-if="!cfg.acceptReject" class="qty-box">
           <button @click="step(line, -1)">−</button>
           <input type="number" inputmode="decimal" v-model.number="line.qty" />
           <button @click="step(line, 1)">＋</button>
         </div>
-        <button class="btn sm danger" style="padding: 8px 10px" @click="removeLine(line.item_code)">🗑</button>
+        <button class="btn sm danger" style="padding: 8px 10px; align-self: flex-start" @click="removeLine(line.item_code)">🗑</button>
       </div>
 
       <div v-if="doc.items.length" class="row between mt12" style="font-weight: 700">
@@ -216,5 +297,21 @@ async function save() {
     <div style="height: 8px"></div>
 
     <ItemPickerSheet v-if="showPicker" @pick="addItem" @close="showPicker = false" />
+    <PurchaseOrderSheet v-if="showPO" :company="doc.company" :supplier="doc.supplier" @pick="selectPO" @close="showPO = false" />
   </div>
 </template>
+
+<style scoped>
+.mini-num {
+  width: 64px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px;
+  background: var(--input-bg); color: var(--ink); text-align: center; font-size: 15px;
+}
+.po-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 9px 12px;
+  border-radius: 10px; background: var(--brand-soft, var(--line)); color: var(--ink);
+  font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.asset-tag {
+  font-size: 10px; background: #0891b2; color: #fff; padding: 1px 7px; border-radius: 999px; margin-left: 4px; font-weight: 700;
+}
+</style>

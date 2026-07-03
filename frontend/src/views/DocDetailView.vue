@@ -21,11 +21,21 @@ const { t } = useI18n()
 const doc = computed(() => docs.byLocalId(route.params.localId))
 const cfg = computed(() => (doc.value ? DOC_TYPES[doc.value.type] : null))
 const totalQty = computed(() => (doc.value ? doc.value.items.reduce((s, i) => s + (Number(i.qty) || 0), 0) : 0))
+// Dokumen sudah masuk alur workflow (Pending/Approved/Rejected) → tombol Submit tidak berlaku;
+// requester tinggal menunggu keputusan approver (aksi ada di layar Persetujuan approver).
+const inWorkflow = computed(() => {
+  const w = doc.value && doc.value.workflowState
+  return !!w && w !== 'Draft'
+})
+// Label tombol finalisasi: untuk MR Purchase = "Ajukan Persetujuan", lainnya = "Submit".
+const submitLabel = computed(() => (doc.value && doc.value.type === 'PR' ? t('approval.submitForApproval') : t('detail.submit')))
 
 // Foto dimuat dari IndexedDB sebagai object URL
 const photoViews = ref([])
 onMounted(async () => {
   if (!doc.value) return
+  // Sinkronkan status terkini dari server (mis. sudah di-approve/reject oleh line manager).
+  docs.refreshState(doc.value.localId)
   try {
     const recs = await getPhotosByLocalId(doc.value.localId)
     photoViews.value = recs.map((r) => ({ id: r.id, url: URL.createObjectURL(r.blob) }))
@@ -34,6 +44,14 @@ onMounted(async () => {
   }
 })
 onBeforeUnmount(() => photoViews.value.forEach((p) => URL.revokeObjectURL(p.url)))
+
+function wfLabel(state) {
+  const map = { 'Pending Approval': 'approval.pending', Approved: 'approval.approved', Rejected: 'approval.rejected' }
+  return map[state] ? t(map[state]) : state
+}
+function wfClass(state) {
+  return { pending: state === 'Pending Approval', approved: state === 'Approved', rejected: state === 'Rejected' }
+}
 
 function del() {
   if (confirm(t('detail.confirmDelete'))) {
@@ -59,12 +77,17 @@ function confirmCancel() {
         <StatusBadge :status="doc.status" :submitted="doc.submitted" />
       </div>
 
+      <div v-if="doc.workflowState" class="mt8">
+        <span class="wf-chip" :class="wfClass(doc.workflowState)">{{ wfLabel(doc.workflowState) }}</span>
+      </div>
+
       <div class="mt12" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
         <div><div class="tiny muted">{{ t('form.company') }}</div><div class="small">{{ doc.company }}</div></div>
         <div><div class="tiny muted">{{ t('form.date') }}</div><div class="small">{{ doc.date }}</div></div>
         <div v-if="cfg.source"><div class="tiny muted">{{ t('form.sourceWh') }}</div><div class="small">{{ doc.sourceWarehouse }}</div></div>
         <div v-if="cfg.target"><div class="tiny muted">{{ t('form.targetWh') }}</div><div class="small">{{ doc.targetWarehouse }}</div></div>
         <div v-if="doc.supplier"><div class="tiny muted">{{ t('form.supplier') }}</div><div class="small">{{ doc.supplier }}</div></div>
+        <div v-if="doc.returnAgainst"><div class="tiny muted">{{ t('ret.receipt') }}</div><div class="small">{{ doc.returnAgainst }}</div></div>
         <div><div class="tiny muted">{{ t('detail.localId') }}</div><div class="tiny truncate">{{ doc.localId }}</div></div>
       </div>
       <div v-if="doc.remoteName" class="mt8 tiny muted">ERPNext: <b>{{ doc.remoteName }}</b></div>
@@ -112,12 +135,16 @@ function confirmCancel() {
     </button>
 
     <button
-      v-if="doc.status === 'synced' && !doc.submitted && !doc.cancelled"
+      v-if="doc.status === 'synced' && !doc.submitted && !doc.cancelled && !inWorkflow"
       class="btn ok block mt12"
       @click="docs.submit(doc.localId)"
     >
-      {{ t('detail.submit') }}
+      {{ submitLabel }}
     </button>
+
+    <div v-if="doc.workflowState === 'Pending Approval'" class="card mt12 tiny muted" style="text-align: center">
+      {{ t('approval.waiting') }}
+    </div>
 
     <button
       v-if="doc.submitted && master.canCancel"
@@ -127,7 +154,10 @@ function confirmCancel() {
       {{ t('detail.cancel') }}
     </button>
 
-    <button class="btn danger block mt12" @click="del">{{ t('common.delete') }}</button>
+    <!-- Hapus hanya untuk dokumen yang belum masuk alur/submit di server (hapus lokal saja).
+         Dokumen Menunggu Persetujuan / Submitted tidak boleh dihapus dari perangkat agar tidak
+         menyisakan dokumen "yatim" di server. -->
+    <button v-if="!inWorkflow && !doc.submitted" class="btn danger block mt12" @click="del">{{ t('common.delete') }}</button>
     <div style="height: 8px"></div>
   </div>
 
@@ -135,3 +165,12 @@ function confirmCancel() {
     <div class="empty"><div class="big">❓</div>{{ t('detail.notFound') }}</div>
   </div>
 </template>
+
+<style scoped>
+.wf-chip {
+  display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
+}
+.wf-chip.pending { background: #fef3c7; color: #92400e; }
+.wf-chip.approved { background: #dcfce7; color: #166534; }
+.wf-chip.rejected { background: #fee2e2; color: #991b1b; }
+</style>

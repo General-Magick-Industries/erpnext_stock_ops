@@ -13,7 +13,28 @@ const messages = {
       online: 'Online', offline: 'Offline', save: 'Simpan', saving: 'Menyimpan…',
       close: 'Tutup', add: 'Tambah', delete: 'Hapus', cancel: 'Batal', total: 'Total',
       items: 'item', note: 'Catatan', optional: 'opsional', all: 'Semua', search: 'Cari',
-      logout: 'Keluar', yes: 'Ya', viewAll: 'Lihat semua', back: 'Kembali'
+      logout: 'Keluar', yes: 'Ya', viewAll: 'Lihat semua', back: 'Kembali', loading: 'Memuat…', clear: 'Hapus'
+    },
+    po: {
+      title: 'Pilih Purchase Order', label: 'Purchase Order', choose: 'Pilih Purchase Order',
+      searchPlaceholder: 'Cari nomor PO…', none: 'Tidak ada PO terbuka', loaded: '{n} item dari {po} dimuat'
+    },
+    ret: {
+      pickTitle: 'Pilih Penerimaan Barang', receipt: 'Penerimaan Barang (asal)', choose: 'Pilih Penerimaan Barang',
+      searchPlaceholder: 'Cari nomor penerimaan…', none: 'Tidak ada penerimaan yang bisa diretur',
+      partlyReturned: 'sudah diretur {pct}%', loaded: '{n} item dari {pr} dimuat',
+      itemsToReturn: 'Item yang Diretur', pickFirst: 'Pilih penerimaan barang dulu untuk memuat item',
+      returnable: 'bisa diretur', totalReturn: 'Total Retur', notePlaceholder: 'Alasan retur (opsional)',
+      vReceipt: 'Pilih penerimaan barang yang akan diretur', vQty: 'Isi qty retur minimal 1 item',
+      vOver: 'Qty retur melebihi qty yang bisa diretur'
+    },
+    approval: {
+      title: 'Persetujuan', none: 'Tidak ada permintaan menunggu persetujuan', note: 'Catatan (opsional)',
+      approve: 'Setujui', reject: 'Tolak', applied: '{name}: {state}',
+      pending: 'Menunggu Persetujuan', approved: 'Disetujui', rejected: 'Ditolak',
+      menu: 'Persetujuan', submittedForApproval: 'Diajukan untuk persetujuan',
+      submitForApproval: 'Ajukan Persetujuan', waiting: 'Menunggu persetujuan line manager…',
+      search: 'Cari nomor / pemohon…', reviewTitle: 'Tinjau Permintaan', requester: 'Pemohon'
     },
     nav: { home: 'Beranda', list: 'Daftar', create: 'Buat', settings: 'Setelan', sync: 'Sync', balance: 'Stok', movement: 'Mutasi' },
     docType: {
@@ -22,8 +43,12 @@ const messages = {
       SE_IN: 'Stock In (Barang Masuk)',
       SE_OUT: 'Stock Out (Barang Keluar)',
       SE_TRANSFER: 'Transfer Barang',
+      GRN: 'Penerimaan Barang (Purchase Receipt)',
+      RET: 'Retur Barang (Purchase Return)',
       groupMR: 'Permintaan Barang',
-      groupSE: 'Stok Barang'
+      groupSE: 'Stok Barang',
+      groupPR: 'Penerimaan Barang',
+      groupRET: 'Retur Barang'
     },
     home: {
       hello: 'Halo, {name} 👋', pendingSync: 'Menunggu sync', synced: 'Tersinkron',
@@ -47,7 +72,11 @@ const messages = {
       location: 'Lokasi', tagLocation: 'Tag Lokasi', locating: 'Mengambil lokasi…', locationOff: 'Lokasi tidak tersedia', viewMap: 'Lihat peta',
       saveSync: 'Simpan & Sync (draft)', saveOutbox: 'Simpan ke Outbox',
       vItems: 'Tambahkan minimal 1 item', vQty: 'Qty item tidak boleh 0',
-      vSrc: 'Pilih gudang asal', vTgt: 'Pilih gudang tujuan', vSame: 'Gudang asal & tujuan tidak boleh sama'
+      vSrc: 'Pilih gudang asal', vTgt: 'Pilih gudang tujuan', vSame: 'Gudang asal & tujuan tidak boleh sama',
+      vSupplier: 'Pilih supplier', whSearch: 'Cari gudang…', whEmpty: 'Gudang tidak ditemukan',
+      acceptedWh: 'Gudang Terima', rejectedWh: 'Gudang Tolak', assetLocation: 'Lokasi Aset',
+      accepted: 'Terima', rejected: 'Tolak', asset: 'Aset',
+      vRejWh: 'Pilih gudang tolak (ada qty ditolak)', vAssetLoc: 'Pilih lokasi aset (ada item aset)'
     },
     list: { title: 'Daftar Dokumen', empty: 'Tidak ada dokumen pada filter ini', local: 'Lokal', server: 'Server', openErp: 'Buka di ERPNext' },
     detail: {
@@ -145,7 +174,28 @@ const messages = {
       online: 'Online', offline: 'Offline', save: 'Save', saving: 'Saving…',
       close: 'Close', add: 'Add', delete: 'Delete', cancel: 'Cancel', total: 'Total',
       items: 'items', note: 'Note', optional: 'optional', all: 'All', search: 'Search',
-      logout: 'Log out', yes: 'Yes', viewAll: 'View all', back: 'Back'
+      logout: 'Log out', yes: 'Yes', viewAll: 'View all', back: 'Back', loading: 'Loading…', clear: 'Clear'
+    },
+    po: {
+      title: 'Select Purchase Order', label: 'Purchase Order', choose: 'Select Purchase Order',
+      searchPlaceholder: 'Search PO number…', none: 'No open POs', loaded: '{n} items from {po} loaded'
+    },
+    ret: {
+      pickTitle: 'Select Purchase Receipt', receipt: 'Purchase Receipt (source)', choose: 'Select Purchase Receipt',
+      searchPlaceholder: 'Search receipt number…', none: 'No returnable receipts',
+      partlyReturned: '{pct}% returned', loaded: '{n} items from {pr} loaded',
+      itemsToReturn: 'Items to Return', pickFirst: 'Select a purchase receipt first to load items',
+      returnable: 'returnable', totalReturn: 'Total Return', notePlaceholder: 'Return reason (optional)',
+      vReceipt: 'Select the purchase receipt to return', vQty: 'Enter return qty for at least 1 item',
+      vOver: 'Return qty exceeds the returnable qty'
+    },
+    approval: {
+      title: 'Approvals', none: 'No requests awaiting approval', note: 'Note (optional)',
+      approve: 'Approve', reject: 'Reject', applied: '{name}: {state}',
+      pending: 'Pending Approval', approved: 'Approved', rejected: 'Rejected',
+      menu: 'Approvals', submittedForApproval: 'Submitted for approval',
+      submitForApproval: 'Submit for Approval', waiting: 'Waiting for line manager approval…',
+      search: 'Search no. / requester…', reviewTitle: 'Review Request', requester: 'Requester'
     },
     nav: { home: 'Home', list: 'Docs', create: 'New', settings: 'Settings', sync: 'Sync', balance: 'Stock', movement: 'Moves' },
     docType: {
@@ -154,8 +204,12 @@ const messages = {
       SE_IN: 'Stock In (Receipt)',
       SE_OUT: 'Stock Out (Issue)',
       SE_TRANSFER: 'Stock Transfer',
+      GRN: 'Goods Receipt (Purchase Receipt)',
+      RET: 'Goods Return (Purchase Return)',
       groupMR: 'Material Requests',
-      groupSE: 'Stock Entries'
+      groupSE: 'Stock Entries',
+      groupPR: 'Goods Receipt',
+      groupRET: 'Goods Return'
     },
     home: {
       hello: 'Hi, {name} 👋', pendingSync: 'Pending sync', synced: 'Synced',
@@ -179,7 +233,11 @@ const messages = {
       location: 'Location', tagLocation: 'Tag Location', locating: 'Getting location…', locationOff: 'Location unavailable', viewMap: 'View map',
       saveSync: 'Save & Sync (draft)', saveOutbox: 'Save to Outbox',
       vItems: 'Add at least 1 item', vQty: 'Item qty cannot be 0',
-      vSrc: 'Select source warehouse', vTgt: 'Select target warehouse', vSame: 'Source & target warehouse must differ'
+      vSrc: 'Select source warehouse', vTgt: 'Select target warehouse', vSame: 'Source & target warehouse must differ',
+      vSupplier: 'Select a supplier', whSearch: 'Search warehouse…', whEmpty: 'No warehouse found',
+      acceptedWh: 'Accepted Warehouse', rejectedWh: 'Rejected Warehouse', assetLocation: 'Asset Location',
+      accepted: 'Accepted', rejected: 'Rejected', asset: 'Asset',
+      vRejWh: 'Select rejected warehouse (some qty rejected)', vAssetLoc: 'Select asset location (asset items present)'
     },
     list: { title: 'Documents', empty: 'No documents for this filter', local: 'Local', server: 'Server', openErp: 'Open in ERPNext' },
     detail: {

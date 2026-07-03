@@ -18,10 +18,12 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Built frontend (di-generate oleh `npm run build:frappe`)
-# bench build --run-build-command triggers the build via root package.json, same as HRMS.
-stock_ops/public/stock_ops/
-stock_ops/www/stock_ops/index.html
+# Built PWA bundle — COMMITTED on purpose so `/stock_ops` works on any install
+# (vanilla frappe_docker apps.json / bench get-app) WITHOUT a Node/Vite build step.
+# Regenerate before committing changes:  cd frontend && npm run build:frappe
+# (was previously git-ignored; see README "Buka Aplikasi 404" troubleshooting)
+#stock_ops/public/stock_ops/
+#stock_ops/www/stock_ops/index.html
 
 # Capacitor native projects (regenerate dgn `npx cap add android`)
 frontend/android/

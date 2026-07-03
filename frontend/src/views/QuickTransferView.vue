@@ -7,6 +7,7 @@ import { useMaster } from '../stores/master'
 import { useI18n } from '../lib/i18n'
 import AppBar from '../components/AppBar.vue'
 import ItemPickerSheet from '../components/ItemPickerSheet.vue'
+import WarehouseSelect from '../components/WarehouseSelect.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -92,11 +93,11 @@ async function submit() {
       <div class="field-row">
         <div class="field">
           <label>{{ t('qt.from') }}</label>
-          <select v-model="form.from"><option v-for="w in warehouseOptions" :key="w">{{ w }}</option></select>
+          <WarehouseSelect v-model="form.from" :options="warehouseOptions" :placeholder="t('qt.from')" />
         </div>
         <div class="field">
           <label>{{ t('qt.to') }}</label>
-          <select v-model="form.to"><option v-for="w in warehouseOptions" :key="w">{{ w }}</option></select>
+          <WarehouseSelect v-model="form.to" :options="warehouseOptions" :placeholder="t('qt.to')" />
         </div>
       </div>
 

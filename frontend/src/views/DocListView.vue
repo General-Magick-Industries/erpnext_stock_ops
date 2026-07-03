@@ -56,6 +56,13 @@ function typeKeyOf(d) {
   return { 'Material Receipt': 'SE_IN', 'Material Issue': 'SE_OUT', 'Material Transfer': 'SE_TRANSFER' }[d.subtype] || 'SE_TRANSFER'
 }
 const docstatusClass = { 0: 's-pending', 1: 's-submitted', 2: 's-error' }
+function wfLabel(state) {
+  const map = { 'Pending Approval': 'approval.pending', Approved: 'approval.approved', Rejected: 'approval.rejected' }
+  return map[state] ? t(map[state]) : state
+}
+function wfClass(state) {
+  return { pending: state === 'Pending Approval', approved: state === 'Approved', rejected: state === 'Rejected' }
+}
 function openInErp(d) {
   const slug = d.doctype.toLowerCase().replace(/ /g, '-')
   window.open(`/app/${slug}/${encodeURIComponent(d.name)}`, '_blank')
@@ -119,10 +126,22 @@ function openInErp(d) {
             <div class="truncate" style="font-weight: 700">{{ d.name }}</div>
             <span class="badge-status" :class="docstatusClass[d.docstatus]">{{ t('status.' + d.docstatus) }}</span>
           </div>
-          <div class="tiny muted truncate">{{ t('docType.' + typeKeyOf(d)) }} · {{ d.date }}</div>
+          <div class="tiny muted truncate">
+            {{ t('docType.' + typeKeyOf(d)) }} · {{ d.date }}
+            <span v-if="d.workflow_state && d.workflow_state !== 'Approved'" class="wf-mini" :class="wfClass(d.workflow_state)">{{ wfLabel(d.workflow_state) }}</span>
+          </div>
           <div class="tiny muted truncate">{{ t('list.openErp') }} ↗</div>
         </div>
       </div>
     </template>
   </div>
 </template>
+
+<style scoped>
+.wf-mini {
+  display: inline-block; margin-left: 4px; padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700;
+}
+.wf-mini.pending { background: #fef3c7; color: #92400e; }
+.wf-mini.rejected { background: #fee2e2; color: #991b1b; }
+.wf-mini.approved { background: #dcfce7; color: #166534; }
+</style>

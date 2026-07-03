@@ -3,7 +3,44 @@ import { DOC_TYPES } from '../data/mock'
 // Ubah objek dokumen app → payload Frappe sesuai DocType.
 export function buildPayload(doc) {
   const cfg = DOC_TYPES[doc.type]
-  return cfg.doctype === 'Material Request' ? buildMR(doc, cfg) : buildSE(doc, cfg)
+  if (cfg.doctype === 'Material Request') return buildMR(doc, cfg)
+  if (cfg.doctype === 'Purchase Receipt') return buildPR(doc, cfg)
+  return buildSE(doc, cfg)
+}
+
+// Purchase Receipt — penerimaan barang dari supplier (menambah stok saat submit).
+// Mendukung: link Purchase Order (per item), qty diterima vs ditolak, gudang terima/tolak,
+// dan lokasi aset untuk item fixed-asset.
+function buildPR(doc) {
+  return clean({
+    doctype: 'Purchase Receipt',
+    company: doc.company,
+    posting_date: doc.date,
+    supplier: doc.supplier || undefined,
+    set_warehouse: doc.targetWarehouse || undefined, // gudang penerimaan (accepted) default
+    external_localid: doc.localId,
+    stock_ops_geolocation: doc.geo || undefined,
+    items: doc.items.map((i) => {
+      const accepted = Number(i.qty) || 0
+      const rejected = Number(i.rejectedQty) || 0
+      return clean({
+        item_code: i.item_code,
+        qty: accepted, // accepted qty
+        rejected_qty: rejected || undefined,
+        received_qty: accepted + rejected,
+        uom: i.uom,
+        rate: Number(i.rate) || 0,
+        warehouse: doc.targetWarehouse || undefined, // gudang terima (accepted)
+        rejected_warehouse: rejected > 0 ? doc.rejectedWarehouse || undefined : undefined,
+        asset_location: i.is_fixed_asset ? doc.assetLocation || undefined : undefined,
+        // link ke Purchase Order (qty terima divalidasi terhadap qty pesan)
+        purchase_order: i.purchase_order || undefined,
+        purchase_order_item: i.purchase_order_item || undefined,
+        // hindari error "valuation/incoming rate" untuk penerimaan tanpa harga
+        allow_zero_valuation_rate: 1
+      })
+    })
+  })
 }
 
 function clean(obj) {

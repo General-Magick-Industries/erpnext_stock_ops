@@ -73,6 +73,36 @@ export const bulkPurchaseRequest = (items, company, externalLocalid) =>
 // Detail item (info + stok per gudang + mutasi)
 export const getItemDetail = (itemCode, company) => call('stock_ops.api.get_item_detail', { item_code: itemCode, company })
 
+// Purchase Order terbuka (untuk Penerimaan Barang) + item PO untuk auto-isi
+export const listOpenPurchaseOrders = (company, supplier, search) =>
+  call('stock_ops.api.list_open_purchase_orders', { company, supplier, search })
+export const getPurchaseOrderItems = (purchaseOrder) =>
+  call('stock_ops.api.get_purchase_order_items', { purchase_order: purchaseOrder })
+
+// Retur Barang: Purchase Receipt yang bisa diretur + item + sisa qty, lalu buat retur (is_return)
+export const listReturnableReceipts = (company, supplier, search) =>
+  call('stock_ops.api.list_returnable_receipts', { company, supplier, search })
+export const getReceiptItemsForReturn = (purchaseReceipt) =>
+  call('stock_ops.api.get_receipt_items_for_return', { purchase_receipt: purchaseReceipt })
+export const createPurchaseReturn = (purchaseReceipt, items, externalLocalid) =>
+  call(
+    'stock_ops.api.create_purchase_return',
+    { purchase_receipt: purchaseReceipt, items, external_localid: externalLocalid },
+    { post: true }
+  )
+
+// Persetujuan (workflow-driven — mengikuti Workflow di server/Desk, tak hardcode aksi)
+export const listPendingApprovals = (limit = 50) =>
+  call('stock_ops.api.list_pending_approvals', { limit })
+export const getWorkflowTransitions = (doctype, name) =>
+  call('stock_ops.api.get_workflow_transitions', { doctype, name })
+export const applyWorkflowAction = (doctype, name, action, note) =>
+  call('stock_ops.api.apply_workflow_action', { doctype, name, action, note }, { post: true })
+export const getApprovalDetail = (name) => call('stock_ops.api.get_approval_detail', { name })
+
+// Status terkini dokumen server (untuk sinkronkan tampilan lokal: docstatus + workflow_state)
+export const getDocState = (doctype, name) => call('stock_ops.api.get_doc_state', { doctype, name })
+
 // Resolve kode (barcode/item_code/nama) → item_code (untuk hasil scan)
 export const resolveItem = (code) => call('stock_ops.api.resolve_item', { code })
 

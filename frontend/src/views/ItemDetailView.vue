@@ -36,7 +36,7 @@ function fmt(n) {
   return Number(n || 0).toLocaleString()
 }
 function dt(m) {
-  return fmtDateTime(`${m.posting_date}T${(m.posting_time || '00:00:00').split('.')[0]}`)
+  return fmtDateTime(`${String(m.posting_date).slice(0, 10)}T${(m.posting_time || '00:00:00').split('.')[0]}`)
 }
 function quick(type) {
   if (type === 'SE_TRANSFER') return router.push({ path: '/quick-transfer', query: { item: code.value } })

@@ -5,7 +5,7 @@ import { useApp } from './app'
 import { useMaster } from './master'
 import { useI18n } from '../lib/i18n'
 import { buildPayload } from '../lib/payload'
-import { createTransaction, submitTransaction, cancelTransaction, uploadFile } from '../lib/service'
+import { createTransaction, submitTransaction, cancelTransaction, createPurchaseReturn, getDocState, uploadFile } from '../lib/service'
 import { getPhoto, deletePhotosByLocalId } from '../lib/idb'
 
 const LS = 'stockops.docs'
@@ -54,8 +54,18 @@ export const useDocs = defineStore('docs', {
         company,
         date: todayStr(),
         sourceWarehouse: cfg.source ? srcDefault : '',
-        targetWarehouse: cfg.target ? app.settings.defaultTargetWarehouse : '',
+        // Untuk dokumen penerimaan (hanya target: Stock In / Purchase Receipt) default-kan
+        // gudang penerima ke gudang default bila target khusus belum diset.
+        targetWarehouse: cfg.target ? app.settings.defaultTargetWarehouse || (cfg.source ? '' : srcDefault) : '',
         supplier: '',
+        // Penerimaan Barang (Purchase Receipt): referensi PO + gudang tolak + lokasi aset
+        purchaseOrder: '',
+        rejectedWarehouse: '',
+        assetLocation: '',
+        // Retur Barang (Purchase Return): Purchase Receipt asal yang diretur
+        returnAgainst: '',
+        // Status workflow (mis. MR Purchase: Pending Approval / Approved / Rejected)
+        workflowState: null,
         remark: '',
         geo: '',
         items: [],
@@ -98,7 +108,15 @@ export const useDocs = defineStore('docs', {
       try {
         // 1) buat dokumen (server cek external_localid → cegah duplikat saat retry)
         if (!doc.remoteName) {
-          const res = await createTransaction(buildPayload(doc))
+          const cfg = DOC_TYPES[doc.type]
+          let res
+          if (cfg && cfg.isReturn) {
+            // Retur barang: make_return_doc (qty negatif) atas Purchase Receipt asal
+            const items = doc.items.map((i) => ({ item_code: i.item_code, qty: Number(i.qty) || 0 }))
+            res = await createPurchaseReturn(doc.returnAgainst, items, doc.localId)
+          } else {
+            res = await createTransaction(buildPayload(doc))
+          }
           doc.remoteName = res.name
           this.persist()
         }
@@ -160,12 +178,36 @@ export const useDocs = defineStore('docs', {
         return
       }
       try {
-        await submitTransaction(doc.doctype, doc.remoteName)
-        doc.submitted = true
+        const res = await submitTransaction(doc.doctype, doc.remoteName)
+        doc.workflowState = (res && res.workflow_state) || null
+        // Purchase MR yang masuk workflow tetap docstatus 0 (Menunggu Persetujuan).
+        doc.submitted = res && res.docstatus === 1
         this.persist()
-        app.notify(t('toast.submitted', { doc: doc.remoteName }), 'success')
+        if (doc.workflowState === 'Pending Approval') {
+          app.notify(t('approval.submittedForApproval') + ' → ' + doc.remoteName, 'success')
+        } else {
+          app.notify(t('toast.submitted', { doc: doc.remoteName }), 'success')
+        }
       } catch (e) {
         app.notify(e && e.message ? e.message : String(e), 'error')
+      }
+    },
+
+    // Sinkronkan status dari server (workflow_state + docstatus) — mis. setelah approver
+    // menyetujui, requester melihat "Disetujui" bukan "Menunggu Persetujuan" yang basi.
+    async refreshState(localId) {
+      const app = useApp()
+      const doc = this.byLocalId(localId)
+      if (!doc || !doc.remoteName || !app.online) return
+      try {
+        const s = await getDocState(doc.doctype, doc.remoteName)
+        if (!s) return
+        if (s.workflow_state) doc.workflowState = s.workflow_state
+        doc.submitted = s.docstatus === 1
+        doc.cancelled = s.docstatus === 2
+        this.persist()
+      } catch {
+        // diamkan — tampilan tetap pakai status lokal terakhir
       }
     },
 
