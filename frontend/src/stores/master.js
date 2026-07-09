@@ -24,6 +24,7 @@ export const useMaster = defineStore('master', {
       suppliers: s.suppliers || [],
       locations: s.locations || [],
       userWarehouses: s.userWarehouses || [],
+      employee: s.employee || null, // detail Employee user (company/department/branch/grade/…)
       defaults: s.defaults || null,
       menu: s.menu || {}, // visibilitas menu dari Stock Ops Settings
       caps: s.caps || {}, // kemampuan user (mis. can_cancel) — dari Role Permission
@@ -69,6 +70,7 @@ export const useMaster = defineStore('master', {
           suppliers: this.suppliers,
           locations: this.locations,
           userWarehouses: this.userWarehouses,
+          employee: this.employee,
           defaults: this.defaults,
           menu: this.menu,
           caps: this.caps,
@@ -98,6 +100,7 @@ export const useMaster = defineStore('master', {
         this.suppliers = b.suppliers || []
         this.locations = b.locations || []
         this.userWarehouses = b.user_warehouses || []
+        this.employee = b.employee || null
         this.defaults = b.defaults || null
         this.menu = b.menu || {}
         this.caps = b.caps || {}

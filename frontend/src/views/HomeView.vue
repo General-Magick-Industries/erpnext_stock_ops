@@ -74,9 +74,6 @@ const dateStr = computed(() =>
           <div class="small" style="opacity: 0.9">{{ t('home.hello', { name: app.user?.name }) }}</div>
           <div style="font-weight: 700; margin-top: 2px; opacity: 0.95">{{ app.settings.company }}</div>
         </div>
-        <div class="net-pill" :class="{ off: !app.online }" style="background: rgba(255,255,255,.18)">
-          <span class="dot"></span>{{ app.online ? t('common.online') : t('common.offline') }}
-        </div>
       </div>
       <div class="hero-clock">{{ clock }}</div>
       <div class="small" style="opacity: 0.9; text-transform: capitalize">{{ dateStr }}</div>

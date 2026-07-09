@@ -60,7 +60,7 @@ def get_user_employee(user=None):
 	return frappe.db.get_value(
 		"Employee",
 		{"user_id": user},
-		["name", "employee_name", "company", "department", "designation"],
+		["name", "employee_name", "company", "department", "designation", "branch", "grade"],
 		as_dict=True,
 	)
 
