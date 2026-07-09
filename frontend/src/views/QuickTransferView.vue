@@ -52,6 +52,7 @@ async function submit() {
   if (!form.item) return app.notify(t('qt.needItem'), 'warn')
   if (!form.qty || form.qty <= 0) return app.notify(t('qt.needQty'), 'warn')
   if (!form.from || !form.to || form.from === form.to) return app.notify(t('qt.sameWh'), 'warn')
+  if (!app.online) return app.notify(t('form.onlineOnly', { doc: t('docType.SE_TRANSFER') }), 'error')
   saving.value = true
   const doc = docs.newDraft('SE_TRANSFER')
   doc.company = company.value
@@ -66,9 +67,9 @@ async function submit() {
       qty: Number(form.qty)
     }
   ]
-  await docs.save({ ...doc })
+  const saved = await docs.save({ ...doc })
   saving.value = false
-  router.replace(`/doc/${doc.localId}`)
+  if (saved) router.replace(`/doc/${doc.localId}`)
 }
 </script>
 

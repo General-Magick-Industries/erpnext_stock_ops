@@ -53,6 +53,8 @@ const locating = ref(false)
 // GRN (Purchase Receipt): tampilkan gudang-tolak bila ada qty ditolak, lokasi aset bila ada item aset.
 const hasRejected = computed(() => doc.items.some((i) => Number(i.rejectedQty) > 0))
 const hasAsset = computed(() => doc.items.some((i) => i.is_fixed_asset))
+// Stock Entry / Penerimaan / Retur wajib online — tak bisa dibuat offline (hanya MR yang boleh).
+const blockedOffline = computed(() => !!(cfg && cfg.onlineOnly && !app.online))
 
 async function tagLocation() {
   locating.value = true
@@ -144,10 +146,11 @@ function valid() {
 async function save() {
   const err = valid()
   if (err) return app.notify(err, 'warn')
+  if (blockedOffline.value) return app.notify(t('form.onlineOnly', { doc: t('docType.' + cfg.key) }), 'error')
   saving.value = true
-  await docs.save({ ...doc })
+  const saved = await docs.save({ ...doc })
   saving.value = false
-  router.replace(`/doc/${doc.localId}`)
+  if (saved) router.replace(`/doc/${doc.localId}`)
 }
 </script>
 
@@ -289,10 +292,12 @@ async function save() {
       </div>
     </div>
 
-    <div v-if="!app.online" class="banner-offline mt12">{{ t('form.offlineHint') }}</div>
+    <div v-if="!app.online" class="banner-offline mt12">
+      {{ blockedOffline ? t('form.onlineOnlyHint') : t('form.offlineHint') }}
+    </div>
 
-    <button class="btn brand block mt16" :disabled="saving" @click="save">
-      {{ saving ? t('common.saving') : app.online ? t('form.saveSync') : t('form.saveOutbox') }}
+    <button class="btn brand block mt16" :disabled="saving || blockedOffline" @click="save">
+      {{ saving ? t('common.saving') : blockedOffline ? t('form.onlineOnly') : app.online ? t('form.saveSync') : t('form.saveOutbox') }}
     </button>
     <div style="height: 8px"></div>
 

@@ -209,25 +209,27 @@ function clearData() {
       </div>
     </div>
 
-    <div class="section-title">{{ t('settings.defaults') }}</div>
-    <div class="card">
-      <div class="field">
-        <label>{{ t('settings.companyDefault') }}</label>
-        <template v-if="companyReadOnly">
-          <input type="text" :value="serverCompany" readonly disabled />
-          <div class="tiny muted" style="margin-top: 4px">{{ t('form.companyFromAccount') }}</div>
-        </template>
-        <select v-else v-model="form.company"><option v-for="c in COMPANIES" :key="c">{{ c }}</option></select>
+    <template v-if="master.isManager">
+      <div class="section-title">{{ t('settings.defaults') }}</div>
+      <div class="card">
+        <div class="field">
+          <label>{{ t('settings.companyDefault') }}</label>
+          <template v-if="companyReadOnly">
+            <input type="text" :value="serverCompany" readonly disabled />
+            <div class="tiny muted" style="margin-top: 4px">{{ t('form.companyFromAccount') }}</div>
+          </template>
+          <select v-else v-model="form.company"><option v-for="c in COMPANIES" :key="c">{{ c }}</option></select>
+        </div>
+        <div class="field">
+          <label>{{ t('settings.srcDefault') }}</label>
+          <select v-model="form.defaultSourceWarehouse"><option v-for="w in WAREHOUSES" :key="w">{{ w }}</option></select>
+        </div>
+        <div class="field" style="margin: 0">
+          <label>{{ t('settings.tgtDefault') }}</label>
+          <select v-model="form.defaultTargetWarehouse"><option v-for="w in WAREHOUSES" :key="w">{{ w }}</option></select>
+        </div>
       </div>
-      <div class="field">
-        <label>{{ t('settings.srcDefault') }}</label>
-        <select v-model="form.defaultSourceWarehouse"><option v-for="w in WAREHOUSES" :key="w">{{ w }}</option></select>
-      </div>
-      <div class="field" style="margin: 0">
-        <label>{{ t('settings.tgtDefault') }}</label>
-        <select v-model="form.defaultTargetWarehouse"><option v-for="w in WAREHOUSES" :key="w">{{ w }}</option></select>
-      </div>
-    </div>
+    </template>
 
     <template v-if="notifSupported && master.menuOn('notifications')">
       <div class="section-title">{{ t('settings.notif') }}</div>
@@ -243,20 +245,22 @@ function clearData() {
       </div>
     </template>
 
-    <div class="section-title">{{ t('settings.photoSync') }}</div>
-    <div class="card">
-      <label class="row between" style="cursor: pointer">
-        <div><div style="font-weight: 600">{{ t('settings.privatePhoto') }}</div><div class="tiny muted">{{ t('settings.privatePhotoDesc') }}</div></div>
-        <input type="checkbox" v-model="form.privatePhotos" style="width: 22px; height: 22px" />
-      </label>
-      <hr style="border: 0; border-top: 1px solid var(--line); margin: 12px 0" />
-      <label class="row between" style="cursor: pointer">
-        <div><div style="font-weight: 600">{{ t('settings.autoSync') }}</div><div class="tiny muted">{{ t('settings.autoSyncDesc') }}</div></div>
-        <input type="checkbox" v-model="form.autoSync" style="width: 22px; height: 22px" />
-      </label>
-    </div>
+    <template v-if="master.isManager">
+      <div class="section-title">{{ t('settings.photoSync') }}</div>
+      <div class="card">
+        <label class="row between" style="cursor: pointer">
+          <div><div style="font-weight: 600">{{ t('settings.privatePhoto') }}</div><div class="tiny muted">{{ t('settings.privatePhotoDesc') }}</div></div>
+          <input type="checkbox" v-model="form.privatePhotos" style="width: 22px; height: 22px" />
+        </label>
+        <hr style="border: 0; border-top: 1px solid var(--line); margin: 12px 0" />
+        <label class="row between" style="cursor: pointer">
+          <div><div style="font-weight: 600">{{ t('settings.autoSync') }}</div><div class="tiny muted">{{ t('settings.autoSyncDesc') }}</div></div>
+          <input type="checkbox" v-model="form.autoSync" style="width: 22px; height: 22px" />
+        </label>
+      </div>
 
-    <button class="btn brand block mt16" @click="save">{{ t('settings.saveSettings') }}</button>
+      <button class="btn brand block mt16" @click="save">{{ t('settings.saveSettings') }}</button>
+    </template>
 
     <div class="section-title">{{ t('settings.getApp') }}</div>
     <div class="card">
@@ -279,13 +283,15 @@ function clearData() {
       </button>
     </div>
 
-    <div class="section-title">{{ t('settings.other') }}</div>
-    <div class="card">
-      <div class="row between small"><span class="muted">{{ t('settings.backend') }}</span><span>erp.localhost</span></div>
-      <div class="row between small mt8"><span class="muted">{{ t('settings.mockVersion') }}</span><span>P0 · 0.0.1</span></div>
-    </div>
+    <template v-if="master.isManager">
+      <div class="section-title">{{ t('settings.other') }}</div>
+      <div class="card">
+        <div class="row between small"><span class="muted">{{ t('settings.backend') }}</span><span>erp.localhost</span></div>
+        <div class="row between small mt8"><span class="muted">{{ t('settings.mockVersion') }}</span><span>P0 · 0.0.1</span></div>
+      </div>
 
-    <button class="btn block mt12" @click="clearData">{{ t('settings.clearData') }}</button>
+      <button class="btn block mt12" @click="clearData">{{ t('settings.clearData') }}</button>
+    </template>
     <button class="btn danger block mt12" @click="logout">{{ t('common.logout') }}</button>
     <div style="height: 8px"></div>
   </div>
