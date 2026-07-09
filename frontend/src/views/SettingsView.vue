@@ -101,9 +101,10 @@ async function installPwa() {
   }
   await app.promptInstall()
 }
-function logout() {
-  app.logout()
-  router.replace('/login')
+async function logout() {
+  const reloading = await app.logout()
+  // Web melakukan reload penuh ke /login; native (SPA) pindah ke layar login.
+  if (!reloading) router.replace('/login')
 }
 function clearData() {
   if (confirm(t('settings.confirmClear'))) {
