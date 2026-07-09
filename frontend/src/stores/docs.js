@@ -81,6 +81,12 @@ export const useDocs = defineStore('docs', {
     async save(doc) {
       const app = useApp()
       const { t } = useI18n()
+      // Stock Entry / Penerimaan / Retur wajib online — tidak boleh masuk outbox offline.
+      const cfg = DOC_TYPES[doc.type]
+      if (cfg && cfg.onlineOnly && !app.online) {
+        app.notify(t('form.onlineOnly', { doc: t('docType.' + doc.type) }), 'error')
+        return null
+      }
       doc.status = 'pending'
       doc.createdAt = doc.createdAt || new Date().toISOString()
       this.docs.unshift(doc)
