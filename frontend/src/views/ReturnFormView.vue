@@ -206,7 +206,7 @@ async function save() {
     </div>
 
     <button class="btn brand block mt16" :disabled="saving || blockedOffline" @click="save">
-      {{ saving ? t('common.saving') : blockedOffline ? t('form.onlineOnly') : app.online ? t('form.saveSync') : t('form.saveOutbox') }}
+      {{ saving ? t('common.saving') : blockedOffline ? t('form.onlineOnlyBtn') : app.online ? t('form.saveSync') : t('form.saveOutbox') }}
     </button>
     <div style="height: 8px"></div>
 
