@@ -130,6 +130,8 @@ const messages = {
     },
     settings: {
       title: 'Pengaturan', defaults: 'Default Transaksi', companyDefault: 'Perusahaan default',
+      company: 'Perusahaan', warehouse: 'Gudang', department: 'Departemen', branch: 'Cabang',
+      grade: 'Grade', designation: 'Jabatan', allWarehouses: 'Semua gudang',
       srcDefault: 'Gudang Asal default', tgtDefault: 'Gudang Tujuan default',
       appearance: 'Tampilan & Bahasa', language: 'Bahasa', theme: 'Tema',
       themeSystem: 'Ikut sistem', themeLight: 'Terang', themeDark: 'Gelap',
@@ -291,6 +293,8 @@ const messages = {
     },
     settings: {
       title: 'Settings', defaults: 'Transaction Defaults', companyDefault: 'Default company',
+      company: 'Company', warehouse: 'Warehouse', department: 'Department', branch: 'Branch',
+      grade: 'Grade', designation: 'Designation', allWarehouses: 'All warehouses',
       srcDefault: 'Default source warehouse', tgtDefault: 'Default target warehouse',
       appearance: 'Appearance & Language', language: 'Language', theme: 'Theme',
       themeSystem: 'Follow system', themeLight: 'Light', themeDark: 'Dark',

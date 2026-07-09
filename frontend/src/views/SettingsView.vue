@@ -22,6 +22,24 @@ const companyReadOnly = computed(() => !!(master.defaults && master.defaults.com
 const serverCompany = computed(() => (master.defaults && master.defaults.company) || form.company)
 const WAREHOUSES = computed(() => master.warehousesForCompany(companyReadOnly.value ? serverCompany.value : form.company))
 
+// Profil karyawan (dari Employee via bootstrap) — hanya baris terisi yang ditampilkan.
+const profileRows = computed(() => {
+  const e = master.employee || {}
+  const company = (master.defaults && master.defaults.company) || e.company || app.settings.company
+  const whs = master.userWarehouses && master.userWarehouses.length
+    ? master.userWarehouses.join(', ')
+    : t('settings.allWarehouses')
+  const rows = [
+    { label: 'settings.company', value: company },
+    { label: 'settings.warehouse', value: whs },
+    { label: 'settings.department', value: e.department },
+    { label: 'settings.branch', value: e.branch },
+    { label: 'settings.grade', value: e.grade },
+    { label: 'settings.designation', value: e.designation }
+  ]
+  return rows.filter((r) => r.value)
+})
+
 const themes = computed(() => [
   { v: 'system', label: t('settings.themeSystem') },
   { v: 'light', label: t('settings.themeLight') },
@@ -121,10 +139,16 @@ function clearData() {
     <div class="card">
       <div class="row">
         <span class="lead-icon" style="background: var(--brand)">👤</span>
-        <div class="grow">
-          <div style="font-weight: 700">{{ app.user?.name }}</div>
-          <div class="tiny muted">{{ app.user?.email }}</div>
+        <div class="grow" style="min-width: 0">
+          <div class="truncate" style="font-weight: 700">{{ master.employee?.employee_name || app.user?.name }}</div>
+          <div class="tiny muted truncate">{{ app.user?.email }}</div>
         </div>
+      </div>
+      <div v-if="profileRows.length" class="profile-grid mt12">
+        <template v-for="r in profileRows" :key="r.label">
+          <div class="tiny muted">{{ t(r.label) }}</div>
+          <div class="small" style="text-align: right; font-weight: 600; min-width: 0; overflow-wrap: anywhere">{{ r.value }}</div>
+        </template>
       </div>
     </div>
 
@@ -266,3 +290,14 @@ function clearData() {
     <div style="height: 8px"></div>
   </div>
 </template>
+
+<style scoped>
+.profile-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  align-items: baseline;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+</style>
