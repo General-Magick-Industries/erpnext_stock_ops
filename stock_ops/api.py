@@ -378,7 +378,7 @@ def get_receipt_items_for_return(purchase_receipt):
 
 
 @frappe.whitelist()
-def create_purchase_return(purchase_receipt, items=None, external_localid=None):
+def create_purchase_return(purchase_receipt, items=None, external_localid=None, remarks=None):
 	"""Buat dokumen **retur barang** (Purchase Receipt is_return=1) atas sebuah Purchase
 	Receipt: qty negatif & return_against terisi (stok berkurang saat di-submit).
 
@@ -416,6 +416,8 @@ def create_purchase_return(purchase_receipt, items=None, external_localid=None):
 
 	if external_localid:
 		ret.external_localid = external_localid
+	if remarks:
+		ret.remarks = remarks
 	ret.insert()
 	frappe.db.commit()
 	return {"name": ret.name, "duplicate": False}

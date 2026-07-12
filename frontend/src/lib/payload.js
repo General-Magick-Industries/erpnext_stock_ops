@@ -20,6 +20,7 @@ function buildPR(doc) {
     set_warehouse: doc.targetWarehouse || undefined, // gudang penerimaan (accepted) default
     external_localid: doc.localId,
     stock_ops_geolocation: doc.geo || undefined,
+    remarks: doc.remark || undefined,
     items: doc.items.map((i) => {
       const accepted = Number(i.qty) || 0
       const rejected = Number(i.rejectedQty) || 0
@@ -59,6 +60,7 @@ function buildMR(doc, cfg) {
     schedule_date: doc.date,
     external_localid: doc.localId,
     stock_ops_geolocation: doc.geo || undefined,
+    remarks: doc.remark || undefined,
     items: doc.items.map((i) =>
       clean({
         item_code: i.item_code,
@@ -82,6 +84,7 @@ function buildSE(doc, cfg) {
     posting_date: doc.date,
     external_localid: doc.localId,
     stock_ops_geolocation: doc.geo || undefined,
+    remarks: doc.remark || undefined,
     from_warehouse: cfg.source ? doc.sourceWarehouse : undefined,
     to_warehouse: cfg.target ? doc.targetWarehouse : undefined,
     items: doc.items.map((i) =>
