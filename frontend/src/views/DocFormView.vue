@@ -55,6 +55,8 @@ const hasRejected = computed(() => doc.items.some((i) => Number(i.rejectedQty) >
 const hasAsset = computed(() => doc.items.some((i) => i.is_fixed_asset))
 // Stock Entry / Penerimaan / Retur wajib online — tak bisa dibuat offline (hanya MR yang boleh).
 const blockedOffline = computed(() => !!(cfg && cfg.onlineOnly && !app.online))
+// Gudang acuan stok di item picker: gudang asal bila ada (keluar/transfer), selain itu tujuan.
+const pickerWarehouse = computed(() => (cfg && cfg.source ? doc.sourceWarehouse : doc.targetWarehouse) || '')
 
 async function tagLocation() {
   locating.value = true
@@ -301,7 +303,7 @@ async function save() {
     </button>
     <div style="height: 8px"></div>
 
-    <ItemPickerSheet v-if="showPicker" @pick="addItem" @close="showPicker = false" />
+    <ItemPickerSheet v-if="showPicker" :warehouse="pickerWarehouse" @pick="addItem" @close="showPicker = false" />
     <PurchaseOrderSheet v-if="showPO" :company="doc.company" :supplier="doc.supplier" @pick="selectPO" @close="showPO = false" />
   </div>
 </template>
