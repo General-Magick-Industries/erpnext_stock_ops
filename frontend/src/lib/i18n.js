@@ -76,7 +76,7 @@ const messages = {
       vSrc: 'Pilih gudang asal', vTgt: 'Pilih gudang tujuan', vSame: 'Gudang asal & tujuan tidak boleh sama',
       vSupplier: 'Pilih supplier', whSearch: 'Cari gudang…', whEmpty: 'Gudang tidak ditemukan',
       acceptedWh: 'Gudang Terima', rejectedWh: 'Gudang Tolak', assetLocation: 'Lokasi Aset',
-      accepted: 'Terima', rejected: 'Tolak', asset: 'Aset',
+      accepted: 'Terima', rejected: 'Tolak', asset: 'Aset', uom: 'Satuan',
       vRejWh: 'Pilih gudang tolak (ada qty ditolak)', vAssetLoc: 'Pilih lokasi aset (ada item aset)'
     },
     list: { title: 'Daftar Dokumen', empty: 'Tidak ada dokumen pada filter ini', local: 'Lokal', server: 'Server', openErp: 'Buka di ERPNext' },
@@ -240,7 +240,7 @@ const messages = {
       vSrc: 'Select source warehouse', vTgt: 'Select target warehouse', vSame: 'Source & target warehouse must differ',
       vSupplier: 'Select a supplier', whSearch: 'Search warehouse…', whEmpty: 'No warehouse found',
       acceptedWh: 'Accepted Warehouse', rejectedWh: 'Rejected Warehouse', assetLocation: 'Asset Location',
-      accepted: 'Accepted', rejected: 'Rejected', asset: 'Asset',
+      accepted: 'Accepted', rejected: 'Rejected', asset: 'Asset', uom: 'Unit',
       vRejWh: 'Select rejected warehouse (some qty rejected)', vAssetLoc: 'Select asset location (asset items present)'
     },
     list: { title: 'Documents', empty: 'No documents for this filter', local: 'Local', server: 'Server', openErp: 'Open in ERPNext' },

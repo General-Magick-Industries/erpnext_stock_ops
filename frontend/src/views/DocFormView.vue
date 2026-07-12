@@ -259,12 +259,16 @@ async function save() {
             <span v-if="line.is_fixed_asset" class="asset-tag">{{ t('form.asset') }}</span>
           </div>
           <div class="tiny muted truncate">
-            {{ line.item_code }} ·
-            <select v-if="itemUoms(line.item_code)" class="uom-inline" :value="line.uom" @change="setUom(line, $event.target.value)" @click.stop>
-              <option v-for="u in itemUoms(line.item_code)" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
-            </select>
-            <template v-else>{{ line.uom }}</template>
-            <span v-if="line.purchase_order"> · {{ line.purchase_order }}</span>
+            {{ line.item_code }}<span v-if="!itemUoms(line.item_code)"> · {{ line.uom }}</span><span v-if="line.purchase_order"> · {{ line.purchase_order }}</span>
+          </div>
+          <div v-if="itemUoms(line.item_code)" class="uom-row">
+            <span class="uom-lbl">{{ t('form.uom') }}</span>
+            <div class="uom-wrap">
+              <select class="uom-select" :value="line.uom" @change="setUom(line, $event.target.value)">
+                <option v-for="u in itemUoms(line.item_code)" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
+              </select>
+              <span class="uom-caret">▾</span>
+            </div>
           </div>
           <div v-if="cfg.acceptReject" class="row" style="gap: 12px; margin-top: 8px; align-items: center">
             <label class="tiny muted" style="display: flex; align-items: center; gap: 5px">{{ t('form.accepted') }}
@@ -344,8 +348,17 @@ async function save() {
 .asset-tag {
   font-size: 10px; background: #0891b2; color: #fff; padding: 1px 7px; border-radius: 999px; margin-left: 4px; font-weight: 700;
 }
-.uom-inline {
-  border: 1px solid var(--line); border-radius: 6px; background: var(--input-bg); color: var(--ink);
-  font-size: 11px; padding: 1px 4px; margin: 0 1px; max-width: 90px; vertical-align: middle;
+.uom-row {
+  display: flex; align-items: center; gap: 8px; margin-top: 8px;
+}
+.uom-lbl { font-size: 12px; color: var(--muted); font-weight: 600; }
+.uom-wrap { position: relative; display: inline-flex; align-items: center; }
+.uom-select {
+  appearance: none; -webkit-appearance: none;
+  border: 1px solid var(--brand); border-radius: 10px; background: var(--input-bg); color: var(--ink);
+  font-size: 15px; font-weight: 700; padding: 9px 30px 9px 14px; min-height: 42px; min-width: 96px;
+}
+.uom-caret {
+  position: absolute; right: 12px; color: var(--brand); font-size: 12px; pointer-events: none;
 }
 </style>
