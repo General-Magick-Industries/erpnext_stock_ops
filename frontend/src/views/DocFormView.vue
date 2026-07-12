@@ -80,10 +80,12 @@ function addItem(it) {
   showPicker.value = false
 }
 
-// UOM yang bisa dipilih untuk sebuah item (>1 → tampilkan dropdown); null bila hanya stock_uom.
-function itemUoms(code) {
-  const it = master.itemList.find((x) => x.item_code === code)
-  return it && it.uoms && it.uoms.length > 1 ? it.uoms : null
+// UOM yang bisa dipilih untuk item (selalu >=1: stock_uom + konversi tambahan dari master item).
+// Dropdown SELALU tampil (bukan karena stok) — item tanpa konversi hanya punya 1 opsi (stock_uom).
+function itemUoms(line) {
+  const it = master.itemList.find((x) => x.item_code === line.item_code)
+  if (it && it.uoms && it.uoms.length) return it.uoms
+  return [{ uom: line.uom, conversion_factor: 1 }]
 }
 function setUom(line, uom) {
   line.uom = uom
@@ -259,13 +261,13 @@ async function save() {
             <span v-if="line.is_fixed_asset" class="asset-tag">{{ t('form.asset') }}</span>
           </div>
           <div class="tiny muted truncate">
-            {{ line.item_code }}<span v-if="!itemUoms(line.item_code)"> · {{ line.uom }}</span><span v-if="line.purchase_order"> · {{ line.purchase_order }}</span>
+            {{ line.item_code }}<span v-if="line.purchase_order"> · {{ line.purchase_order }}</span>
           </div>
-          <div v-if="itemUoms(line.item_code)" class="uom-row">
+          <div class="uom-row">
             <span class="uom-lbl">{{ t('form.uom') }}</span>
             <div class="uom-wrap">
               <select class="uom-select" :value="line.uom" @change="setUom(line, $event.target.value)">
-                <option v-for="u in itemUoms(line.item_code)" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
+                <option v-for="u in itemUoms(line)" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
               </select>
               <span class="uom-caret">▾</span>
             </div>

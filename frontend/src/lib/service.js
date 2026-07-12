@@ -84,10 +84,10 @@ export const listReturnableReceipts = (company, supplier, search) =>
   call('stock_ops.api.list_returnable_receipts', { company, supplier, search })
 export const getReceiptItemsForReturn = (purchaseReceipt) =>
   call('stock_ops.api.get_receipt_items_for_return', { purchase_receipt: purchaseReceipt })
-export const createPurchaseReturn = (purchaseReceipt, items, externalLocalid) =>
+export const createPurchaseReturn = (purchaseReceipt, items, externalLocalid, remarks) =>
   call(
     'stock_ops.api.create_purchase_return',
-    { purchase_receipt: purchaseReceipt, items, external_localid: externalLocalid },
+    { purchase_receipt: purchaseReceipt, items, external_localid: externalLocalid, remarks },
     { post: true }
   )
 

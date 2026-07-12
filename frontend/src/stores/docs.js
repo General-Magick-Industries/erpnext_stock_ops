@@ -119,7 +119,7 @@ export const useDocs = defineStore('docs', {
           if (cfg && cfg.isReturn) {
             // Retur barang: make_return_doc (qty negatif) atas Purchase Receipt asal
             const items = doc.items.map((i) => ({ item_code: i.item_code, qty: Number(i.qty) || 0 }))
-            res = await createPurchaseReturn(doc.returnAgainst, items, doc.localId)
+            res = await createPurchaseReturn(doc.returnAgainst, items, doc.localId, doc.remark)
           } else {
             res = await createTransaction(buildPayload(doc))
           }
