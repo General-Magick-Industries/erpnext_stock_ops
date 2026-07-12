@@ -816,6 +816,21 @@ def get_bootstrap():
 	for it in items:
 		it["barcode"] = bc_map.get(it["item_code"], "")
 
+	# UOM yang diizinkan per item (stock_uom factor 1 + konversi tambahan) → untuk ubah UOM di form.
+	uom_rows = frappe.get_all(
+		"UOM Conversion Detail", fields=["parent", "uom", "conversion_factor"], limit_page_length=0
+	)
+	uom_map = {}
+	for r in uom_rows:
+		uom_map.setdefault(r["parent"], []).append({"uom": r["uom"], "conversion_factor": r["conversion_factor"]})
+	for it in items:
+		su = it["stock_uom"]
+		opts = [{"uom": su, "conversion_factor": 1.0}]
+		for u in uom_map.get(it["item_code"], []):
+			if u["uom"] != su:
+				opts.append(u)
+		it["uoms"] = opts
+
 	uoms = [u.name for u in frappe.get_all("UOM", filters={"enabled": 1}, fields=["name"], order_by="name", limit_page_length=0)]
 	# Supplier bisa tak terbaca oleh role terbatas (mis. Stock User) → jangan gagalkan bootstrap.
 	try:

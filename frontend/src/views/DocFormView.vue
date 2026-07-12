@@ -76,8 +76,23 @@ function addItem(it) {
   const exist = doc.items.find((x) => x.item_code === it.item_code)
   if (exist) exist.qty += 1
   else
-    doc.items.push({ item_code: it.item_code, item_name: it.item_name, image: it.image, uom: it.stock_uom, qty: 1, rejectedQty: 0, is_fixed_asset: it.is_fixed_asset ? 1 : 0 })
+    doc.items.push({ item_code: it.item_code, item_name: it.item_name, image: it.image, uom: it.stock_uom, conversionFactor: 1, qty: 1, rejectedQty: 0, is_fixed_asset: it.is_fixed_asset ? 1 : 0 })
   showPicker.value = false
+}
+
+// UOM yang bisa dipilih untuk sebuah item (>1 → tampilkan dropdown); null bila hanya stock_uom.
+function itemUoms(code) {
+  const it = master.itemList.find((x) => x.item_code === code)
+  return it && it.uoms && it.uoms.length > 1 ? it.uoms : null
+}
+function setUom(line, uom) {
+  line.uom = uom
+  line.conversionFactor = uomFactor(line.item_code, uom)
+}
+function uomFactor(code, uom) {
+  const it = master.itemList.find((x) => x.item_code === code)
+  const u = it && it.uoms && it.uoms.find((o) => o.uom === uom)
+  return u ? u.conversion_factor : 1
 }
 
 // Penerimaan Barang: pilih PO → tarik item PO yang belum diterima (auto-isi + link).
@@ -94,6 +109,7 @@ async function selectPO(po) {
       item_code: i.item_code,
       item_name: i.item_name,
       uom: i.uom,
+      conversionFactor: uomFactor(i.item_code, i.uom),
       qty: Number(i.qty) || 0,
       rejectedQty: 0,
       rate: i.rate,
@@ -242,7 +258,14 @@ async function save() {
             {{ line.item_name }}
             <span v-if="line.is_fixed_asset" class="asset-tag">{{ t('form.asset') }}</span>
           </div>
-          <div class="tiny muted truncate">{{ line.item_code }} · {{ line.uom }}<span v-if="line.purchase_order"> · {{ line.purchase_order }}</span></div>
+          <div class="tiny muted truncate">
+            {{ line.item_code }} ·
+            <select v-if="itemUoms(line.item_code)" class="uom-inline" :value="line.uom" @change="setUom(line, $event.target.value)" @click.stop>
+              <option v-for="u in itemUoms(line.item_code)" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
+            </select>
+            <template v-else>{{ line.uom }}</template>
+            <span v-if="line.purchase_order"> · {{ line.purchase_order }}</span>
+          </div>
           <div v-if="cfg.acceptReject" class="row" style="gap: 12px; margin-top: 8px; align-items: center">
             <label class="tiny muted" style="display: flex; align-items: center; gap: 5px">{{ t('form.accepted') }}
               <input type="number" inputmode="decimal" min="0" v-model.number="line.qty" class="mini-num" />
@@ -320,5 +343,9 @@ async function save() {
 }
 .asset-tag {
   font-size: 10px; background: #0891b2; color: #fff; padding: 1px 7px; border-radius: 999px; margin-left: 4px; font-weight: 700;
+}
+.uom-inline {
+  border: 1px solid var(--line); border-radius: 6px; background: var(--input-bg); color: var(--ink);
+  font-size: 11px; padding: 1px 4px; margin: 0 1px; max-width: 90px; vertical-align: middle;
 }
 </style>
