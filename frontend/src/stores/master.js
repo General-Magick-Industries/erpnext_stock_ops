@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { bootstrap } from '../lib/service'
+import { bootstrap, getStockBalance } from '../lib/service'
 import { ITEMS, WAREHOUSES, COMPANIES, UOMS, SUPPLIERS } from '../data/mock'
 
 const LS = 'stockops.master'
@@ -33,7 +33,10 @@ export const useMaster = defineStore('master', {
       defaultLang: s.defaultLang || 'id',
       flutterApkUrl: s.flutterApkUrl || '',
       loadedAt: s.loadedAt || null,
-      loading: false
+      loading: false,
+      // Saldo stok per gudang (transient, tak dipersist) → {warehouse: {item_code: actual_qty}}.
+      // Dipakai item picker untuk menampilkan stok tersedia sesuai gudang terpilih.
+      stockByWh: {}
     }
   },
   getters: {
@@ -116,6 +119,21 @@ export const useMaster = defineStore('master', {
         return b
       } finally {
         this.loading = false
+      }
+    },
+
+    // Saldo stok gudang (untuk item picker) — cache per gudang; item tanpa stok → tak ada di map (0).
+    async loadWarehouseStock(warehouse, force = false) {
+      if (!warehouse) return {}
+      if (!force && this.stockByWh[warehouse]) return this.stockByWh[warehouse]
+      try {
+        const res = await getStockBalance({ warehouse })
+        const map = {}
+        for (const b of (res && res.balance) || []) map[b.item_code] = b.actual_qty
+        this.stockByWh = { ...this.stockByWh, [warehouse]: map }
+        return map
+      } catch {
+        return this.stockByWh[warehouse] || {}
       }
     }
   }

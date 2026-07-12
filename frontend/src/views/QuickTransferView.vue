@@ -116,6 +116,6 @@ async function submit() {
       🔁 {{ saving ? '…' : t('qt.submit') }}
     </button>
 
-    <ItemPickerSheet v-if="showPicker" @pick="pick" @close="showPicker = false" />
+    <ItemPickerSheet v-if="showPicker" :warehouse="form.from" @pick="pick" @close="showPicker = false" />
   </div>
 </template>

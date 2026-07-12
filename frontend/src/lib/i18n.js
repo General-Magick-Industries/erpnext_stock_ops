@@ -156,7 +156,7 @@ const messages = {
       nativeNote: 'Login dengan akun ERPNext Anda. Token disimpan di perangkat.'
     },
     status: { pending: 'Pending', syncing: 'Syncing…', synced: 'Synced', error: 'Error', draft: 'Draft', submitted: 'Submitted', cancelled: 'Cancelled', '0': 'Draft', '1': 'Submitted', '2': 'Cancelled' },
-    picker: { title: 'Pilih Item', searchPlaceholder: 'Cari nama / kode / barcode…', noMatch: 'Tidak ada item cocok' },
+    picker: { title: 'Pilih Item', searchPlaceholder: 'Cari nama / kode / barcode…', noMatch: 'Tidak ada item cocok', stockAt: 'Stok tersedia di {wh}' },
     scan: {
       title: 'Scan Barcode', hint: 'Arahkan kamera ke barcode item',
       notFound: 'Item dengan barcode {code} tidak ditemukan', camFail: 'Kamera tidak tersedia / izin ditolak'
@@ -320,7 +320,7 @@ const messages = {
       nativeNote: 'Sign in with your ERPNext account. Token stored on device.'
     },
     status: { pending: 'Pending', syncing: 'Syncing…', synced: 'Synced', error: 'Error', draft: 'Draft', submitted: 'Submitted', cancelled: 'Cancelled', '0': 'Draft', '1': 'Submitted', '2': 'Cancelled' },
-    picker: { title: 'Pick Item', searchPlaceholder: 'Search name / code / barcode…', noMatch: 'No matching item' },
+    picker: { title: 'Pick Item', searchPlaceholder: 'Search name / code / barcode…', noMatch: 'No matching item', stockAt: 'Available stock at {wh}' },
     scan: {
       title: 'Scan Barcode', hint: 'Point the camera at the item barcode',
       notFound: 'No item with barcode {code}', camFail: 'Camera unavailable / permission denied'
