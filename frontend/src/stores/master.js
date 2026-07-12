@@ -97,7 +97,8 @@ export const useMaster = defineStore('master', {
           stock_uom: it.stock_uom || 'Nos',
           image: it.image || '',
           barcode: it.barcode || '',
-          is_fixed_asset: it.is_fixed_asset ? 1 : 0
+          is_fixed_asset: it.is_fixed_asset ? 1 : 0,
+          uoms: Array.isArray(it.uoms) && it.uoms.length ? it.uoms : [{ uom: it.stock_uom || 'Nos', conversion_factor: 1 }]
         }))
         this.uoms = b.uoms || []
         this.suppliers = b.suppliers || []
