@@ -77,7 +77,8 @@ const messages = {
       vSupplier: 'Pilih supplier', whSearch: 'Cari gudang…', whEmpty: 'Gudang tidak ditemukan',
       acceptedWh: 'Gudang Terima', rejectedWh: 'Gudang Tolak', assetLocation: 'Lokasi Aset',
       accepted: 'Terima', rejected: 'Tolak', asset: 'Aset', uom: 'Satuan',
-      vRejWh: 'Pilih gudang tolak (ada qty ditolak)', vAssetLoc: 'Pilih lokasi aset (ada item aset)'
+      vRejWh: 'Pilih gudang tolak (ada qty ditolak)', vAssetLoc: 'Pilih lokasi aset (ada item aset)',
+      insufficientStock: '⚠️ Stok tidak cukup — butuh {need} {uom}, tersedia {avail} {uom}'
     },
     list: { title: 'Daftar Dokumen', empty: 'Tidak ada dokumen pada filter ini', local: 'Lokal', server: 'Server', openErp: 'Buka di ERPNext' },
     detail: {
@@ -167,6 +168,7 @@ const messages = {
       syncDelayed: 'Masih offline — sync ditunda', nothingToSync: 'Tidak ada yang perlu disinkron',
       cantSyncOffline: 'Tidak bisa sync — sedang offline', submitFirst: 'Sync dulu sebelum submit',
       submitted: '{doc} disubmit', cancelled: '{doc} dibatalkan', settingsSaved: 'Pengaturan disimpan', dataCleared: 'Data lokal dibersihkan',
+      negativeStock: '❌ Stok tidak mencukupi. Server menolak karena stok akan minus (Allow Negative Stock non-aktif). Kurangi qty atau tambah stok dulu.',
       scan: 'Scan: {code} → {name}',
       notifOn: 'Notifikasi diaktifkan', notifOff: 'Notifikasi dimatikan', notifDenied: 'Izin notifikasi ditolak', testSent: 'Notifikasi uji dikirim'
     }
@@ -241,7 +243,8 @@ const messages = {
       vSupplier: 'Select a supplier', whSearch: 'Search warehouse…', whEmpty: 'No warehouse found',
       acceptedWh: 'Accepted Warehouse', rejectedWh: 'Rejected Warehouse', assetLocation: 'Asset Location',
       accepted: 'Accepted', rejected: 'Rejected', asset: 'Asset', uom: 'Unit',
-      vRejWh: 'Select rejected warehouse (some qty rejected)', vAssetLoc: 'Select asset location (asset items present)'
+      vRejWh: 'Select rejected warehouse (some qty rejected)', vAssetLoc: 'Select asset location (asset items present)',
+      insufficientStock: '⚠️ Not enough stock — needs {need} {uom}, {avail} {uom} available'
     },
     list: { title: 'Documents', empty: 'No documents for this filter', local: 'Local', server: 'Server', openErp: 'Open in ERPNext' },
     detail: {
@@ -331,6 +334,7 @@ const messages = {
       syncDelayed: 'Still offline — sync deferred', nothingToSync: 'Nothing to sync',
       cantSyncOffline: 'Cannot sync — currently offline', submitFirst: 'Sync before submitting',
       submitted: '{doc} submitted', cancelled: '{doc} cancelled', settingsSaved: 'Settings saved', dataCleared: 'Local data cleared',
+      negativeStock: '❌ Insufficient stock. The server rejected it because stock would go negative (Allow Negative Stock is off). Reduce qty or add stock first.',
       scan: 'Scan: {code} → {name}',
       notifOn: 'Notifications enabled', notifOff: 'Notifications disabled', notifDenied: 'Notification permission denied', testSent: 'Test notification sent'
     }

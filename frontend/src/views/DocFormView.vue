@@ -58,6 +58,40 @@ const blockedOffline = computed(() => !!(cfg && cfg.onlineOnly && !app.online))
 // Gudang acuan stok di item picker: gudang asal bila ada (keluar/transfer), selain itu tujuan.
 const pickerWarehouse = computed(() => (cfg && cfg.source ? doc.sourceWarehouse : doc.targetWarehouse) || '')
 
+// ===== Peringatan stok (lunak) untuk dokumen yang MENGURANGI stok (ada gudang asal) =====
+// Angka stok diambil dari saldo gudang asal (cache master.stockByWh). Peringatan bersifat
+// lunak: submit tetap boleh — ERPNext yang menentukan sesuai setting Allow Negative Stock.
+const stockCheckWh = computed(() => (cfg && cfg.source ? doc.sourceWarehouse : '') || '')
+watch(
+  stockCheckWh,
+  (wh) => {
+    if (wh) master.loadWarehouseStock(wh)
+  },
+  { immediate: true }
+)
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
+function stockUomOf(line) {
+  const it = master.itemList.find((x) => x.item_code === line.item_code)
+  return (it && it.stock_uom) || line.uom || ''
+}
+// Stok tersedia (dalam stock_uom) di gudang asal; null bila belum dimuat / tak ada gudang.
+function availableStock(line) {
+  const wh = stockCheckWh.value
+  if (!wh) return null
+  const m = master.stockByWh[wh]
+  if (!m) return null
+  return round2(m[line.item_code] || 0)
+}
+// Qty dibutuhkan dalam stock_uom = qty × faktor konversi UOM.
+function neededStockQty(line) {
+  return round2((Number(line.qty) || 0) * (Number(line.conversionFactor) || 1))
+}
+function isShort(line) {
+  const avail = availableStock(line)
+  if (avail === null) return false
+  return neededStockQty(line) > avail + 1e-9
+}
+
 async function tagLocation() {
   locating.value = true
   const g = await getGeolocation()
@@ -272,6 +306,9 @@ async function save() {
               <span class="uom-caret">▾</span>
             </div>
           </div>
+          <div v-if="isShort(line)" class="stock-warn">
+            {{ t('form.insufficientStock', { need: neededStockQty(line), avail: availableStock(line), uom: stockUomOf(line) }) }}
+          </div>
           <div v-if="cfg.acceptReject" class="row" style="gap: 12px; margin-top: 8px; align-items: center">
             <label class="tiny muted" style="display: flex; align-items: center; gap: 5px">{{ t('form.accepted') }}
               <input type="number" inputmode="decimal" min="0" v-model.number="line.qty" class="mini-num" />
@@ -362,5 +399,10 @@ async function save() {
 }
 .uom-caret {
   position: absolute; right: 12px; color: var(--brand); font-size: 12px; pointer-events: none;
+}
+.stock-warn {
+  margin-top: 7px; font-size: 12px; font-weight: 700; line-height: 1.35;
+  color: #92400e; background: #fef3c7; border: 1px solid #fcd34d;
+  padding: 5px 9px; border-radius: 8px;
 }
 </style>
