@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { DOC_TYPES } from '../data/mock'
 import { useApp } from '../stores/app'
@@ -64,17 +64,24 @@ function clampLine(line) {
   line.qty = v
 }
 
-async function tagLocation() {
+async function captureLocation(silent = false) {
   locating.value = true
   const g = await getGeolocation()
   locating.value = false
   if (g) {
     doc.geo = g
-    app.notify('📍 ' + g, 'success')
-  } else {
+    if (!silent) app.notify('📍 ' + g, 'success')
+  } else if (!silent) {
     app.notify(t('form.locationOff'), 'warn')
   }
 }
+function tagLocation() {
+  captureLocation(false)
+}
+// Otomatis minta izin + ambil lokasi saat form dibuka (senyap; tombol tetap bisa re-tag).
+onMounted(() => {
+  if (!doc.geo) captureLocation(true)
+})
 
 function valid() {
   if (!doc.returnAgainst) return t('ret.vReceipt')

@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { DOC_TYPES } from '../data/mock'
 import { useApp } from '../stores/app'
@@ -92,17 +92,24 @@ function isShort(line) {
   return neededStockQty(line) > avail + 1e-9
 }
 
-async function tagLocation() {
+async function captureLocation(silent = false) {
   locating.value = true
   const g = await getGeolocation()
   locating.value = false
   if (g) {
     doc.geo = g
-    app.notify('📍 ' + g, 'success')
-  } else {
+    if (!silent) app.notify('📍 ' + g, 'success')
+  } else if (!silent) {
     app.notify(t('form.locationOff'), 'warn')
   }
 }
+function tagLocation() {
+  captureLocation(false)
+}
+// Otomatis minta izin + ambil lokasi saat form dibuka (senyap; tombol tetap bisa re-tag).
+onMounted(() => {
+  if (!doc.geo) captureLocation(true)
+})
 
 const totalQty = computed(() => doc.items.reduce((s, i) => s + (Number(i.qty) || 0), 0))
 
