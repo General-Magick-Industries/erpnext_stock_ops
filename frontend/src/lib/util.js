@@ -85,6 +85,22 @@ export function delay(ms) {
   return new Promise((r) => setTimeout(r, ms))
 }
 
+// Buang tag HTML dari pesan server Frappe (kadang mengandung <b>, <br>, dll).
+export function stripHtml(s) {
+  return String(s || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Deteksi error "stok minus" dari ERPNext (Allow Negative Stock non-aktif).
+// Cocokkan varian pesan EN maupun ID agar bisa diterjemahkan jadi pesan yang jelas.
+export function isNegativeStockError(msg) {
+  return /negative stock|is negative|insufficient stock|to complete this transaction|needed in warehouse|stok.*minus|stok tidak (cukup|mencukupi)/i.test(
+    String(msg || '')
+  )
+}
+
 // Ambil koordinat GPS → "lat,lng" (atau null bila gagal/ditolak). Butuh secure context (localhost/HTTPS).
 export function getGeolocation(timeout = 8000) {
   return new Promise((resolve) => {
