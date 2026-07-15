@@ -20,6 +20,7 @@ function buildPR(doc) {
     set_warehouse: doc.targetWarehouse || undefined, // gudang penerimaan (accepted) default
     external_localid: doc.localId,
     stock_ops_geolocation: doc.geo || undefined,
+    remarks: doc.remark || undefined,
     items: doc.items.map((i) => {
       const accepted = Number(i.qty) || 0
       const rejected = Number(i.rejectedQty) || 0
@@ -29,6 +30,7 @@ function buildPR(doc) {
         rejected_qty: rejected || undefined,
         received_qty: accepted + rejected,
         uom: i.uom,
+        conversion_factor: Number(i.conversionFactor) || 1,
         rate: Number(i.rate) || 0,
         warehouse: doc.targetWarehouse || undefined, // gudang terima (accepted)
         rejected_warehouse: rejected > 0 ? doc.rejectedWarehouse || undefined : undefined,
@@ -58,11 +60,13 @@ function buildMR(doc, cfg) {
     schedule_date: doc.date,
     external_localid: doc.localId,
     stock_ops_geolocation: doc.geo || undefined,
+    remarks: doc.remark || undefined,
     items: doc.items.map((i) =>
       clean({
         item_code: i.item_code,
         qty: i.qty,
         uom: i.uom,
+        conversion_factor: Number(i.conversionFactor) || 1,
         schedule_date: doc.date,
         warehouse: doc.targetWarehouse || undefined,
         from_warehouse: cfg.source ? doc.sourceWarehouse : undefined
@@ -80,6 +84,7 @@ function buildSE(doc, cfg) {
     posting_date: doc.date,
     external_localid: doc.localId,
     stock_ops_geolocation: doc.geo || undefined,
+    remarks: doc.remark || undefined,
     from_warehouse: cfg.source ? doc.sourceWarehouse : undefined,
     to_warehouse: cfg.target ? doc.targetWarehouse : undefined,
     items: doc.items.map((i) =>
@@ -87,6 +92,7 @@ function buildSE(doc, cfg) {
         item_code: i.item_code,
         qty: i.qty,
         uom: i.uom,
+        conversion_factor: Number(i.conversionFactor) || 1,
         s_warehouse: cfg.source ? doc.sourceWarehouse : undefined,
         t_warehouse: cfg.target ? doc.targetWarehouse : undefined,
         // hindari error "valuation rate not found" untuk item tanpa nilai (testing)

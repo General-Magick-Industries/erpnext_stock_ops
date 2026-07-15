@@ -22,6 +22,24 @@ const companyReadOnly = computed(() => !!(master.defaults && master.defaults.com
 const serverCompany = computed(() => (master.defaults && master.defaults.company) || form.company)
 const WAREHOUSES = computed(() => master.warehousesForCompany(companyReadOnly.value ? serverCompany.value : form.company))
 
+// Profil karyawan (dari Employee via bootstrap) — hanya baris terisi yang ditampilkan.
+const profileRows = computed(() => {
+  const e = master.employee || {}
+  const company = (master.defaults && master.defaults.company) || e.company || app.settings.company
+  const whs = master.userWarehouses && master.userWarehouses.length
+    ? master.userWarehouses.join(', ')
+    : t('settings.allWarehouses')
+  const rows = [
+    { label: 'settings.company', value: company },
+    { label: 'settings.warehouse', value: whs },
+    { label: 'settings.department', value: e.department },
+    { label: 'settings.branch', value: e.branch },
+    { label: 'settings.grade', value: e.grade },
+    { label: 'settings.designation', value: e.designation }
+  ]
+  return rows.filter((r) => r.value)
+})
+
 const themes = computed(() => [
   { v: 'system', label: t('settings.themeSystem') },
   { v: 'light', label: t('settings.themeLight') },
@@ -101,9 +119,10 @@ async function installPwa() {
   }
   await app.promptInstall()
 }
-function logout() {
-  app.logout()
-  router.replace('/login')
+async function logout() {
+  const reloading = await app.logout()
+  // Web melakukan reload penuh ke /login; native (SPA) pindah ke layar login.
+  if (!reloading) router.replace('/login')
 }
 function clearData() {
   if (confirm(t('settings.confirmClear'))) {
@@ -120,10 +139,16 @@ function clearData() {
     <div class="card">
       <div class="row">
         <span class="lead-icon" style="background: var(--brand)">👤</span>
-        <div class="grow">
-          <div style="font-weight: 700">{{ app.user?.name }}</div>
-          <div class="tiny muted">{{ app.user?.email }}</div>
+        <div class="grow" style="min-width: 0">
+          <div class="truncate" style="font-weight: 700">{{ master.employee?.employee_name || app.user?.name }}</div>
+          <div class="tiny muted truncate">{{ app.user?.email }}</div>
         </div>
+      </div>
+      <div v-if="profileRows.length" class="profile-grid mt12">
+        <template v-for="r in profileRows" :key="r.label">
+          <div class="tiny muted">{{ t(r.label) }}</div>
+          <div class="small" style="text-align: right; font-weight: 600; min-width: 0; overflow-wrap: anywhere">{{ r.value }}</div>
+        </template>
       </div>
     </div>
 
@@ -184,25 +209,27 @@ function clearData() {
       </div>
     </div>
 
-    <div class="section-title">{{ t('settings.defaults') }}</div>
-    <div class="card">
-      <div class="field">
-        <label>{{ t('settings.companyDefault') }}</label>
-        <template v-if="companyReadOnly">
-          <input type="text" :value="serverCompany" readonly disabled />
-          <div class="tiny muted" style="margin-top: 4px">{{ t('form.companyFromAccount') }}</div>
-        </template>
-        <select v-else v-model="form.company"><option v-for="c in COMPANIES" :key="c">{{ c }}</option></select>
+    <template v-if="master.isManager">
+      <div class="section-title">{{ t('settings.defaults') }}</div>
+      <div class="card">
+        <div class="field">
+          <label>{{ t('settings.companyDefault') }}</label>
+          <template v-if="companyReadOnly">
+            <input type="text" :value="serverCompany" readonly disabled />
+            <div class="tiny muted" style="margin-top: 4px">{{ t('form.companyFromAccount') }}</div>
+          </template>
+          <select v-else v-model="form.company"><option v-for="c in COMPANIES" :key="c">{{ c }}</option></select>
+        </div>
+        <div class="field">
+          <label>{{ t('settings.srcDefault') }}</label>
+          <select v-model="form.defaultSourceWarehouse"><option v-for="w in WAREHOUSES" :key="w">{{ w }}</option></select>
+        </div>
+        <div class="field" style="margin: 0">
+          <label>{{ t('settings.tgtDefault') }}</label>
+          <select v-model="form.defaultTargetWarehouse"><option v-for="w in WAREHOUSES" :key="w">{{ w }}</option></select>
+        </div>
       </div>
-      <div class="field">
-        <label>{{ t('settings.srcDefault') }}</label>
-        <select v-model="form.defaultSourceWarehouse"><option v-for="w in WAREHOUSES" :key="w">{{ w }}</option></select>
-      </div>
-      <div class="field" style="margin: 0">
-        <label>{{ t('settings.tgtDefault') }}</label>
-        <select v-model="form.defaultTargetWarehouse"><option v-for="w in WAREHOUSES" :key="w">{{ w }}</option></select>
-      </div>
-    </div>
+    </template>
 
     <template v-if="notifSupported && master.menuOn('notifications')">
       <div class="section-title">{{ t('settings.notif') }}</div>
@@ -218,20 +245,22 @@ function clearData() {
       </div>
     </template>
 
-    <div class="section-title">{{ t('settings.photoSync') }}</div>
-    <div class="card">
-      <label class="row between" style="cursor: pointer">
-        <div><div style="font-weight: 600">{{ t('settings.privatePhoto') }}</div><div class="tiny muted">{{ t('settings.privatePhotoDesc') }}</div></div>
-        <input type="checkbox" v-model="form.privatePhotos" style="width: 22px; height: 22px" />
-      </label>
-      <hr style="border: 0; border-top: 1px solid var(--line); margin: 12px 0" />
-      <label class="row between" style="cursor: pointer">
-        <div><div style="font-weight: 600">{{ t('settings.autoSync') }}</div><div class="tiny muted">{{ t('settings.autoSyncDesc') }}</div></div>
-        <input type="checkbox" v-model="form.autoSync" style="width: 22px; height: 22px" />
-      </label>
-    </div>
+    <template v-if="master.isManager">
+      <div class="section-title">{{ t('settings.photoSync') }}</div>
+      <div class="card">
+        <label class="row between" style="cursor: pointer">
+          <div><div style="font-weight: 600">{{ t('settings.privatePhoto') }}</div><div class="tiny muted">{{ t('settings.privatePhotoDesc') }}</div></div>
+          <input type="checkbox" v-model="form.privatePhotos" style="width: 22px; height: 22px" />
+        </label>
+        <hr style="border: 0; border-top: 1px solid var(--line); margin: 12px 0" />
+        <label class="row between" style="cursor: pointer">
+          <div><div style="font-weight: 600">{{ t('settings.autoSync') }}</div><div class="tiny muted">{{ t('settings.autoSyncDesc') }}</div></div>
+          <input type="checkbox" v-model="form.autoSync" style="width: 22px; height: 22px" />
+        </label>
+      </div>
 
-    <button class="btn brand block mt16" @click="save">{{ t('settings.saveSettings') }}</button>
+      <button class="btn brand block mt16" @click="save">{{ t('settings.saveSettings') }}</button>
+    </template>
 
     <div class="section-title">{{ t('settings.getApp') }}</div>
     <div class="card">
@@ -254,14 +283,27 @@ function clearData() {
       </button>
     </div>
 
-    <div class="section-title">{{ t('settings.other') }}</div>
-    <div class="card">
-      <div class="row between small"><span class="muted">{{ t('settings.backend') }}</span><span>erp.localhost</span></div>
-      <div class="row between small mt8"><span class="muted">{{ t('settings.mockVersion') }}</span><span>P0 · 0.0.1</span></div>
-    </div>
+    <template v-if="master.isManager">
+      <div class="section-title">{{ t('settings.other') }}</div>
+      <div class="card">
+        <div class="row between small"><span class="muted">{{ t('settings.backend') }}</span><span>erp.localhost</span></div>
+        <div class="row between small mt8"><span class="muted">{{ t('settings.mockVersion') }}</span><span>P0 · 0.0.1</span></div>
+      </div>
 
-    <button class="btn block mt12" @click="clearData">{{ t('settings.clearData') }}</button>
+      <button class="btn block mt12" @click="clearData">{{ t('settings.clearData') }}</button>
+    </template>
     <button class="btn danger block mt12" @click="logout">{{ t('common.logout') }}</button>
     <div style="height: 8px"></div>
   </div>
 </template>
+
+<style scoped>
+.profile-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  align-items: baseline;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+</style>

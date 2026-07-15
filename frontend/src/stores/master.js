@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { bootstrap } from '../lib/service'
+import { bootstrap, getStockBalance } from '../lib/service'
 import { ITEMS, WAREHOUSES, COMPANIES, UOMS, SUPPLIERS } from '../data/mock'
 
 const LS = 'stockops.master'
@@ -24,6 +24,7 @@ export const useMaster = defineStore('master', {
       suppliers: s.suppliers || [],
       locations: s.locations || [],
       userWarehouses: s.userWarehouses || [],
+      employee: s.employee || null, // detail Employee user (company/department/branch/grade/…)
       defaults: s.defaults || null,
       menu: s.menu || {}, // visibilitas menu dari Stock Ops Settings
       caps: s.caps || {}, // kemampuan user (mis. can_cancel) — dari Role Permission
@@ -32,7 +33,10 @@ export const useMaster = defineStore('master', {
       defaultLang: s.defaultLang || 'id',
       flutterApkUrl: s.flutterApkUrl || '',
       loadedAt: s.loadedAt || null,
-      loading: false
+      loading: false,
+      // Saldo stok per gudang (transient, tak dipersist) → {warehouse: {item_code: actual_qty}}.
+      // Dipakai item picker untuk menampilkan stok tersedia sesuai gudang terpilih.
+      stockByWh: {}
     }
   },
   getters: {
@@ -69,6 +73,7 @@ export const useMaster = defineStore('master', {
           suppliers: this.suppliers,
           locations: this.locations,
           userWarehouses: this.userWarehouses,
+          employee: this.employee,
           defaults: this.defaults,
           menu: this.menu,
           caps: this.caps,
@@ -92,12 +97,14 @@ export const useMaster = defineStore('master', {
           stock_uom: it.stock_uom || 'Nos',
           image: it.image || '',
           barcode: it.barcode || '',
-          is_fixed_asset: it.is_fixed_asset ? 1 : 0
+          is_fixed_asset: it.is_fixed_asset ? 1 : 0,
+          uoms: Array.isArray(it.uoms) && it.uoms.length ? it.uoms : [{ uom: it.stock_uom || 'Nos', conversion_factor: 1 }]
         }))
         this.uoms = b.uoms || []
         this.suppliers = b.suppliers || []
         this.locations = b.locations || []
         this.userWarehouses = b.user_warehouses || []
+        this.employee = b.employee || null
         this.defaults = b.defaults || null
         this.menu = b.menu || {}
         this.caps = b.caps || {}
@@ -113,6 +120,21 @@ export const useMaster = defineStore('master', {
         return b
       } finally {
         this.loading = false
+      }
+    },
+
+    // Saldo stok gudang (untuk item picker) — cache per gudang; item tanpa stok → tak ada di map (0).
+    async loadWarehouseStock(warehouse, force = false) {
+      if (!warehouse) return {}
+      if (!force && this.stockByWh[warehouse]) return this.stockByWh[warehouse]
+      try {
+        const res = await getStockBalance({ warehouse })
+        const map = {}
+        for (const b of (res && res.balance) || []) map[b.item_code] = b.actual_qty
+        this.stockByWh = { ...this.stockByWh, [warehouse]: map }
+        return map
+      } catch {
+        return this.stockByWh[warehouse] || {}
       }
     }
   }

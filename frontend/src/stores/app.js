@@ -80,11 +80,30 @@ export const useApp = defineStore('app', {
         patch.defaultTargetWarehouse = whs[Math.min(1, whs.length - 1)]
       if (Object.keys(patch).length) this.saveSettings(patch)
     },
-    logout() {
+    async logout() {
+      const platform = await import('../lib/platform')
+      const native = platform.isNative()
+      // 1) Akhiri sesi di server. Web: hapus cookie sesi Frappe (sid); native: akhiri sesi + token.
+      //    Tanpa ini, sesi cookie tetap hidup → main.js auto-login lagi dari window.stockops_user
+      //    saat reload → "tidak bisa logout".
+      try {
+        const { call } = await import('../lib/api')
+        await call('logout', {}, { post: true })
+      } catch {
+        // offline / sesi sudah tak ada — tetap lanjut bersihkan lokal
+      }
+      // 2) Bersihkan state lokal + token native.
+      platform.clearToken()
       this.user = null
       this.persist()
-      // hapus token native (jika ada) supaya tidak auto-login lagi
-      import('../lib/platform').then((p) => p.clearToken()).catch(() => {})
+      // 3) Web (disajikan bench): reload penuh ke halaman login Frappe. Hanya ganti route SPA
+      //    tidak cukup — www page akan menyuntik user sesi lagi. /login di luar scope service
+      //    worker → selalu memuat dari server sebagai Guest.
+      if (!native && typeof window !== 'undefined' && window.stockops_user) {
+        window.location.replace('/login?redirect-to=/stock_ops')
+        return true // sedang reload penuh
+      }
+      return false
     },
     setForceOffline(v) {
       this.forceOffline = v

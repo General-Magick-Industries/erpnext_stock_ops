@@ -51,8 +51,19 @@ APPROVAL_NOTE_FIELD = {
 	"description": "Catatan persetujuan/penolakan dari aplikasi Stock Ops.",
 }
 
+# Material Request TIDAK punya field remarks bawaan → tambahkan agar catatan/remark dari
+# aplikasi tersimpan. (Stock Entry & Purchase Receipt sudah punya `remarks` bawaan.)
+MR_REMARKS_FIELD = {
+	"fieldname": "remarks",
+	"label": "Remarks",
+	"fieldtype": "Small Text",
+	"no_copy": 1,
+	"insert_after": "stock_ops_approval_note",
+	"description": "Catatan/keterangan dari aplikasi Stock Ops.",
+}
+
 CUSTOM_FIELDS = {
-	"Material Request": [dict(LOCALID_FIELD), dict(GEO_FIELD), dict(APPROVER_FIELD), dict(APPROVAL_NOTE_FIELD)],
+	"Material Request": [dict(LOCALID_FIELD), dict(GEO_FIELD), dict(APPROVER_FIELD), dict(APPROVAL_NOTE_FIELD), dict(MR_REMARKS_FIELD)],
 	"Stock Entry": [dict(LOCALID_FIELD), dict(GEO_FIELD)],
 	"Stock Reconciliation": [dict(LOCALID_FIELD)],
 	"Purchase Receipt": [dict(LOCALID_FIELD), dict(GEO_FIELD)],
