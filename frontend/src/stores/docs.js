@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { DOC_TYPES } from '../data/mock'
-import { uuid, todayStr } from '../lib/util'
+import { uuid, todayStr, stripHtml, isNegativeStockError } from '../lib/util'
 import { useApp } from './app'
 import { useMaster } from './master'
 import { useI18n } from '../lib/i18n'
@@ -9,6 +9,17 @@ import { createTransaction, submitTransaction, cancelTransaction, createPurchase
 import { getPhoto, deletePhotosByLocalId } from '../lib/idb'
 
 const LS = 'stockops.docs'
+
+// Terjemahkan error server jadi pesan yang jelas. Error "stok minus" (Allow Negative
+// Stock non-aktif) diberi awalan Indonesia + detail asli (item/gudang) tetap disertakan.
+function friendlyError(e, t) {
+  const s = e && e.message ? e.message : String(e)
+  if (isNegativeStockError(s)) {
+    const detail = stripHtml(s)
+    return detail ? `${t('toast.negativeStock')} — ${detail}` : t('toast.negativeStock')
+  }
+  return s
+}
 
 function load() {
   try {
@@ -81,6 +92,12 @@ export const useDocs = defineStore('docs', {
     async save(doc) {
       const app = useApp()
       const { t } = useI18n()
+      // Stock Entry / Penerimaan / Retur wajib online — tidak boleh masuk outbox offline.
+      const cfg = DOC_TYPES[doc.type]
+      if (cfg && cfg.onlineOnly && !app.online) {
+        app.notify(t('form.onlineOnly', { doc: t('docType.' + doc.type) }), 'error')
+        return null
+      }
       doc.status = 'pending'
       doc.createdAt = doc.createdAt || new Date().toISOString()
       this.docs.unshift(doc)
@@ -113,7 +130,7 @@ export const useDocs = defineStore('docs', {
           if (cfg && cfg.isReturn) {
             // Retur barang: make_return_doc (qty negatif) atas Purchase Receipt asal
             const items = doc.items.map((i) => ({ item_code: i.item_code, qty: Number(i.qty) || 0 }))
-            res = await createPurchaseReturn(doc.returnAgainst, items, doc.localId)
+            res = await createPurchaseReturn(doc.returnAgainst, items, doc.localId, doc.remark)
           } else {
             res = await createTransaction(buildPayload(doc))
           }
@@ -144,7 +161,7 @@ export const useDocs = defineStore('docs', {
         app.notify(t('toast.syncedTo', { doc: doc.remoteName }), 'success')
       } catch (e) {
         doc.status = 'error'
-        doc.error = e && e.message ? e.message : String(e)
+        doc.error = friendlyError(e, t)
         this.persist()
         app.notify(doc.error, 'error')
       }
@@ -189,7 +206,7 @@ export const useDocs = defineStore('docs', {
           app.notify(t('toast.submitted', { doc: doc.remoteName }), 'success')
         }
       } catch (e) {
-        app.notify(e && e.message ? e.message : String(e), 'error')
+        app.notify(friendlyError(e, t), 'error')
       }
     },
 
@@ -224,7 +241,7 @@ export const useDocs = defineStore('docs', {
         this.persist()
         app.notify(t('toast.cancelled', { doc: doc.remoteName }), 'success')
       } catch (e) {
-        app.notify(e && e.message ? e.message : String(e), 'error')
+        app.notify(friendlyError(e, t), 'error')
       }
     },
 

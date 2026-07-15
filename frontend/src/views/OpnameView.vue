@@ -86,7 +86,7 @@ function fmt(n) {
   <div class="content" style="padding-bottom: 90px">
     <FilterBar :collapsible="whOptions.length > 1">
       <template #bar><SearchInput v-model="q" :placeholder="t('opname.search')" /></template>
-      <div v-if="whOptions.length > 1" class="chips" style="margin-top: 10px">
+      <div v-if="whOptions.length > 1" class="chips wrap" style="margin-top: 10px">
         <button v-for="w in whOptions" :key="w" class="chip" :class="{ active: warehouse === w }" @click="selectWh(w)">{{ w }}</button>
       </div>
       <div v-else class="tiny muted" style="margin-top: 8px">🏬 {{ warehouse }}</div>

@@ -83,7 +83,7 @@ function dt(e) {
         <label class="date-field"><span>{{ t('movement.to') }}</span><input type="date" v-model="toDate" /></label>
         <button v-if="fromDate || toDate" class="btn sm" style="align-self: flex-end" @click="clearDates">✕</button>
       </div>
-      <div v-if="warehouses.length > 1" class="chips" style="margin-top: 10px">
+      <div v-if="warehouses.length > 1" class="chips wrap" style="margin-top: 10px">
         <button class="chip" :class="{ active: whFilter === 'ALL' }" @click="whFilter = 'ALL'">{{ t('balance.allWh') }}</button>
         <button v-for="w in warehouses" :key="w" class="chip" :class="{ active: whFilter === w }" @click="whFilter = w">{{ w }}</button>
       </div>

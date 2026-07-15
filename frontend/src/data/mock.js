@@ -55,30 +55,32 @@ export const DOC_TYPES = {
   SE_IN: {
     key: 'SE_IN', short: 'IN', label: 'Stock In — Material Receipt',
     doctype: 'Stock Entry', meta: 'stock_entry_type=Material Receipt',
-    icon: '📥', color: '#16a34a', source: false, target: true
+    icon: '📥', color: '#16a34a', source: false, target: true, onlineOnly: true
   },
   SE_OUT: {
     key: 'SE_OUT', short: 'OUT', label: 'Stock Out — Material Issue',
     doctype: 'Stock Entry', meta: 'stock_entry_type=Material Issue',
-    icon: '📤', color: '#dc2626', source: true, target: false
+    icon: '📤', color: '#dc2626', source: true, target: false, onlineOnly: true
   },
   SE_TRANSFER: {
     key: 'SE_TRANSFER', short: 'TRF', label: 'Stock Transfer — Material Transfer',
     doctype: 'Stock Entry', meta: 'stock_entry_type=Material Transfer',
-    icon: '🔁', color: '#ea580c', source: true, target: true
+    icon: '🔁', color: '#ea580c', source: true, target: true, onlineOnly: true
   },
   GRN: {
     key: 'GRN', short: 'GRN', label: 'Goods Receipt — Purchase Receipt',
     doctype: 'Purchase Receipt', meta: 'penerimaan barang dari supplier',
     icon: '📦', color: '#0891b2', source: false, target: true, supplier: true, supplierRequired: true,
-    purchaseOrder: true, acceptReject: true
+    purchaseOrder: true, acceptReject: true, onlineOnly: true
   },
   RET: {
     key: 'RET', short: 'RET', label: 'Goods Return — Purchase Return',
     doctype: 'Purchase Receipt', meta: 'retur barang ke supplier',
     icon: '↩️', color: '#b45309', source: false, target: false, supplier: true,
-    isReturn: true
+    isReturn: true, onlineOnly: true
   }
 }
+// Hanya Material Request (MR/PR) yang boleh dibuat offline (masuk outbox). Stock Entry,
+// Penerimaan Barang, & Retur wajib online (kunci stok/valuasi real-time) → onlineOnly.
 
 export const DOC_TYPE_LIST = Object.values(DOC_TYPES)

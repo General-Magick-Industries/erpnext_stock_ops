@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { DOC_TYPES } from '../data/mock'
 import { useApp } from '../stores/app'
@@ -53,18 +53,63 @@ const locating = ref(false)
 // GRN (Purchase Receipt): tampilkan gudang-tolak bila ada qty ditolak, lokasi aset bila ada item aset.
 const hasRejected = computed(() => doc.items.some((i) => Number(i.rejectedQty) > 0))
 const hasAsset = computed(() => doc.items.some((i) => i.is_fixed_asset))
+// Stock Entry / Penerimaan / Retur wajib online — tak bisa dibuat offline (hanya MR yang boleh).
+const blockedOffline = computed(() => !!(cfg && cfg.onlineOnly && !app.online))
+// Gudang acuan stok di item picker: gudang asal bila ada (keluar/transfer), selain itu tujuan.
+const pickerWarehouse = computed(() => (cfg && cfg.source ? doc.sourceWarehouse : doc.targetWarehouse) || '')
 
-async function tagLocation() {
+// ===== Peringatan stok (lunak) untuk dokumen yang MENGURANGI stok (ada gudang asal) =====
+// Angka stok diambil dari saldo gudang asal (cache master.stockByWh). Peringatan bersifat
+// lunak: submit tetap boleh — ERPNext yang menentukan sesuai setting Allow Negative Stock.
+const stockCheckWh = computed(() => (cfg && cfg.source ? doc.sourceWarehouse : '') || '')
+watch(
+  stockCheckWh,
+  (wh) => {
+    if (wh) master.loadWarehouseStock(wh)
+  },
+  { immediate: true }
+)
+const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100
+function stockUomOf(line) {
+  const it = master.itemList.find((x) => x.item_code === line.item_code)
+  return (it && it.stock_uom) || line.uom || ''
+}
+// Stok tersedia (dalam stock_uom) di gudang asal; null bila belum dimuat / tak ada gudang.
+function availableStock(line) {
+  const wh = stockCheckWh.value
+  if (!wh) return null
+  const m = master.stockByWh[wh]
+  if (!m) return null
+  return round2(m[line.item_code] || 0)
+}
+// Qty dibutuhkan dalam stock_uom = qty × faktor konversi UOM.
+function neededStockQty(line) {
+  return round2((Number(line.qty) || 0) * (Number(line.conversionFactor) || 1))
+}
+function isShort(line) {
+  const avail = availableStock(line)
+  if (avail === null) return false
+  return neededStockQty(line) > avail + 1e-9
+}
+
+async function captureLocation(silent = false) {
   locating.value = true
   const g = await getGeolocation()
   locating.value = false
   if (g) {
     doc.geo = g
-    app.notify('📍 ' + g, 'success')
-  } else {
+    if (!silent) app.notify('📍 ' + g, 'success')
+  } else if (!silent) {
     app.notify(t('form.locationOff'), 'warn')
   }
 }
+function tagLocation() {
+  captureLocation(false)
+}
+// Otomatis minta izin + ambil lokasi saat form dibuka (senyap; tombol tetap bisa re-tag).
+onMounted(() => {
+  if (!doc.geo) captureLocation(true)
+})
 
 const totalQty = computed(() => doc.items.reduce((s, i) => s + (Number(i.qty) || 0), 0))
 
@@ -72,8 +117,25 @@ function addItem(it) {
   const exist = doc.items.find((x) => x.item_code === it.item_code)
   if (exist) exist.qty += 1
   else
-    doc.items.push({ item_code: it.item_code, item_name: it.item_name, image: it.image, uom: it.stock_uom, qty: 1, rejectedQty: 0, is_fixed_asset: it.is_fixed_asset ? 1 : 0 })
+    doc.items.push({ item_code: it.item_code, item_name: it.item_name, image: it.image, uom: it.stock_uom, conversionFactor: 1, qty: 1, rejectedQty: 0, is_fixed_asset: it.is_fixed_asset ? 1 : 0 })
   showPicker.value = false
+}
+
+// UOM yang bisa dipilih untuk item (selalu >=1: stock_uom + konversi tambahan dari master item).
+// Dropdown SELALU tampil (bukan karena stok) — item tanpa konversi hanya punya 1 opsi (stock_uom).
+function itemUoms(line) {
+  const it = master.itemList.find((x) => x.item_code === line.item_code)
+  if (it && it.uoms && it.uoms.length) return it.uoms
+  return [{ uom: line.uom, conversion_factor: 1 }]
+}
+function setUom(line, uom) {
+  line.uom = uom
+  line.conversionFactor = uomFactor(line.item_code, uom)
+}
+function uomFactor(code, uom) {
+  const it = master.itemList.find((x) => x.item_code === code)
+  const u = it && it.uoms && it.uoms.find((o) => o.uom === uom)
+  return u ? u.conversion_factor : 1
 }
 
 // Penerimaan Barang: pilih PO → tarik item PO yang belum diterima (auto-isi + link).
@@ -90,6 +152,7 @@ async function selectPO(po) {
       item_code: i.item_code,
       item_name: i.item_name,
       uom: i.uom,
+      conversionFactor: uomFactor(i.item_code, i.uom),
       qty: Number(i.qty) || 0,
       rejectedQty: 0,
       rate: i.rate,
@@ -144,10 +207,11 @@ function valid() {
 async function save() {
   const err = valid()
   if (err) return app.notify(err, 'warn')
+  if (blockedOffline.value) return app.notify(t('form.onlineOnly', { doc: t('docType.' + cfg.key) }), 'error')
   saving.value = true
-  await docs.save({ ...doc })
+  const saved = await docs.save({ ...doc })
   saving.value = false
-  router.replace(`/doc/${doc.localId}`)
+  if (saved) router.replace(`/doc/${doc.localId}`)
 }
 </script>
 
@@ -237,7 +301,21 @@ async function save() {
             {{ line.item_name }}
             <span v-if="line.is_fixed_asset" class="asset-tag">{{ t('form.asset') }}</span>
           </div>
-          <div class="tiny muted truncate">{{ line.item_code }} · {{ line.uom }}<span v-if="line.purchase_order"> · {{ line.purchase_order }}</span></div>
+          <div class="tiny muted truncate">
+            {{ line.item_code }}<span v-if="line.purchase_order"> · {{ line.purchase_order }}</span>
+          </div>
+          <div class="uom-row">
+            <span class="uom-lbl">{{ t('form.uom') }}</span>
+            <div class="uom-wrap">
+              <select class="uom-select" :value="line.uom" @change="setUom(line, $event.target.value)">
+                <option v-for="u in itemUoms(line)" :key="u.uom" :value="u.uom">{{ u.uom }}</option>
+              </select>
+              <span class="uom-caret">▾</span>
+            </div>
+          </div>
+          <div v-if="isShort(line)" class="stock-warn">
+            {{ t('form.insufficientStock', { need: neededStockQty(line), avail: availableStock(line), uom: stockUomOf(line) }) }}
+          </div>
           <div v-if="cfg.acceptReject" class="row" style="gap: 12px; margin-top: 8px; align-items: center">
             <label class="tiny muted" style="display: flex; align-items: center; gap: 5px">{{ t('form.accepted') }}
               <input type="number" inputmode="decimal" min="0" v-model.number="line.qty" class="mini-num" />
@@ -289,14 +367,16 @@ async function save() {
       </div>
     </div>
 
-    <div v-if="!app.online" class="banner-offline mt12">{{ t('form.offlineHint') }}</div>
+    <div v-if="!app.online" class="banner-offline mt12">
+      {{ blockedOffline ? t('form.onlineOnlyHint') : t('form.offlineHint') }}
+    </div>
 
-    <button class="btn brand block mt16" :disabled="saving" @click="save">
-      {{ saving ? t('common.saving') : app.online ? t('form.saveSync') : t('form.saveOutbox') }}
+    <button class="btn brand block mt16" :disabled="saving || blockedOffline" @click="save">
+      {{ saving ? t('common.saving') : blockedOffline ? t('form.onlineOnlyBtn') : app.online ? t('form.saveSync') : t('form.saveOutbox') }}
     </button>
     <div style="height: 8px"></div>
 
-    <ItemPickerSheet v-if="showPicker" @pick="addItem" @close="showPicker = false" />
+    <ItemPickerSheet v-if="showPicker" :warehouse="pickerWarehouse" @pick="addItem" @close="showPicker = false" />
     <PurchaseOrderSheet v-if="showPO" :company="doc.company" :supplier="doc.supplier" @pick="selectPO" @close="showPO = false" />
   </div>
 </template>
@@ -313,5 +393,23 @@ async function save() {
 }
 .asset-tag {
   font-size: 10px; background: #0891b2; color: #fff; padding: 1px 7px; border-radius: 999px; margin-left: 4px; font-weight: 700;
+}
+.uom-row {
+  display: flex; align-items: center; gap: 8px; margin-top: 8px;
+}
+.uom-lbl { font-size: 12px; color: var(--muted); font-weight: 600; }
+.uom-wrap { position: relative; display: inline-flex; align-items: center; }
+.uom-select {
+  appearance: none; -webkit-appearance: none;
+  border: 1px solid var(--brand); border-radius: 10px; background: var(--input-bg); color: var(--ink);
+  font-size: 15px; font-weight: 700; padding: 9px 30px 9px 14px; min-height: 42px; min-width: 96px;
+}
+.uom-caret {
+  position: absolute; right: 12px; color: var(--brand); font-size: 12px; pointer-events: none;
+}
+.stock-warn {
+  margin-top: 7px; font-size: 12px; font-weight: 700; line-height: 1.35;
+  color: #92400e; background: #fef3c7; border: 1px solid #fcd34d;
+  padding: 5px 9px; border-radius: 8px;
 }
 </style>

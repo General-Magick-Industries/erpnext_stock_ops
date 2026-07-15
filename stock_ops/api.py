@@ -60,7 +60,7 @@ def get_user_employee(user=None):
 	return frappe.db.get_value(
 		"Employee",
 		{"user_id": user},
-		["name", "employee_name", "company", "department", "designation"],
+		["name", "employee_name", "company", "department", "designation", "branch", "grade"],
 		as_dict=True,
 	)
 
@@ -378,7 +378,7 @@ def get_receipt_items_for_return(purchase_receipt):
 
 
 @frappe.whitelist()
-def create_purchase_return(purchase_receipt, items=None, external_localid=None):
+def create_purchase_return(purchase_receipt, items=None, external_localid=None, remarks=None):
 	"""Buat dokumen **retur barang** (Purchase Receipt is_return=1) atas sebuah Purchase
 	Receipt: qty negatif & return_against terisi (stok berkurang saat di-submit).
 
@@ -416,6 +416,8 @@ def create_purchase_return(purchase_receipt, items=None, external_localid=None):
 
 	if external_localid:
 		ret.external_localid = external_localid
+	if remarks:
+		ret.remarks = remarks
 	ret.insert()
 	frappe.db.commit()
 	return {"name": ret.name, "duplicate": False}
@@ -815,6 +817,21 @@ def get_bootstrap():
 		bc_map.setdefault(b.parent, b.barcode)
 	for it in items:
 		it["barcode"] = bc_map.get(it["item_code"], "")
+
+	# UOM yang diizinkan per item (stock_uom factor 1 + konversi tambahan) → untuk ubah UOM di form.
+	uom_rows = frappe.get_all(
+		"UOM Conversion Detail", fields=["parent", "uom", "conversion_factor"], limit_page_length=0
+	)
+	uom_map = {}
+	for r in uom_rows:
+		uom_map.setdefault(r["parent"], []).append({"uom": r["uom"], "conversion_factor": r["conversion_factor"]})
+	for it in items:
+		su = it["stock_uom"]
+		opts = [{"uom": su, "conversion_factor": 1.0}]
+		for u in uom_map.get(it["item_code"], []):
+			if u["uom"] != su:
+				opts.append(u)
+		it["uoms"] = opts
 
 	uoms = [u.name for u in frappe.get_all("UOM", filters={"enabled": 1}, fields=["name"], order_by="name", limit_page_length=0)]
 	# Supplier bisa tak terbaca oleh role terbatas (mis. Stock User) → jangan gagalkan bootstrap.

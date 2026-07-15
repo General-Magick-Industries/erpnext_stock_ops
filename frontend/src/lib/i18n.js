@@ -69,14 +69,16 @@ const messages = {
       processing: 'Memproses…', notePlaceholder: 'Keterangan (opsional)',
       photoHint: 'Foto di-upload ke attachment dokumen ({vis}) saat sync.',
       offlineHint: '📴 Offline — tersimpan di Outbox & disinkron otomatis saat online.',
+      onlineOnly: '{doc} wajib dibuat saat online', onlineOnlyHint: '📶 Wajib online — hanya Permintaan Barang yang bisa dibuat offline.', onlineOnlyBtn: 'Harus Online',
       location: 'Lokasi', tagLocation: 'Tag Lokasi', locating: 'Mengambil lokasi…', locationOff: 'Lokasi tidak tersedia', viewMap: 'Lihat peta',
       saveSync: 'Simpan & Sync (draft)', saveOutbox: 'Simpan ke Outbox',
       vItems: 'Tambahkan minimal 1 item', vQty: 'Qty item tidak boleh 0',
       vSrc: 'Pilih gudang asal', vTgt: 'Pilih gudang tujuan', vSame: 'Gudang asal & tujuan tidak boleh sama',
       vSupplier: 'Pilih supplier', whSearch: 'Cari gudang…', whEmpty: 'Gudang tidak ditemukan',
       acceptedWh: 'Gudang Terima', rejectedWh: 'Gudang Tolak', assetLocation: 'Lokasi Aset',
-      accepted: 'Terima', rejected: 'Tolak', asset: 'Aset',
-      vRejWh: 'Pilih gudang tolak (ada qty ditolak)', vAssetLoc: 'Pilih lokasi aset (ada item aset)'
+      accepted: 'Terima', rejected: 'Tolak', asset: 'Aset', uom: 'Satuan',
+      vRejWh: 'Pilih gudang tolak (ada qty ditolak)', vAssetLoc: 'Pilih lokasi aset (ada item aset)',
+      insufficientStock: '⚠️ Stok tidak cukup — butuh {need} {uom}, tersedia {avail} {uom}'
     },
     list: { title: 'Daftar Dokumen', empty: 'Tidak ada dokumen pada filter ini', local: 'Lokal', server: 'Server', openErp: 'Buka di ERPNext' },
     detail: {
@@ -130,6 +132,8 @@ const messages = {
     },
     settings: {
       title: 'Pengaturan', defaults: 'Default Transaksi', companyDefault: 'Perusahaan default',
+      company: 'Perusahaan', warehouse: 'Gudang', department: 'Departemen', branch: 'Cabang',
+      grade: 'Grade', designation: 'Jabatan', allWarehouses: 'Semua gudang',
       srcDefault: 'Gudang Asal default', tgtDefault: 'Gudang Tujuan default',
       appearance: 'Tampilan & Bahasa', language: 'Bahasa', theme: 'Tema',
       themeSystem: 'Ikut sistem', themeLight: 'Terang', themeDark: 'Gelap',
@@ -153,7 +157,7 @@ const messages = {
       nativeNote: 'Login dengan akun ERPNext Anda. Token disimpan di perangkat.'
     },
     status: { pending: 'Pending', syncing: 'Syncing…', synced: 'Synced', error: 'Error', draft: 'Draft', submitted: 'Submitted', cancelled: 'Cancelled', '0': 'Draft', '1': 'Submitted', '2': 'Cancelled' },
-    picker: { title: 'Pilih Item', searchPlaceholder: 'Cari nama / kode / barcode…', noMatch: 'Tidak ada item cocok' },
+    picker: { title: 'Pilih Item', searchPlaceholder: 'Cari nama / kode / barcode…', noMatch: 'Tidak ada item cocok', stockAt: 'Stok tersedia di {wh}' },
     scan: {
       title: 'Scan Barcode', hint: 'Arahkan kamera ke barcode item',
       notFound: 'Item dengan barcode {code} tidak ditemukan', camFail: 'Kamera tidak tersedia / izin ditolak'
@@ -164,6 +168,7 @@ const messages = {
       syncDelayed: 'Masih offline — sync ditunda', nothingToSync: 'Tidak ada yang perlu disinkron',
       cantSyncOffline: 'Tidak bisa sync — sedang offline', submitFirst: 'Sync dulu sebelum submit',
       submitted: '{doc} disubmit', cancelled: '{doc} dibatalkan', settingsSaved: 'Pengaturan disimpan', dataCleared: 'Data lokal dibersihkan',
+      negativeStock: '❌ Stok tidak mencukupi. Server menolak karena stok akan minus (Allow Negative Stock non-aktif). Kurangi qty atau tambah stok dulu.',
       scan: 'Scan: {code} → {name}',
       notifOn: 'Notifikasi diaktifkan', notifOff: 'Notifikasi dimatikan', notifDenied: 'Izin notifikasi ditolak', testSent: 'Notifikasi uji dikirim'
     }
@@ -230,14 +235,16 @@ const messages = {
       processing: 'Processing…', notePlaceholder: 'Remark (optional)',
       photoHint: 'Photos are uploaded to the document attachment ({vis}) on sync.',
       offlineHint: '📴 Offline — saved to Outbox & auto-synced when online.',
+      onlineOnly: '{doc} must be created online', onlineOnlyHint: '📶 Online required — only Material Requests can be created offline.', onlineOnlyBtn: 'Online required',
       location: 'Location', tagLocation: 'Tag Location', locating: 'Getting location…', locationOff: 'Location unavailable', viewMap: 'View map',
       saveSync: 'Save & Sync (draft)', saveOutbox: 'Save to Outbox',
       vItems: 'Add at least 1 item', vQty: 'Item qty cannot be 0',
       vSrc: 'Select source warehouse', vTgt: 'Select target warehouse', vSame: 'Source & target warehouse must differ',
       vSupplier: 'Select a supplier', whSearch: 'Search warehouse…', whEmpty: 'No warehouse found',
       acceptedWh: 'Accepted Warehouse', rejectedWh: 'Rejected Warehouse', assetLocation: 'Asset Location',
-      accepted: 'Accepted', rejected: 'Rejected', asset: 'Asset',
-      vRejWh: 'Select rejected warehouse (some qty rejected)', vAssetLoc: 'Select asset location (asset items present)'
+      accepted: 'Accepted', rejected: 'Rejected', asset: 'Asset', uom: 'Unit',
+      vRejWh: 'Select rejected warehouse (some qty rejected)', vAssetLoc: 'Select asset location (asset items present)',
+      insufficientStock: '⚠️ Not enough stock — needs {need} {uom}, {avail} {uom} available'
     },
     list: { title: 'Documents', empty: 'No documents for this filter', local: 'Local', server: 'Server', openErp: 'Open in ERPNext' },
     detail: {
@@ -291,6 +298,8 @@ const messages = {
     },
     settings: {
       title: 'Settings', defaults: 'Transaction Defaults', companyDefault: 'Default company',
+      company: 'Company', warehouse: 'Warehouse', department: 'Department', branch: 'Branch',
+      grade: 'Grade', designation: 'Designation', allWarehouses: 'All warehouses',
       srcDefault: 'Default source warehouse', tgtDefault: 'Default target warehouse',
       appearance: 'Appearance & Language', language: 'Language', theme: 'Theme',
       themeSystem: 'Follow system', themeLight: 'Light', themeDark: 'Dark',
@@ -314,7 +323,7 @@ const messages = {
       nativeNote: 'Sign in with your ERPNext account. Token stored on device.'
     },
     status: { pending: 'Pending', syncing: 'Syncing…', synced: 'Synced', error: 'Error', draft: 'Draft', submitted: 'Submitted', cancelled: 'Cancelled', '0': 'Draft', '1': 'Submitted', '2': 'Cancelled' },
-    picker: { title: 'Pick Item', searchPlaceholder: 'Search name / code / barcode…', noMatch: 'No matching item' },
+    picker: { title: 'Pick Item', searchPlaceholder: 'Search name / code / barcode…', noMatch: 'No matching item', stockAt: 'Available stock at {wh}' },
     scan: {
       title: 'Scan Barcode', hint: 'Point the camera at the item barcode',
       notFound: 'No item with barcode {code}', camFail: 'Camera unavailable / permission denied'
@@ -325,6 +334,7 @@ const messages = {
       syncDelayed: 'Still offline — sync deferred', nothingToSync: 'Nothing to sync',
       cantSyncOffline: 'Cannot sync — currently offline', submitFirst: 'Sync before submitting',
       submitted: '{doc} submitted', cancelled: '{doc} cancelled', settingsSaved: 'Settings saved', dataCleared: 'Local data cleared',
+      negativeStock: '❌ Insufficient stock. The server rejected it because stock would go negative (Allow Negative Stock is off). Reduce qty or add stock first.',
       scan: 'Scan: {code} → {name}',
       notifOn: 'Notifications enabled', notifOff: 'Notifications disabled', notifDenied: 'Notification permission denied', testSent: 'Test notification sent'
     }

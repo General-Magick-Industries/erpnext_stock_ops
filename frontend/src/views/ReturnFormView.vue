@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { DOC_TYPES } from '../data/mock'
 import { useApp } from '../stores/app'
@@ -25,6 +25,8 @@ const saving = ref(false)
 const locating = ref(false)
 
 const totalQty = computed(() => doc.items.reduce((s, i) => s + (Number(i.qty) || 0), 0))
+// Retur wajib online (kunci stok real-time) — tak bisa masuk outbox offline.
+const blockedOffline = computed(() => !!(cfg.onlineOnly && !app.online))
 
 // Pilih Purchase Receipt asal → tarik item + sisa qty yang masih bisa diretur.
 async function selectReceipt(r) {
@@ -62,17 +64,24 @@ function clampLine(line) {
   line.qty = v
 }
 
-async function tagLocation() {
+async function captureLocation(silent = false) {
   locating.value = true
   const g = await getGeolocation()
   locating.value = false
   if (g) {
     doc.geo = g
-    app.notify('📍 ' + g, 'success')
-  } else {
+    if (!silent) app.notify('📍 ' + g, 'success')
+  } else if (!silent) {
     app.notify(t('form.locationOff'), 'warn')
   }
 }
+function tagLocation() {
+  captureLocation(false)
+}
+// Otomatis minta izin + ambil lokasi saat form dibuka (senyap; tombol tetap bisa re-tag).
+onMounted(() => {
+  if (!doc.geo) captureLocation(true)
+})
 
 function valid() {
   if (!doc.returnAgainst) return t('ret.vReceipt')
@@ -85,12 +94,13 @@ function valid() {
 async function save() {
   const err = valid()
   if (err) return app.notify(err, 'warn')
+  if (blockedOffline.value) return app.notify(t('form.onlineOnly', { doc: t('docType.RET') }), 'error')
   // Kirim hanya baris dengan qty > 0
   doc.items = doc.items.filter((i) => Number(i.qty) > 0)
   saving.value = true
-  await docs.save({ ...doc })
+  const saved = await docs.save({ ...doc })
   saving.value = false
-  router.replace(`/doc/${doc.localId}`)
+  if (saved) router.replace(`/doc/${doc.localId}`)
 }
 </script>
 
@@ -198,10 +208,12 @@ async function save() {
       </div>
     </div>
 
-    <div v-if="!app.online" class="banner-offline mt12">{{ t('form.offlineHint') }}</div>
+    <div v-if="!app.online" class="banner-offline mt12">
+      {{ blockedOffline ? t('form.onlineOnlyHint') : t('form.offlineHint') }}
+    </div>
 
-    <button class="btn brand block mt16" :disabled="saving" @click="save">
-      {{ saving ? t('common.saving') : app.online ? t('form.saveSync') : t('form.saveOutbox') }}
+    <button class="btn brand block mt16" :disabled="saving || blockedOffline" @click="save">
+      {{ saving ? t('common.saving') : blockedOffline ? t('form.onlineOnlyBtn') : app.online ? t('form.saveSync') : t('form.saveOutbox') }}
     </button>
     <div style="height: 8px"></div>
 
