@@ -63,9 +63,10 @@ function wfLabel(state) {
 function wfClass(state) {
   return { pending: state === 'Pending Approval', approved: state === 'Approved', rejected: state === 'Rejected' }
 }
+// Buka dokumen server di Desk (tab baru) — hanya bila user punya akses/izin baca doctype.
 function openInErp(d) {
-  const slug = d.doctype.toLowerCase().replace(/ /g, '-')
-  window.open(`/app/${slug}/${encodeURIComponent(d.name)}`, '_blank')
+  if (!master.canOpenInDesk(d.doctype)) return app.notify(t('common.noDeskPerm'), 'warn')
+  window.open(master.deskUrl(d.doctype, d.name), '_blank', 'noopener')
 }
 </script>
 
@@ -100,7 +101,7 @@ function openInErp(d) {
 
       <div v-for="d in localList" :key="d.localId" class="list-item mt12" style="cursor: pointer" @click="router.push(`/doc/${d.localId}`)">
         <span class="lead-icon" :style="{ background: DOC_TYPES[d.type].color }">{{ DOC_TYPES[d.type].icon }}</span>
-        <div class="grow">
+        <div class="grow" style="min-width: 0">
           <div class="row between">
             <div class="truncate" style="font-weight: 700">{{ d.remoteName || t('home.draftLocal') }}</div>
             <StatusBadge :status="d.status" :submitted="d.submitted" />
@@ -108,6 +109,15 @@ function openInErp(d) {
           <div class="tiny muted truncate">{{ t('docType.' + d.type) }} · {{ d.items.length }} {{ t('common.items') }} · {{ fmtDateTime(d.createdAt) }}</div>
           <div class="tiny muted truncate">{{ d.sourceWarehouse || '—' }} → {{ d.targetWarehouse || '—' }}</div>
         </div>
+        <a
+          v-if="d.remoteName && master.canOpenInDesk(DOC_TYPES[d.type].doctype)"
+          :href="master.deskUrl(DOC_TYPES[d.type].doctype, d.remoteName)"
+          target="_blank"
+          rel="noopener"
+          class="desk-icon"
+          :title="t('common.openInDesk')"
+          @click.stop
+        >🖥️</a>
       </div>
     </template>
 
@@ -130,7 +140,7 @@ function openInErp(d) {
             {{ t('docType.' + typeKeyOf(d)) }} · {{ d.date }}
             <span v-if="d.workflow_state && d.workflow_state !== 'Approved'" class="wf-mini" :class="wfClass(d.workflow_state)">{{ wfLabel(d.workflow_state) }}</span>
           </div>
-          <div class="tiny muted truncate">{{ t('list.openErp') }} ↗</div>
+          <div v-if="master.canOpenInDesk(d.doctype)" class="tiny muted truncate">🖥️ {{ t('common.openInDesk') }} ↗</div>
         </div>
       </div>
     </template>
@@ -144,4 +154,8 @@ function openInErp(d) {
 .wf-mini.pending { background: #fef3c7; color: #92400e; }
 .wf-mini.rejected { background: #fee2e2; color: #991b1b; }
 .wf-mini.approved { background: #dcfce7; color: #166534; }
+.desk-icon {
+  flex: none; align-self: center; text-decoration: none; font-size: 16px; line-height: 1;
+  padding: 8px 9px; border: 1px solid var(--line); border-radius: 8px; margin-left: 4px;
+}
 </style>
