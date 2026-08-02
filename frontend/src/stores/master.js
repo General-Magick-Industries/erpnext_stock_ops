@@ -30,6 +30,8 @@ export const useMaster = defineStore('master', {
       caps: s.caps || {}, // kemampuan user (mis. can_cancel) — dari Role Permission
       isApprover: s.isApprover || false, // user adalah approver (leave approver) MR Purchase
       pendingApprovals: s.pendingApprovals || 0, // jumlah MR menunggu persetujuan user
+      // Akses Desk (dari server): { can_access, perms: {Doctype: bool} } — untuk tautan "Buka di Desk".
+      desk: s.desk || { can_access: false, perms: {} },
       defaultLang: s.defaultLang || 'id',
       flutterApkUrl: s.flutterApkUrl || '',
       loadedAt: s.loadedAt || null,
@@ -47,6 +49,11 @@ export const useMaster = defineStore('master', {
     // (penegakan sebenarnya tetap di server; ini hanya menyembunyikan tombol).
     canCancel: (s) => s.caps.can_cancel !== false,
     isManager: (s) => s.caps.is_manager === true,
+    // Boleh buka dokumen ini di Desk? (System User + izin baca doctype dari server).
+    canOpenInDesk: (s) => (doctype) => !!(s.desk && s.desk.can_access && s.desk.perms && s.desk.perms[doctype]),
+    // URL Desk untuk sebuah dokumen: /app/<doctype-slug>/<name> (dibuka di tab baru).
+    deskUrl: () => (doctype, name) =>
+      `/app/${String(doctype || '').toLowerCase().replace(/ /g, '-')}/${encodeURIComponent(name)}`,
     // Item siap pakai untuk picker (normalisasi field + fallback gambar)
     itemList: (s) => (s.items.length ? s.items : ITEMS),
     warehouseNames: (s) => (s.warehouses.length ? s.warehouses.map((w) => w.name) : WAREHOUSES),
@@ -79,6 +86,7 @@ export const useMaster = defineStore('master', {
           caps: this.caps,
           isApprover: this.isApprover,
           pendingApprovals: this.pendingApprovals,
+          desk: this.desk,
           defaultLang: this.defaultLang,
           flutterApkUrl: this.flutterApkUrl,
           loadedAt: this.loadedAt
@@ -110,6 +118,7 @@ export const useMaster = defineStore('master', {
         this.caps = b.caps || {}
         this.isApprover = !!b.is_approver
         this.pendingApprovals = b.pending_approvals || 0
+        this.desk = b.desk || { can_access: false, perms: {} }
         this.defaultLang = b.default_lang || 'id'
         this.flutterApkUrl = b.flutter_apk_url || ''
         this.loadedAt = new Date().toISOString()

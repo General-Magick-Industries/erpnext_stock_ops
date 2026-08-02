@@ -859,6 +859,15 @@ def get_bootstrap():
 			"Material Request", {"stock_ops_approver": user, "workflow_state": "Pending Approval"}
 		)
 
+	# Akses Desk: hanya System User (punya /app) + izin baca per-doctype. Dipakai PWA
+	# untuk menampilkan tautan "Buka di Desk" HANYA bila user memang bisa membukanya.
+	desk_can_access = frappe.db.get_value("User", user, "user_type") == "System User"
+	desk_perms = (
+		{dt: bool(frappe.has_permission(dt, "read")) for dt in ("Material Request", "Stock Entry", "Purchase Receipt")}
+		if desk_can_access
+		else {}
+	)
+
 	return {
 		"user": {"name": user, "full_name": frappe.utils.get_fullname(user)},
 		"employee": scope["employee"] or None,
@@ -881,6 +890,7 @@ def get_bootstrap():
 		"caps": _app["caps"],
 		"is_approver": bool(is_emp_approver or pending_approvals),
 		"pending_approvals": pending_approvals,
+		"desk": {"can_access": bool(desk_can_access), "perms": desk_perms},
 		"server_time": frappe.utils.now(),
 	}
 

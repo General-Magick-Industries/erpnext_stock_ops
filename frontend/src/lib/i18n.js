@@ -13,7 +13,8 @@ const messages = {
       online: 'Online', offline: 'Offline', save: 'Simpan', saving: 'Menyimpan…',
       close: 'Tutup', add: 'Tambah', delete: 'Hapus', cancel: 'Batal', total: 'Total',
       items: 'item', note: 'Catatan', optional: 'opsional', all: 'Semua', search: 'Cari',
-      logout: 'Keluar', yes: 'Ya', viewAll: 'Lihat semua', back: 'Kembali', loading: 'Memuat…', clear: 'Hapus'
+      logout: 'Keluar', yes: 'Ya', viewAll: 'Lihat semua', back: 'Kembali', loading: 'Memuat…', clear: 'Hapus',
+      openInDesk: 'Buka di Desk', noDeskPerm: 'Anda tidak punya izin membuka dokumen ini di Desk'
     },
     po: {
       title: 'Pilih Purchase Order', label: 'Purchase Order', choose: 'Pilih Purchase Order',
@@ -179,7 +180,8 @@ const messages = {
       online: 'Online', offline: 'Offline', save: 'Save', saving: 'Saving…',
       close: 'Close', add: 'Add', delete: 'Delete', cancel: 'Cancel', total: 'Total',
       items: 'items', note: 'Note', optional: 'optional', all: 'All', search: 'Search',
-      logout: 'Log out', yes: 'Yes', viewAll: 'View all', back: 'Back', loading: 'Loading…', clear: 'Clear'
+      logout: 'Log out', yes: 'Yes', viewAll: 'View all', back: 'Back', loading: 'Loading…', clear: 'Clear',
+      openInDesk: 'Open in Desk', noDeskPerm: 'You do not have permission to open this document in Desk'
     },
     po: {
       title: 'Select Purchase Order', label: 'Purchase Order', choose: 'Select Purchase Order',
