@@ -23,6 +23,7 @@ const { t } = useI18n()
 
 const COMPANIES = computed(() => master.companyNames)
 const SUPPLIERS = computed(() => master.supplierNames)
+const CUSTOMERS = computed(() => master.customerNames)
 const LOCATIONS = computed(() => master.locationNames)
 // Company dikunci bila berasal dari Employee user (server). Lihat get_user_context.
 const companyReadOnly = computed(() => !!(master.defaults && master.defaults.company_read_only))
@@ -198,6 +199,7 @@ function valid() {
     return t('form.vQty')
   }
   if (cfg.supplierRequired && !doc.supplier) return t('form.vSupplier')
+  if (cfg.customer && !(doc.customer && doc.customer.trim())) return t('form.vCustomer')
   if (cfg.source && !doc.sourceWarehouse) return t('form.vSrc')
   if (cfg.target && !doc.targetWarehouse) return t('form.vTgt')
   if (cfg.source && cfg.target && doc.sourceWarehouse === doc.targetWarehouse) return t('form.vSame')
@@ -257,6 +259,15 @@ async function save() {
           <option value="">—</option>
           <option v-for="s in SUPPLIERS" :key="s">{{ s }}</option>
         </select>
+      </div>
+
+      <div v-if="cfg.customer" class="field">
+        <label>{{ t('form.customer') }}</label>
+        <input list="stockops-customers" v-model="doc.customer" :placeholder="t('form.customerPlaceholder')" autocomplete="off" />
+        <datalist id="stockops-customers">
+          <option v-for="c in CUSTOMERS" :key="c" :value="c" />
+        </datalist>
+        <div class="tiny muted" style="margin-top: 4px">{{ t('form.customerHint') }}</div>
       </div>
 
       <div class="field-row">

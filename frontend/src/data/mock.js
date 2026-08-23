@@ -78,6 +78,12 @@ export const DOC_TYPES = {
     doctype: 'Purchase Receipt', meta: 'retur barang ke supplier',
     icon: '↩️', color: '#b45309', source: false, target: false, supplier: true,
     isReturn: true, onlineOnly: true
+  },
+  QTN: {
+    key: 'QTN', short: 'QTN', label: 'Quotation — Sales',
+    doctype: 'Quotation', meta: 'permintaan barang penjualan (ditarik ke Sales Invoice)',
+    icon: '🧾', color: '#0d9488', source: false, target: false,
+    customer: true, isQuotation: true, onlineOnly: true
   }
 }
 // Hanya Material Request (MR/PR) yang boleh dibuat offline (masuk outbox). Stock Entry,

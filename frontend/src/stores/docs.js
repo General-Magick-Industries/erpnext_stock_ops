@@ -5,7 +5,7 @@ import { useApp } from './app'
 import { useMaster } from './master'
 import { useI18n } from '../lib/i18n'
 import { buildPayload } from '../lib/payload'
-import { createTransaction, submitTransaction, cancelTransaction, createPurchaseReturn, getDocState, uploadFile } from '../lib/service'
+import { createTransaction, submitTransaction, cancelTransaction, createPurchaseReturn, createQuotation, getDocState, uploadFile } from '../lib/service'
 import { getPhoto, deletePhotosByLocalId } from '../lib/idb'
 
 const LS = 'stockops.docs'
@@ -69,6 +69,8 @@ export const useDocs = defineStore('docs', {
         // gudang penerima ke gudang default bila target khusus belum diset.
         targetWarehouse: cfg.target ? app.settings.defaultTargetWarehouse || (cfg.source ? '' : srcDefault) : '',
         supplier: '',
+        // Quotation (penawaran penjualan): customer existing atau nama bebas (→ Lead)
+        customer: '',
         // Penerimaan Barang (Purchase Receipt): referensi PO + gudang tolak + lokasi aset
         purchaseOrder: '',
         rejectedWarehouse: '',
@@ -131,6 +133,10 @@ export const useDocs = defineStore('docs', {
             // Retur barang: make_return_doc (qty negatif) atas Purchase Receipt asal
             const items = doc.items.map((i) => ({ item_code: i.item_code, qty: Number(i.qty) || 0 }))
             res = await createPurchaseReturn(doc.returnAgainst, items, doc.localId, doc.remark)
+          } else if (cfg && cfg.isQuotation) {
+            // Quotation: customer + item + qty (rate 0 — harga diisi sales nanti di Desk)
+            const items = doc.items.map((i) => ({ item_code: i.item_code, qty: Number(i.qty) || 0, uom: i.uom }))
+            res = await createQuotation(doc.customer, items, doc.company, doc.localId, doc.remark)
           } else {
             res = await createTransaction(buildPayload(doc))
           }

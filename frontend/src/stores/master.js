@@ -22,6 +22,7 @@ export const useMaster = defineStore('master', {
       items: s.items || [],
       uoms: s.uoms || [],
       suppliers: s.suppliers || [],
+      customers: s.customers || [], // master Customer (untuk Quotation/penjualan)
       locations: s.locations || [],
       userWarehouses: s.userWarehouses || [],
       employee: s.employee || null, // detail Employee user (company/department/branch/grade/…)
@@ -32,6 +33,7 @@ export const useMaster = defineStore('master', {
       pendingApprovals: s.pendingApprovals || 0, // jumlah MR menunggu persetujuan user
       // Akses Desk (dari server): { can_access, perms: {Doctype: bool} } — untuk tautan "Buka di Desk".
       desk: s.desk || { can_access: false, perms: {} },
+      canQuotation: s.canQuotation || false, // user boleh buat Quotation (dari izin server)
       defaultLang: s.defaultLang || 'id',
       flutterApkUrl: s.flutterApkUrl || '',
       loadedAt: s.loadedAt || null,
@@ -66,6 +68,7 @@ export const useMaster = defineStore('master', {
     companyNames: (s) => (s.companies.length ? s.companies.map((c) => c.name) : COMPANIES),
     uomList: (s) => (s.uoms.length ? s.uoms : UOMS),
     supplierNames: (s) => (s.suppliers.length ? s.suppliers.map((x) => x.supplier) : SUPPLIERS),
+    customerNames: (s) => (s.customers || []).map((c) => c.name),
     locationNames: (s) => s.locations || []
   },
   actions: {
@@ -78,6 +81,7 @@ export const useMaster = defineStore('master', {
           items: this.items,
           uoms: this.uoms,
           suppliers: this.suppliers,
+          customers: this.customers,
           locations: this.locations,
           userWarehouses: this.userWarehouses,
           employee: this.employee,
@@ -87,6 +91,7 @@ export const useMaster = defineStore('master', {
           isApprover: this.isApprover,
           pendingApprovals: this.pendingApprovals,
           desk: this.desk,
+          canQuotation: this.canQuotation,
           defaultLang: this.defaultLang,
           flutterApkUrl: this.flutterApkUrl,
           loadedAt: this.loadedAt
@@ -110,6 +115,7 @@ export const useMaster = defineStore('master', {
         }))
         this.uoms = b.uoms || []
         this.suppliers = b.suppliers || []
+        this.customers = b.customers || []
         this.locations = b.locations || []
         this.userWarehouses = b.user_warehouses || []
         this.employee = b.employee || null
@@ -119,6 +125,7 @@ export const useMaster = defineStore('master', {
         this.isApprover = !!b.is_approver
         this.pendingApprovals = b.pending_approvals || 0
         this.desk = b.desk || { can_access: false, perms: {} }
+        this.canQuotation = !!b.can_quotation
         this.defaultLang = b.default_lang || 'id'
         this.flutterApkUrl = b.flutter_apk_url || ''
         this.loadedAt = new Date().toISOString()

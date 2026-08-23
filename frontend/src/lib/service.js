@@ -91,6 +91,14 @@ export const createPurchaseReturn = (purchaseReceipt, items, externalLocalid, re
     { post: true }
   )
 
+// Quotation (permintaan barang penjualan) — customer bisa nama existing atau nama bebas (→ Lead).
+export const createQuotation = (customer, items, company, externalLocalid, remarks) =>
+  call(
+    'stock_ops.api.create_quotation',
+    { customer, items, company, external_localid: externalLocalid, remarks },
+    { post: true }
+  )
+
 // Persetujuan (workflow-driven — mengikuti Workflow di server/Desk, tak hardcode aksi)
 export const listPendingApprovals = (limit = 50) =>
   call('stock_ops.api.list_pending_approvals', { limit })
