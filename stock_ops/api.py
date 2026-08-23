@@ -929,9 +929,28 @@ def create_transaction(data):
 			return {"name": existing, "duplicate": True}
 
 	doc = frappe.get_doc(data)
+	_apply_default_cost_center(doc)
 	doc.insert()  # tetap draft (docstatus = 0)
 	frappe.db.commit()
 	return {"name": doc.name, "duplicate": False}
+
+
+def _apply_default_cost_center(doc):
+	"""Terapkan 1 cost center seragam ke semua baris Stock Out (Material Issue).
+
+	Sumber = Stock Ops Settings → Default Cost Center. Hanya diterapkan bila cost center
+	milik perusahaan dokumen (hindari error lintas-perusahaan). Bila kosong/tidak cocok,
+	ERPNext mengisi cost center otomatis dari Item/Company default seperti biasa.
+	"""
+	if doc.doctype != "Stock Entry" or doc.get("stock_entry_type") != "Material Issue":
+		return
+	cc = frappe.db.get_single_value("Stock Ops Settings", "default_cost_center")
+	if not cc:
+		return
+	if frappe.db.get_value("Cost Center", cc, "company") != doc.company:
+		return
+	for row in doc.get("items") or []:
+		row.cost_center = cc
 
 
 @frappe.whitelist()
