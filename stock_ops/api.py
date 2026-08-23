@@ -3,7 +3,7 @@ import json
 import frappe
 from frappe import _
 
-ALLOWED_DOCTYPES = ("Material Request", "Stock Entry", "Purchase Receipt")
+ALLOWED_DOCTYPES = ("Material Request", "Stock Entry", "Purchase Receipt", "Quotation")
 
 
 def get_user_warehouses(user=None):
@@ -840,6 +840,12 @@ def get_bootstrap():
 	except frappe.PermissionError:
 		suppliers = []
 
+	# Customer (untuk Quotation/penawaran penjualan) — role tanpa akses jual → daftar kosong.
+	try:
+		customers = frappe.get_all("Customer", fields=["name", "customer_name"], order_by="customer_name", limit_page_length=0)
+	except frappe.PermissionError:
+		customers = []
+
 	# Lokasi aset (untuk penerimaan barang yang berupa fixed asset). Modul/akses bisa tak ada.
 	try:
 		locations = frappe.get_all("Location", filters={"is_group": 0}, pluck="name", order_by="name", limit_page_length=0)
@@ -868,6 +874,9 @@ def get_bootstrap():
 		else {}
 	)
 
+	# Menu Quotation (permintaan barang penjualan) hanya untuk user yang boleh buat Quotation.
+	can_quotation = bool(frappe.has_permission("Quotation", "create")) if frappe.db.exists("DocType", "Quotation") else False
+
 	return {
 		"user": {"name": user, "full_name": frappe.utils.get_fullname(user)},
 		"employee": scope["employee"] or None,
@@ -876,6 +885,7 @@ def get_bootstrap():
 		"items": items,
 		"uoms": uoms,
 		"suppliers": suppliers,
+		"customers": customers,
 		"locations": locations,
 		"defaults": {
 			"company": company,
@@ -891,6 +901,7 @@ def get_bootstrap():
 		"is_approver": bool(is_emp_approver or pending_approvals),
 		"pending_approvals": pending_approvals,
 		"desk": {"can_access": bool(desk_can_access), "perms": desk_perms},
+		"can_quotation": can_quotation,
 		"server_time": frappe.utils.now(),
 	}
 
@@ -919,6 +930,58 @@ def create_transaction(data):
 
 	doc = frappe.get_doc(data)
 	doc.insert()  # tetap draft (docstatus = 0)
+	frappe.db.commit()
+	return {"name": doc.name, "duplicate": False}
+
+
+@frappe.whitelist()
+def create_quotation(customer, items, company=None, external_localid=None, remarks=None):
+	"""Buat Quotation (permintaan barang penjualan) draft dari Stock Ops. Idempoten via external_localid.
+
+	`customer` = nama Customer yang sudah ada, ATAU nama bebas (dibuatkan Lead baru untuk calon pelanggan).
+	`items`    = list [{item_code, qty, uom}]. Harga (rate) sengaja 0 — diisi tim sales nanti di Desk,
+	             lalu Quotation ditarik menjadi Sales Order → Sales Invoice.
+	"""
+	if isinstance(items, str):
+		items = json.loads(items)
+	customer = (customer or "").strip()
+	if not customer:
+		frappe.throw(_("Customer wajib diisi."))
+	items = [i for i in (items or []) if i.get("item_code") and (i.get("qty") or 0) > 0]
+	if not items:
+		frappe.throw(_("Minimal 1 item dengan qty > 0."))
+
+	if external_localid:
+		existing = frappe.db.get_value("Quotation", {"external_localid": external_localid}, "name")
+		if existing:
+			return {"name": existing, "duplicate": True}
+
+	# Tentukan party: Customer yang ada → quotation_to=Customer; selain itu buat/pakai Lead.
+	if frappe.db.exists("Customer", customer):
+		quotation_to, party_name = "Customer", customer
+	elif frappe.db.exists("Lead", {"lead_name": customer}):
+		quotation_to, party_name = "Lead", frappe.db.get_value("Lead", {"lead_name": customer}, "name")
+	else:
+		lead = frappe.get_doc({"doctype": "Lead", "lead_name": customer, "company_name": customer})
+		lead.insert(ignore_permissions=True)
+		quotation_to, party_name = "Lead", lead.name
+
+	doc = frappe.new_doc("Quotation")
+	doc.quotation_to = quotation_to
+	doc.party_name = party_name
+	if company:
+		doc.company = company
+	doc.transaction_date = frappe.utils.nowdate()
+	if external_localid:
+		doc.external_localid = external_localid
+	if remarks:
+		doc.remarks = remarks
+	for it in items:
+		row = {"item_code": it.get("item_code"), "qty": it.get("qty") or 0, "rate": 0}
+		if it.get("uom"):
+			row["uom"] = it.get("uom")
+		doc.append("items", row)
+	doc.insert()  # draft (docstatus 0) — harga diisi tim sales nanti
 	frappe.db.commit()
 	return {"name": doc.name, "duplicate": False}
 

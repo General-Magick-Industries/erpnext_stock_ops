@@ -62,11 +62,24 @@ MR_REMARKS_FIELD = {
 	"description": "Catatan/keterangan dari aplikasi Stock Ops.",
 }
 
+# Quotation (penawaran penjualan) TIDAK punya field remarks bawaan → tambahkan untuk
+# menyimpan catatan dari aplikasi. (Diverifikasi: quotation.json tidak punya `remarks`.)
+QTN_REMARKS_FIELD = {
+	"fieldname": "remarks",
+	"label": "Remarks",
+	"fieldtype": "Small Text",
+	"no_copy": 1,
+	"insert_after": "external_localid",
+	"description": "Catatan/keterangan dari aplikasi Stock Ops (Quotation).",
+}
+
 CUSTOM_FIELDS = {
 	"Material Request": [dict(LOCALID_FIELD), dict(GEO_FIELD), dict(APPROVER_FIELD), dict(APPROVAL_NOTE_FIELD), dict(MR_REMARKS_FIELD)],
 	"Stock Entry": [dict(LOCALID_FIELD), dict(GEO_FIELD)],
 	"Stock Reconciliation": [dict(LOCALID_FIELD)],
 	"Purchase Receipt": [dict(LOCALID_FIELD), dict(GEO_FIELD)],
+	# Quotation: hanya perlu idempotensi + catatan (tanpa gudang/geo).
+	"Quotation": [dict(LOCALID_FIELD), dict(QTN_REMARKS_FIELD)],
 	# Pengaitan gudang per employee (dipakai Stock Ops untuk membatasi stok/pergerakan)
 	"Employee": [
 		{
@@ -130,7 +143,8 @@ ROLE_USER = "Stock Ops User"
 ROLE_MANAGER = "Stock Ops Manager"
 
 # Doctype transaksi yang dioperasikan aplikasi (submittable).
-TXN_DOCTYPES = ("Material Request", "Stock Entry", "Stock Reconciliation", "Purchase Receipt")
+# Quotation = permintaan barang penjualan (ops), nanti ditarik sales → Sales Invoice.
+TXN_DOCTYPES = ("Material Request", "Stock Entry", "Stock Reconciliation", "Purchase Receipt", "Quotation")
 
 # Master data yang cukup dibaca (read-only) oleh aplikasi.
 READ_DOCTYPES = (
@@ -142,6 +156,7 @@ READ_DOCTYPES = (
 	"UOM",
 	"Company",
 	"Supplier",
+	"Customer",
 	"Stock Ledger Entry",
 )
 
