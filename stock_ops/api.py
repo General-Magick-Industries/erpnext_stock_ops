@@ -981,7 +981,22 @@ def create_quotation(customer, items, company=None, external_localid=None, remar
 		if it.get("uom"):
 			row["uom"] = it.get("uom")
 		doc.append("items", row)
-	doc.insert()  # draft (docstatus 0) — harga diisi tim sales nanti
+	doc.insert()  # draft (docstatus 0)
+
+	# Paksa harga 0: ERPNext otomatis mengisi rate dari Selling Price List saat insert.
+	# Sesuai kebutuhan ops ("harga diisi tim sales nanti di Desk"), nolkan rate + total pada
+	# draft ini. Saat sales membuka & mengisi harga, ERPNext menghitung ulang seperti biasa.
+	_ITEM_ZERO = (
+		"rate", "amount", "base_rate", "base_amount", "net_rate", "net_amount",
+		"base_net_rate", "base_net_amount", "price_list_rate", "base_price_list_rate", "discount_amount",
+	)
+	for row in doc.items:
+		frappe.db.set_value("Quotation Item", row.name, {f: 0 for f in _ITEM_ZERO}, update_modified=False)
+	_PARENT_ZERO = (
+		"total", "base_total", "net_total", "base_net_total", "grand_total", "base_grand_total",
+		"rounded_total", "base_rounded_total", "total_taxes_and_charges", "base_total_taxes_and_charges",
+	)
+	frappe.db.set_value("Quotation", doc.name, {f: 0 for f in _PARENT_ZERO}, update_modified=False)
 	frappe.db.commit()
 	return {"name": doc.name, "duplicate": False}
 
