@@ -14,6 +14,8 @@ const mrTypes = computed(() => DOC_TYPE_LIST.filter((x) => x.doctype === 'Materi
 const seTypes = computed(() => DOC_TYPE_LIST.filter((x) => x.doctype === 'Stock Entry' && on(x)))
 const prTypes = computed(() => DOC_TYPE_LIST.filter((x) => x.doctype === 'Purchase Receipt' && !x.isReturn && on(x)))
 const retTypes = computed(() => DOC_TYPE_LIST.filter((x) => x.isReturn && on(x)))
+// Quotation (penjualan) hanya untuk user yang boleh buat Quotation di server.
+const qtnTypes = computed(() => (master.canQuotation ? DOC_TYPE_LIST.filter((x) => x.isQuotation && on(x)) : []))
 </script>
 
 <template>
@@ -74,6 +76,22 @@ const retTypes = computed(() => DOC_TYPE_LIST.filter((x) => x.isReturn && on(x))
       class="list-item"
       style="width: 100%; text-align: left; border: 0; cursor: pointer"
       @click="router.push('/return')"
+    >
+      <span class="lead-icon" :style="{ background: ty.color }">{{ ty.icon }}</span>
+      <div class="grow">
+        <div style="font-weight: 700">{{ t('docType.' + ty.key) }}</div>
+        <div class="tiny muted">{{ ty.doctype }} · {{ ty.meta }}</div>
+      </div>
+      <span style="font-size: 22px; color: var(--muted)">›</span>
+    </button>
+
+    <div v-if="qtnTypes.length" class="section-title">{{ t('docType.groupQTN') }}</div>
+    <button
+      v-for="ty in qtnTypes"
+      :key="ty.key"
+      class="list-item"
+      style="width: 100%; text-align: left; border: 0; cursor: pointer"
+      @click="router.push(`/form/${ty.key}`)"
     >
       <span class="lead-icon" :style="{ background: ty.color }">{{ ty.icon }}</span>
       <div class="grow">
