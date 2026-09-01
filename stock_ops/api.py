@@ -3,7 +3,7 @@ import json
 import frappe
 from frappe import _
 
-ALLOWED_DOCTYPES = ("Material Request", "Stock Entry", "Purchase Receipt")
+ALLOWED_DOCTYPES = ("Material Request", "Stock Entry", "Purchase Receipt", "Quotation")
 
 
 def get_user_warehouses(user=None):
@@ -840,6 +840,12 @@ def get_bootstrap():
 	except frappe.PermissionError:
 		suppliers = []
 
+	# Customer (untuk Quotation/penawaran penjualan) — role tanpa akses jual → daftar kosong.
+	try:
+		customers = frappe.get_all("Customer", fields=["name", "customer_name"], order_by="customer_name", limit_page_length=0)
+	except frappe.PermissionError:
+		customers = []
+
 	# Lokasi aset (untuk penerimaan barang yang berupa fixed asset). Modul/akses bisa tak ada.
 	try:
 		locations = frappe.get_all("Location", filters={"is_group": 0}, pluck="name", order_by="name", limit_page_length=0)
@@ -859,6 +865,18 @@ def get_bootstrap():
 			"Material Request", {"stock_ops_approver": user, "workflow_state": "Pending Approval"}
 		)
 
+	# Akses Desk: hanya System User (punya /app) + izin baca per-doctype. Dipakai PWA
+	# untuk menampilkan tautan "Buka di Desk" HANYA bila user memang bisa membukanya.
+	desk_can_access = frappe.db.get_value("User", user, "user_type") == "System User"
+	desk_perms = (
+		{dt: bool(frappe.has_permission(dt, "read")) for dt in ("Material Request", "Stock Entry", "Purchase Receipt")}
+		if desk_can_access
+		else {}
+	)
+
+	# Menu Quotation (permintaan barang penjualan) hanya untuk user yang boleh buat Quotation.
+	can_quotation = bool(frappe.has_permission("Quotation", "create")) if frappe.db.exists("DocType", "Quotation") else False
+
 	return {
 		"user": {"name": user, "full_name": frappe.utils.get_fullname(user)},
 		"employee": scope["employee"] or None,
@@ -867,6 +885,7 @@ def get_bootstrap():
 		"items": items,
 		"uoms": uoms,
 		"suppliers": suppliers,
+		"customers": customers,
 		"locations": locations,
 		"defaults": {
 			"company": company,
@@ -881,6 +900,8 @@ def get_bootstrap():
 		"caps": _app["caps"],
 		"is_approver": bool(is_emp_approver or pending_approvals),
 		"pending_approvals": pending_approvals,
+		"desk": {"can_access": bool(desk_can_access), "perms": desk_perms},
+		"can_quotation": can_quotation,
 		"server_time": frappe.utils.now(),
 	}
 
@@ -908,7 +929,93 @@ def create_transaction(data):
 			return {"name": existing, "duplicate": True}
 
 	doc = frappe.get_doc(data)
+	_apply_default_cost_center(doc)
 	doc.insert()  # tetap draft (docstatus = 0)
+	frappe.db.commit()
+	return {"name": doc.name, "duplicate": False}
+
+
+def _apply_default_cost_center(doc):
+	"""Terapkan 1 cost center seragam ke semua baris Stock Out (Material Issue).
+
+	Sumber = Stock Ops Settings → Default Cost Center. Hanya diterapkan bila cost center
+	milik perusahaan dokumen (hindari error lintas-perusahaan). Bila kosong/tidak cocok,
+	ERPNext mengisi cost center otomatis dari Item/Company default seperti biasa.
+	"""
+	if doc.doctype != "Stock Entry" or doc.get("stock_entry_type") != "Material Issue":
+		return
+	cc = frappe.db.get_single_value("Stock Ops Settings", "default_cost_center")
+	if not cc:
+		return
+	if frappe.db.get_value("Cost Center", cc, "company") != doc.company:
+		return
+	for row in doc.get("items") or []:
+		row.cost_center = cc
+
+
+@frappe.whitelist()
+def create_quotation(customer, items, company=None, external_localid=None, remarks=None):
+	"""Buat Quotation (permintaan barang penjualan) draft dari Stock Ops. Idempoten via external_localid.
+
+	`customer` = nama Customer yang sudah ada, ATAU nama bebas (dibuatkan Lead baru untuk calon pelanggan).
+	`items`    = list [{item_code, qty, uom}]. Harga (rate) sengaja 0 — diisi tim sales nanti di Desk,
+	             lalu Quotation ditarik menjadi Sales Order → Sales Invoice.
+	"""
+	if isinstance(items, str):
+		items = json.loads(items)
+	customer = (customer or "").strip()
+	if not customer:
+		frappe.throw(_("Customer wajib diisi."))
+	items = [i for i in (items or []) if i.get("item_code") and (i.get("qty") or 0) > 0]
+	if not items:
+		frappe.throw(_("Minimal 1 item dengan qty > 0."))
+
+	if external_localid:
+		existing = frappe.db.get_value("Quotation", {"external_localid": external_localid}, "name")
+		if existing:
+			return {"name": existing, "duplicate": True}
+
+	# Tentukan party: Customer yang ada → quotation_to=Customer; selain itu buat/pakai Lead.
+	if frappe.db.exists("Customer", customer):
+		quotation_to, party_name = "Customer", customer
+	elif frappe.db.exists("Lead", {"lead_name": customer}):
+		quotation_to, party_name = "Lead", frappe.db.get_value("Lead", {"lead_name": customer}, "name")
+	else:
+		lead = frappe.get_doc({"doctype": "Lead", "lead_name": customer, "company_name": customer})
+		lead.insert(ignore_permissions=True)
+		quotation_to, party_name = "Lead", lead.name
+
+	doc = frappe.new_doc("Quotation")
+	doc.quotation_to = quotation_to
+	doc.party_name = party_name
+	if company:
+		doc.company = company
+	doc.transaction_date = frappe.utils.nowdate()
+	if external_localid:
+		doc.external_localid = external_localid
+	if remarks:
+		doc.remarks = remarks
+	for it in items:
+		row = {"item_code": it.get("item_code"), "qty": it.get("qty") or 0, "rate": 0}
+		if it.get("uom"):
+			row["uom"] = it.get("uom")
+		doc.append("items", row)
+	doc.insert()  # draft (docstatus 0)
+
+	# Paksa harga 0: ERPNext otomatis mengisi rate dari Selling Price List saat insert.
+	# Sesuai kebutuhan ops ("harga diisi tim sales nanti di Desk"), nolkan rate + total pada
+	# draft ini. Saat sales membuka & mengisi harga, ERPNext menghitung ulang seperti biasa.
+	_ITEM_ZERO = (
+		"rate", "amount", "base_rate", "base_amount", "net_rate", "net_amount",
+		"base_net_rate", "base_net_amount", "price_list_rate", "base_price_list_rate", "discount_amount",
+	)
+	for row in doc.items:
+		frappe.db.set_value("Quotation Item", row.name, {f: 0 for f in _ITEM_ZERO}, update_modified=False)
+	_PARENT_ZERO = (
+		"total", "base_total", "net_total", "base_net_total", "grand_total", "base_grand_total",
+		"rounded_total", "base_rounded_total", "total_taxes_and_charges", "base_total_taxes_and_charges",
+	)
+	frappe.db.set_value("Quotation", doc.name, {f: 0 for f in _PARENT_ZERO}, update_modified=False)
 	frappe.db.commit()
 	return {"name": doc.name, "duplicate": False}
 

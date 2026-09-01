@@ -87,10 +87,20 @@ function confirmCancel() {
         <div v-if="cfg.source"><div class="tiny muted">{{ t('form.sourceWh') }}</div><div class="small">{{ doc.sourceWarehouse }}</div></div>
         <div v-if="cfg.target"><div class="tiny muted">{{ t('form.targetWh') }}</div><div class="small">{{ doc.targetWarehouse }}</div></div>
         <div v-if="doc.supplier"><div class="tiny muted">{{ t('form.supplier') }}</div><div class="small">{{ doc.supplier }}</div></div>
+        <div v-if="doc.customer"><div class="tiny muted">{{ t('form.customer') }}</div><div class="small">{{ doc.customer }}</div></div>
         <div v-if="doc.returnAgainst"><div class="tiny muted">{{ t('ret.receipt') }}</div><div class="small">{{ doc.returnAgainst }}</div></div>
         <div><div class="tiny muted">{{ t('detail.localId') }}</div><div class="tiny truncate">{{ doc.localId }}</div></div>
       </div>
-      <div v-if="doc.remoteName" class="mt8 tiny muted">ERPNext: <b>{{ doc.remoteName }}</b></div>
+      <div v-if="doc.remoteName" class="mt8 row between" style="align-items: center; gap: 8px">
+        <div class="tiny muted" style="min-width: 0">ERPNext: <b>{{ doc.remoteName }}</b></div>
+        <a
+          v-if="master.canOpenInDesk(doc.doctype)"
+          :href="master.deskUrl(doc.doctype, doc.remoteName)"
+          target="_blank"
+          rel="noopener"
+          class="desk-link"
+        >🖥️ {{ t('common.openInDesk') }}</a>
+      </div>
       <div v-if="doc.remark" class="mt8 small">📝 {{ doc.remark }}</div>
       <div v-if="doc.geo" class="mt8 small">📍 <a :href="`https://maps.google.com/?q=${doc.geo}`" target="_blank" style="color: var(--brand)">{{ doc.geo }}</a></div>
     </div>
@@ -173,4 +183,8 @@ function confirmCancel() {
 .wf-chip.pending { background: #fef3c7; color: #92400e; }
 .wf-chip.approved { background: #dcfce7; color: #166534; }
 .wf-chip.rejected { background: #fee2e2; color: #991b1b; }
+.desk-link {
+  flex: none; font-size: 12px; font-weight: 700; color: var(--brand); text-decoration: none;
+  padding: 5px 10px; border: 1px solid var(--brand); border-radius: 8px; white-space: nowrap;
+}
 </style>

@@ -13,7 +13,8 @@ const messages = {
       online: 'Online', offline: 'Offline', save: 'Simpan', saving: 'Menyimpan…',
       close: 'Tutup', add: 'Tambah', delete: 'Hapus', cancel: 'Batal', total: 'Total',
       items: 'item', note: 'Catatan', optional: 'opsional', all: 'Semua', search: 'Cari',
-      logout: 'Keluar', yes: 'Ya', viewAll: 'Lihat semua', back: 'Kembali', loading: 'Memuat…', clear: 'Hapus'
+      logout: 'Keluar', yes: 'Ya', viewAll: 'Lihat semua', back: 'Kembali', loading: 'Memuat…', clear: 'Hapus',
+      openInDesk: 'Buka di Desk', noDeskPerm: 'Anda tidak punya izin membuka dokumen ini di Desk'
     },
     po: {
       title: 'Pilih Purchase Order', label: 'Purchase Order', choose: 'Pilih Purchase Order',
@@ -45,10 +46,12 @@ const messages = {
       SE_TRANSFER: 'Transfer Barang',
       GRN: 'Penerimaan Barang (Purchase Receipt)',
       RET: 'Retur Barang (Purchase Return)',
+      QTN: 'Penawaran Jual (Quotation)',
       groupMR: 'Permintaan Barang',
       groupSE: 'Stok Barang',
       groupPR: 'Penerimaan Barang',
-      groupRET: 'Retur Barang'
+      groupRET: 'Retur Barang',
+      groupQTN: 'Penjualan'
     },
     home: {
       hello: 'Halo, {name} 👋', pendingSync: 'Menunggu sync', synced: 'Tersinkron',
@@ -63,6 +66,9 @@ const messages = {
     notif: { title: 'Notifikasi', empty: 'Belum ada notifikasi', markAll: 'Tandai semua dibaca' },
     form: {
       newSuffix: 'Baru', company: 'Perusahaan', date: 'Tanggal', supplier: 'Supplier',
+      customer: 'Customer', customerPlaceholder: 'Pilih atau ketik nama customer…',
+      customerHint: 'Pilih customer terdaftar, atau ketik nama baru (dibuat sebagai prospek/Lead).',
+      vCustomer: 'Pilih atau isi customer',
       companyFromAccount: 'Mengikuti perusahaan akun Anda',
       sourceWh: 'Gudang Asal', targetWh: 'Gudang Tujuan', noItems: 'Belum ada item',
       totalQty: 'Total Qty', photos: 'Foto Barang', addPhoto: 'Tambah foto',
@@ -179,7 +185,8 @@ const messages = {
       online: 'Online', offline: 'Offline', save: 'Save', saving: 'Saving…',
       close: 'Close', add: 'Add', delete: 'Delete', cancel: 'Cancel', total: 'Total',
       items: 'items', note: 'Note', optional: 'optional', all: 'All', search: 'Search',
-      logout: 'Log out', yes: 'Yes', viewAll: 'View all', back: 'Back', loading: 'Loading…', clear: 'Clear'
+      logout: 'Log out', yes: 'Yes', viewAll: 'View all', back: 'Back', loading: 'Loading…', clear: 'Clear',
+      openInDesk: 'Open in Desk', noDeskPerm: 'You do not have permission to open this document in Desk'
     },
     po: {
       title: 'Select Purchase Order', label: 'Purchase Order', choose: 'Select Purchase Order',
@@ -211,10 +218,12 @@ const messages = {
       SE_TRANSFER: 'Stock Transfer',
       GRN: 'Goods Receipt (Purchase Receipt)',
       RET: 'Goods Return (Purchase Return)',
+      QTN: 'Sales Quotation',
       groupMR: 'Material Requests',
       groupSE: 'Stock Entries',
       groupPR: 'Goods Receipt',
-      groupRET: 'Goods Return'
+      groupRET: 'Goods Return',
+      groupQTN: 'Sales'
     },
     home: {
       hello: 'Hi, {name} 👋', pendingSync: 'Pending sync', synced: 'Synced',
@@ -229,6 +238,9 @@ const messages = {
     notif: { title: 'Notifications', empty: 'No notifications', markAll: 'Mark all read' },
     form: {
       newSuffix: 'New', company: 'Company', date: 'Date', supplier: 'Supplier',
+      customer: 'Customer', customerPlaceholder: 'Pick or type a customer name…',
+      customerHint: 'Pick a registered customer, or type a new name (created as a Lead/prospect).',
+      vCustomer: 'Select or enter a customer',
       companyFromAccount: 'Follows your account company',
       sourceWh: 'Source Warehouse', targetWh: 'Target Warehouse', noItems: 'No items yet',
       totalQty: 'Total Qty', photos: 'Item Photos', addPhoto: 'Add photo',
