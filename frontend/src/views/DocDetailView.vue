@@ -156,6 +156,18 @@ function confirmCancel() {
       {{ t('approval.waiting') }}
     </div>
 
+    <!-- Ditolak: tampilkan alasan + jalan keluar (buka kembali → ajukan ulang). -->
+    <template v-if="doc.workflowState === 'Rejected'">
+      <div class="card mt12 reject-card">
+        <div class="small" style="font-weight: 700">{{ t('approval.reason') }}</div>
+        <div class="small mt8">{{ doc.approvalNote || t('approval.noReason') }}</div>
+        <div class="tiny muted mt8">{{ t('approval.reopenHint') }}</div>
+      </div>
+      <button class="btn brand block mt12" :disabled="!app.online" @click="docs.reopen(doc.localId)">
+        {{ t('approval.reopen') }}
+      </button>
+    </template>
+
     <button
       v-if="doc.submitted && master.canCancel"
       class="btn block mt12"
@@ -183,6 +195,7 @@ function confirmCancel() {
 .wf-chip.pending { background: #fef3c7; color: #92400e; }
 .wf-chip.approved { background: #dcfce7; color: #166534; }
 .wf-chip.rejected { background: #fee2e2; color: #991b1b; }
+.reject-card { border-left: 4px solid var(--danger); }
 .desk-link {
   flex: none; font-size: 12px; font-weight: 700; color: var(--brand); text-decoration: none;
   padding: 5px 10px; border: 1px solid var(--brand); border-radius: 8px; white-space: nowrap;

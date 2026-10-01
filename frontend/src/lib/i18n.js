@@ -35,7 +35,10 @@ const messages = {
       pending: 'Menunggu Persetujuan', approved: 'Disetujui', rejected: 'Ditolak',
       menu: 'Persetujuan', submittedForApproval: 'Diajukan untuk persetujuan',
       submitForApproval: 'Ajukan Persetujuan', waiting: 'Menunggu persetujuan line manager…',
-      search: 'Cari nomor / pemohon…', reviewTitle: 'Tinjau Permintaan', requester: 'Pemohon'
+      search: 'Cari nomor / pemohon…', reviewTitle: 'Tinjau Permintaan', requester: 'Pemohon',
+      reason: 'Alasan penolakan', noReason: '(tidak ada alasan dicantumkan)',
+      reopenHint: 'Buka kembali permintaan ini untuk mengajukannya ulang.',
+      reopen: 'Buka Kembali & Ajukan Ulang', reopened: '{name} dibuka kembali — silakan ajukan ulang'
     },
     nav: { home: 'Beranda', list: 'Daftar', create: 'Buat', settings: 'Setelan', sync: 'Sync', balance: 'Stok', movement: 'Mutasi' },
     docType: {
@@ -207,7 +210,10 @@ const messages = {
       pending: 'Pending Approval', approved: 'Approved', rejected: 'Rejected',
       menu: 'Approvals', submittedForApproval: 'Submitted for approval',
       submitForApproval: 'Submit for Approval', waiting: 'Waiting for line manager approval…',
-      search: 'Search no. / requester…', reviewTitle: 'Review Request', requester: 'Requester'
+      search: 'Search no. / requester…', reviewTitle: 'Review Request', requester: 'Requester',
+      reason: 'Rejection reason', noReason: '(no reason given)',
+      reopenHint: 'Reopen this request to submit it again.',
+      reopen: 'Reopen & Resubmit', reopened: '{name} reopened — you can submit it again'
     },
     nav: { home: 'Home', list: 'Docs', create: 'New', settings: 'Settings', sync: 'Sync', balance: 'Stock', movement: 'Moves' },
     docType: {
