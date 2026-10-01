@@ -57,12 +57,12 @@ def get_user_companies(user=None):
 def get_user_employee(user=None):
 	"""Employee yang tertaut ke user (via Employee.user_id). None bila tidak ada."""
 	user = user or frappe.session.user
-	return frappe.db.get_value(
-		"Employee",
-		{"user_id": user},
-		["name", "employee_name", "company", "department", "designation", "branch", "grade"],
-		as_dict=True,
-	)
+	meta = frappe.get_meta("Employee")
+	# "grade" (dan sebagian field lain) berasal dari HRMS — pilih hanya yang ada agar tak 500 tanpa HRMS.
+	fields = ["name", "employee_name", "company"] + [
+		f for f in ("department", "designation", "branch", "grade") if meta.get_field(f)
+	]
+	return frappe.db.get_value("Employee", {"user_id": user}, fields, as_dict=True)
 
 
 @frappe.whitelist()
@@ -200,19 +200,64 @@ def _default_source_warehouse():
 		return ""
 
 
+# Role yang boleh mengelola persetujuan MR (selain approver yang ditunjuk).
+APPROVAL_ADMIN_ROLES = {"Stock Ops Manager", "Purchase Manager", "System Manager"}
+
+
+def _is_manager():
+	roles = set(frappe.get_roles(frappe.session.user))
+	return frappe.session.user == "Administrator" or any(
+		r in roles for r in ("System Manager", "Stock Manager", "Stock Ops Manager")
+	)
+
+
+def _allowed_companies():
+	"""Perusahaan dalam lingkup user: User Permission Company, lalu perusahaan gudang user.
+	Kosong = tidak dibatasi (sama dengan aturan `_user_scope`)."""
+	up = get_user_companies()
+	if up:
+		return up
+	whs = get_user_warehouses()
+	return _warehouse_companies(whs) if whs else []
+
+
+def _assert_company_allowed(company):
+	"""Tolak akses ke dokumen/data perusahaan di luar lingkup user (bila dibatasi)."""
+	allowed = _allowed_companies()
+	if allowed and company not in allowed:
+		frappe.throw(_("Anda tidak punya akses ke perusahaan: {0}").format(company), frappe.PermissionError)
+
+
+def _company_filter(company=None):
+	"""Nilai filter `company` untuk endpoint BACA, dijepit ke lingkup user.
+
+	Perusahaan yang diminta dipakai bila dalam lingkup (atau user tak dibatasi). Bila di luar
+	lingkup (mis. default perangkat basi di HP bersama) → jatuh ke seluruh lingkup user, bukan
+	error, agar layar tetap jalan tanpa membocorkan data perusahaan lain.
+	None = tanpa filter (user tak dibatasi & tak meminta perusahaan)."""
+	allowed = _allowed_companies()
+	if not allowed:
+		return company or None
+	if company in allowed:
+		return company
+	return ["in", allowed]
+
+
 def _resolve_warehouses(warehouse=None, company=None):
+	"""Gudang yang boleh DIBACA user. Gudang eksplisit di luar lingkup → ditolak;
+	perusahaan dijepit ke lingkup user (lihat `_company_filter`)."""
 	user_whs = get_user_warehouses()
-	up_companies = get_user_companies()
+	restricted = bool(user_whs) or bool(get_user_companies())
 	if warehouse:
-		return [warehouse], bool(user_whs) or bool(up_companies)
+		_assert_warehouses_allowed([warehouse])
+		return [warehouse], restricted
 	if user_whs:
 		return user_whs, True
 	wfilter = {"disabled": 0, "is_group": 0}
-	if company:
-		wfilter["company"] = company
-	elif up_companies:
-		wfilter["company"] = ["in", up_companies]
-	return frappe.get_all("Warehouse", filters=wfilter, pluck="name"), bool(up_companies)
+	co = _company_filter(company)
+	if co:
+		wfilter["company"] = co
+	return frappe.get_all("Warehouse", filters=wfilter, pluck="name"), restricted
 
 
 @frappe.whitelist()
@@ -275,8 +320,9 @@ def list_open_purchase_orders(company=None, supplier=None, search=None, limit=50
 		"status": ["not in", ["Closed", "Completed", "Cancelled", "On Hold"]],
 		"per_received": ["<", 100],
 	}
-	if company:
-		filters["company"] = company
+	co = _company_filter(company)
+	if co:
+		filters["company"] = co
 	if supplier:
 		filters["supplier"] = supplier
 	if search:
@@ -298,6 +344,7 @@ def get_purchase_order_items(purchase_order):
 	Receipt ter-link ke PO; ERPNext memvalidasi qty terima terhadap qty pesan.
 	"""
 	po = frappe.get_doc("Purchase Order", purchase_order)
+	_assert_company_allowed(po.company)
 	out = []
 	for it in po.items:
 		remaining = (it.qty or 0) - (it.received_qty or 0)
@@ -328,8 +375,9 @@ def get_purchase_order_items(purchase_order):
 def list_returnable_receipts(company=None, supplier=None, search=None, limit=50):
 	"""Purchase Receipt yang sudah disubmit & bisa diretur (bukan dokumen retur)."""
 	filters = {"docstatus": 1, "is_return": 0}
-	if company:
-		filters["company"] = company
+	co = _company_filter(company)
+	if co:
+		filters["company"] = co
 	if supplier:
 		filters["supplier"] = supplier
 	if search:
@@ -353,6 +401,7 @@ def get_receipt_items_for_return(purchase_receipt):
 	from erpnext.controllers.sales_and_purchase_return import make_return_doc
 
 	pr = frappe.get_doc("Purchase Receipt", purchase_receipt)
+	_assert_company_allowed(pr.company)
 	remaining = {}
 	try:
 		ret = make_return_doc("Purchase Receipt", purchase_receipt)
@@ -394,7 +443,9 @@ def create_purchase_return(purchase_receipt, items=None, external_localid=None, 
 
 	from erpnext.controllers.sales_and_purchase_return import make_return_doc
 
+	_assert_company_allowed(frappe.db.get_value("Purchase Receipt", purchase_receipt, "company"))
 	ret = make_return_doc("Purchase Receipt", purchase_receipt)
+	_assert_warehouses_allowed(_collect_warehouses(ret.as_dict()))
 
 	# Retur sebagian: sesuaikan qty per item (negatif) & buang item yang tak diretur.
 	if items:
@@ -700,10 +751,7 @@ def _user_caps():
 	Penegakan tetap di server (API patuh izin standar); ini hanya supaya tombol
 	cancel/hapus tak ditampilkan ke Stock Ops User biasa.
 	"""
-	roles = set(frappe.get_roles(frappe.session.user))
-	is_manager = frappe.session.user == "Administrator" or any(
-		r in roles for r in ("System Manager", "Stock Manager", "Stock Ops Manager")
-	)
+	is_manager = _is_manager()
 	can_cancel = is_manager or any(
 		frappe.has_permission(dt, ptype="cancel") for dt in ("Material Request", "Stock Entry")
 	)
@@ -1082,11 +1130,21 @@ def apply_workflow_action(doctype, name, action, note=None):
 	from frappe.model.workflow import apply_workflow
 
 	doc = frappe.get_doc(doctype, name)
-	roles = set(frappe.get_roles())
-	is_approver = getattr(doc, "stock_ops_approver", None) == frappe.session.user
-	if not (is_approver or {"Stock Ops Manager", "Purchase Manager", "System Manager"} & roles):
+	user = frappe.session.user
+	# Approver yang ditunjuk hanya memutuskan (Approve/Reject); Reopen adalah hak pemohon.
+	is_approver = getattr(doc, "stock_ops_approver", None) == user and action in ("Approve", "Reject")
+	# Pemohon boleh membuka kembali permintaannya sendiri yang ditolak (Rejected → Draft)
+	# untuk diperbaiki & diajukan ulang — transition "Reopen" memang diizinkan untuk Stock Ops User.
+	is_owner_reopen = (
+		action == "Reopen" and doc.owner == user and getattr(doc, "workflow_state", None) == "Rejected"
+	)
+	is_admin = bool(APPROVAL_ADMIN_ROLES & set(frappe.get_roles()))
+	if not (is_approver or is_owner_reopen or is_admin):
 		frappe.throw(_("Anda tidak berwenang mengubah status dokumen ini."), frappe.PermissionError)
-	if note:
+	if is_admin and not (is_approver or is_owner_reopen):
+		_assert_company_allowed(doc.company)
+	# Catatan hanya dari approver/admin — Reopen pemohon tak boleh menimpa alasan penolakan.
+	if note and not is_owner_reopen:
 		doc.stock_ops_approval_note = note
 		doc.save(ignore_permissions=True)
 		doc.reload()
@@ -1101,17 +1159,32 @@ def get_doc_state(doctype, name):
 	"""Status terkini dokumen dari server (untuk refresh tampilan lokal): docstatus + workflow_state."""
 	if doctype not in ALLOWED_DOCTYPES:
 		frappe.throw(_("Doctype tidak diizinkan: {0}").format(doctype))
-	fields = ["docstatus"]
-	if frappe.get_meta(doctype).get_field("workflow_state"):
-		fields.append("workflow_state")
+	meta = frappe.get_meta(doctype)
+	fields = ["docstatus", "company"]
+	for f in ("workflow_state", "stock_ops_approval_note"):
+		if meta.get_field(f):
+			fields.append(f)
 	row = frappe.db.get_value(doctype, name, fields, as_dict=True) or {}
-	return {"docstatus": row.get("docstatus"), "workflow_state": row.get("workflow_state")}
+	if row:
+		_assert_company_allowed(row.get("company"))
+	state = row.get("workflow_state")
+	return {
+		"docstatus": row.get("docstatus"),
+		"workflow_state": state,
+		# Alasan penolakan — ditampilkan ke pemohon agar tahu apa yang harus diperbaiki.
+		"approval_note": row.get("stock_ops_approval_note") if state == "Rejected" else None,
+	}
 
 
 @frappe.whitelist()
 def get_approval_detail(name):
 	"""Detail Material Request untuk ditinjau approver sebelum menyetujui."""
 	doc = frappe.get_doc("Material Request", name)
+	user = frappe.session.user
+	if user not in (doc.owner, getattr(doc, "stock_ops_approver", None)):
+		if not APPROVAL_ADMIN_ROLES & set(frappe.get_roles()):
+			frappe.throw(_("Anda tidak berwenang melihat dokumen ini."), frappe.PermissionError)
+		_assert_company_allowed(doc.company)
 	return {
 		"name": doc.name,
 		"owner": doc.owner,
@@ -1157,8 +1230,15 @@ def list_recent(company=None, limit=20):
 	"""Dokumen terbaru dari server (MR + Stock Entry) — untuk tab 'Server' di Daftar."""
 	limit = int(limit)
 	out = []
-	mr_filters = {"company": company} if company else {}
-	se_filters = {"company": company} if company else {}
+	base = {}
+	co = _company_filter(company)
+	if co:
+		base["company"] = co
+	# User dibatasi (staf) hanya melihat dokumen miliknya; manajer melihat seluruh lingkupnya.
+	if _allowed_companies() and not _is_manager():
+		base["owner"] = frappe.session.user
+	mr_filters = dict(base)
+	se_filters = dict(base)
 
 	mr_fields = ["name", "material_request_type as subtype", "transaction_date as date", "status", "docstatus", "modified"]
 	if frappe.get_meta("Material Request").get_field("workflow_state"):
@@ -1183,7 +1263,7 @@ def list_recent(company=None, limit=20):
 
 	for d in frappe.get_all(
 		"Purchase Receipt",
-		filters=({"company": company} if company else {}),
+		filters=dict(base),
 		fields=["name", "supplier as subtype", "posting_date as date", "status", "docstatus", "modified"],
 		order_by="modified desc",
 		limit_page_length=limit,
@@ -1204,9 +1284,10 @@ def report_counts(company=None):
 	start = str(get_first_day(nowdate()))
 	mr_cond = {"transaction_date": [">=", start]}
 	se_cond = {"posting_date": [">=", start]}
-	if company:
-		mr_cond["company"] = company
-		se_cond["company"] = company
+	co = _company_filter(company)
+	if co:
+		mr_cond["company"] = co
+		se_cond["company"] = co
 
 	res = {"period": start, "mr": {}, "se": {}}
 	for tp in ("Material Transfer", "Purchase"):
