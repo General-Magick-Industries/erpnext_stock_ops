@@ -5,7 +5,7 @@ import { useApp } from './app'
 import { useMaster } from './master'
 import { useI18n } from '../lib/i18n'
 import { buildPayload } from '../lib/payload'
-import { createTransaction, submitTransaction, cancelTransaction, createPurchaseReturn, createQuotation, getDocState, uploadFile } from '../lib/service'
+import { createTransaction, submitTransaction, cancelTransaction, createPurchaseReturn, createQuotation, getDocState, applyWorkflowAction, uploadFile } from '../lib/service'
 import { getPhoto, deletePhotosByLocalId } from '../lib/idb'
 
 const LS = 'stockops.docs'
@@ -226,11 +226,30 @@ export const useDocs = defineStore('docs', {
         const s = await getDocState(doc.doctype, doc.remoteName)
         if (!s) return
         if (s.workflow_state) doc.workflowState = s.workflow_state
+        doc.approvalNote = s.approval_note || null
         doc.submitted = s.docstatus === 1
         doc.cancelled = s.docstatus === 2
         this.persist()
       } catch {
         // diamkan — tampilan tetap pakai status lokal terakhir
+      }
+    },
+
+    // Pemohon membuka kembali permintaan yang ditolak (Rejected → Draft) agar bisa diajukan ulang.
+    async reopen(localId) {
+      const app = useApp()
+      const { t } = useI18n()
+      const doc = this.byLocalId(localId)
+      if (!doc || !doc.remoteName || doc.workflowState !== 'Rejected') return
+      try {
+        const res = await applyWorkflowAction(doc.doctype, doc.remoteName, 'Reopen')
+        doc.workflowState = (res && res.workflow_state) || 'Draft'
+        doc.approvalNote = null
+        doc.submitted = false
+        this.persist()
+        app.notify(t('approval.reopened', { name: doc.remoteName }), 'success')
+      } catch (e) {
+        app.notify(friendlyError(e, t), 'error')
       }
     },
 
