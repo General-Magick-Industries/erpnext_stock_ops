@@ -69,7 +69,7 @@ function confirmCancel() {
   <div class="content" v-if="doc">
     <div class="card">
       <div class="row" style="gap: 10px">
-        <span class="lead-icon" :style="{ background: cfg.color }">{{ cfg.icon }}</span>
+        <span class="lead-icon" :style="{ background: cfg.color }"><Icon :name="cfg.icon" /></span>
         <div class="grow">
           <div style="font-weight: 700">{{ t('docType.' + cfg.key) }}</div>
           <div class="tiny muted">{{ cfg.doctype }} · {{ cfg.meta }}</div>
@@ -86,6 +86,7 @@ function confirmCancel() {
         <div><div class="tiny muted">{{ t('form.date') }}</div><div class="small">{{ doc.date }}</div></div>
         <div v-if="cfg.source"><div class="tiny muted">{{ t('form.sourceWh') }}</div><div class="small">{{ doc.sourceWarehouse }}</div></div>
         <div v-if="cfg.target"><div class="tiny muted">{{ t('form.targetWh') }}</div><div class="small">{{ doc.targetWarehouse }}</div></div>
+        <div v-if="doc.purpose"><div class="tiny muted">{{ t('form.purpose') }}</div><div class="small">{{ doc.purpose }}</div></div>
         <div v-if="doc.supplier"><div class="tiny muted">{{ t('form.supplier') }}</div><div class="small">{{ doc.supplier }}</div></div>
         <div v-if="doc.customer"><div class="tiny muted">{{ t('form.customer') }}</div><div class="small">{{ doc.customer }}</div></div>
         <div v-if="doc.returnAgainst"><div class="tiny muted">{{ t('ret.receipt') }}</div><div class="small">{{ doc.returnAgainst }}</div></div>
@@ -99,10 +100,10 @@ function confirmCancel() {
           target="_blank"
           rel="noopener"
           class="desk-link"
-        >🖥️ {{ t('common.openInDesk') }}</a>
+        ><Icon name="desk" /> {{ t('common.openInDesk') }}</a>
       </div>
-      <div v-if="doc.remark" class="mt8 small">📝 {{ doc.remark }}</div>
-      <div v-if="doc.geo" class="mt8 small">📍 <a :href="`https://maps.google.com/?q=${doc.geo}`" target="_blank" style="color: var(--brand)">{{ doc.geo }}</a></div>
+      <div v-if="doc.remark" class="mt8 small"><Icon name="note" /> {{ doc.remark }}</div>
+      <div v-if="doc.geo" class="mt8 small"><Icon name="location" /> <a :href="`https://maps.google.com/?q=${doc.geo}`" target="_blank" style="color: var(--brand)">{{ doc.geo }}</a></div>
     </div>
 
     <div class="card mt12">
@@ -184,7 +185,7 @@ function confirmCancel() {
   </div>
 
   <div class="content" v-else>
-    <div class="empty"><div class="big">❓</div>{{ t('detail.notFound') }}</div>
+    <div class="empty"><div class="big"><Icon name="question" /></div>{{ t('detail.notFound') }}</div>
   </div>
 </template>
 

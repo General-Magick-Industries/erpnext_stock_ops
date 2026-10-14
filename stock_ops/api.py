@@ -2,6 +2,7 @@ import json
 
 import frappe
 from frappe import _
+from frappe.utils import cint
 
 ALLOWED_DOCTYPES = ("Material Request", "Stock Entry", "Purchase Receipt", "Quotation")
 
@@ -755,7 +756,7 @@ def _user_caps():
 	can_cancel = is_manager or any(
 		frappe.has_permission(dt, ptype="cancel") for dt in ("Material Request", "Stock Entry")
 	)
-	return {"is_manager": is_manager, "can_cancel": bool(can_cancel)}
+	return {"is_manager": is_manager, "can_cancel": bool(can_cancel), "is_system_manager": _is_system_manager()}
 
 
 def _app_settings():
@@ -946,7 +947,9 @@ def get_bootstrap():
 		"default_lang": _app["default_lang"],
 		"flutter_apk_url": _app["flutter_apk_url"],
 		"caps": _app["caps"],
-		"is_approver": bool(is_emp_approver or pending_approvals),
+		"is_approver": bool(is_emp_approver or pending_approvals or _is_system_manager()),
+		"issue_purposes": [p for p in _issue_purposes() if not scope["allowed_companies"] or p["company"] in scope["allowed_companies"]],
+		"issue_purpose_required": bool(frappe.db.get_single_value("Stock Ops Settings", "issue_purpose_required")),
 		"pending_approvals": pending_approvals,
 		"desk": {"can_access": bool(desk_can_access), "perms": desk_perms},
 		"can_quotation": can_quotation,
@@ -976,29 +979,148 @@ def create_transaction(data):
 		if existing:
 			return {"name": existing, "duplicate": True}
 
-	doc = frappe.get_doc(data)
-	_apply_default_cost_center(doc)
+	if doctype == "Purchase Receipt" and any(i.get("purchase_order") for i in data.get("items") or []):
+		doc = _purchase_receipt_from_po(data)
+	else:
+		doc = frappe.get_doc(data)
+	_apply_issue_cost_center(doc)
 	doc.insert()  # tetap draft (docstatus = 0)
 	frappe.db.commit()
 	return {"name": doc.name, "duplicate": False}
 
 
-def _apply_default_cost_center(doc):
-	"""Terapkan 1 cost center seragam ke semua baris Stock Out (Material Issue).
+def _purchase_receipt_from_po(data):
+	"""Bangun Purchase Receipt dari PO lewat mapper ERPNext (sama dengan Desk "Create > Purchase
+	Receipt") agar currency, kurs, price list, rate, diskon, pajak & supplier IKUT PO.
 
-	Sumber = Stock Ops Settings → Default Cost Center. Hanya diterapkan bila cost center
-	milik perusahaan dokumen (hindari error lintas-perusahaan). Bila kosong/tidak cocok,
-	ERPNext mengisi cost center otomatis dari Item/Company default seperti biasa.
+	Membangun dari nol membuat ERPNext mengisi ulang currency/price list dari supplier/default
+	(mis. Standard Buying) → error "Currency must be equal to …" / "Rate must be same as Purchase
+	Order" bila Maintain Same Rate aktif. Dari aplikasi hanya qty, gudang & data tolak yang dipakai.
 	"""
-	if doc.doctype != "Stock Entry" or doc.get("stock_entry_type") != "Material Issue":
+	from erpnext.buying.doctype.purchase_order.purchase_order import make_purchase_receipt
+	from frappe.utils import flt
+
+	lines = data.get("items") or []
+	pos = list(dict.fromkeys(i["purchase_order"] for i in lines if i.get("purchase_order")))
+	if len(pos) > 1:
+		frappe.throw(_("Satu penerimaan hanya boleh dari satu Purchase Order."))
+	po_company = frappe.db.get_value("Purchase Order", pos[0], "company")
+	_assert_company_allowed(po_company)
+	if data.get("company") and data["company"] != po_company:
+		frappe.throw(_("Perusahaan penerimaan harus sama dengan Purchase Order ({0}).").format(po_company))
+
+	pr = make_purchase_receipt(pos[0])
+	by_po_item = {i.get("purchase_order_item"): i for i in lines if i.get("purchase_order_item")}
+	kept = []
+	for row in pr.items:
+		line = by_po_item.get(row.purchase_order_item)
+		if not line:
+			continue  # baris PO yang tidak diterima kali ini
+		# Rate PO berlaku per UOM PO; bila user mengganti UOM di aplikasi, konversikan qty ke UOM PO.
+		factor = 1.0
+		if line.get("uom") and line["uom"] != row.uom:
+			factor = flt(line.get("conversion_factor") or 1) / flt(row.conversion_factor or 1)
+		accepted = flt(line.get("qty")) * factor
+		rejected = flt(line.get("rejected_qty")) * factor
+		row.qty = accepted
+		row.rejected_qty = rejected
+		row.received_qty = accepted + rejected
+		if line.get("warehouse"):
+			row.warehouse = line["warehouse"]
+		row.rejected_warehouse = line.get("rejected_warehouse") if rejected else None
+		if line.get("asset_location"):
+			row.asset_location = line["asset_location"]
+		if line.get("allow_zero_valuation_rate"):
+			row.allow_zero_valuation_rate = 1
+		kept.append(row)
+	pr.set("items", kept)
+	# Item tambahan (tanpa link PO) tetap ikut, dengan harga dari aplikasi.
+	for line in lines:
+		if not line.get("purchase_order"):
+			pr.append("items", line)
+	if not pr.items:
+		frappe.throw(_("Tidak ada item Purchase Order yang diterima."))
+
+	for f in ("posting_date", "set_warehouse", "external_localid", "stock_ops_geolocation", "remarks", "stock_ops_purpose"):
+		if data.get(f):
+			pr.set(f, data[f])
+	return pr
+
+
+# Jenis dokumen yang memakai Tujuan → cost center (nilai kolom "Berlaku untuk").
+PURPOSE_APPLIES = {"SE_OUT": "Stock Out", "GRN": "Penerimaan Barang"}
+
+
+def _issue_purposes(company=None, applies=None):
+	"""Daftar Tujuan → cost center (Stock Ops Settings › Tujuan → Cost Center).
+
+	Perusahaan tiap tujuan = perusahaan cost center-nya, sehingga satu nama tujuan boleh
+	dipetakan ke cost center berbeda per perusahaan. `applies_to` = "Semua" / "Stock Out" /
+	"Penerimaan Barang". `company` & `applies` = saring (opsional)."""
+	if not frappe.db.exists("DocType", "Stock Ops Issue Purpose"):
+		return []
+	has_applies = bool(frappe.get_meta("Stock Ops Issue Purpose").get_field("applies_to"))
+	rows = frappe.get_all(
+		"Stock Ops Issue Purpose",
+		filters={"parent": "Stock Ops Settings", "parenttype": "Stock Ops Settings"},
+		fields=["purpose", "cost_center"] + (["applies_to"] if has_applies else []),
+		order_by="idx asc",
+	)
+	ccs = [r.cost_center for r in rows if r.cost_center]
+	cc_company = (
+		{c.name: c.company for c in frappe.get_all("Cost Center", filters={"name": ["in", ccs]}, fields=["name", "company"])}
+		if ccs
+		else {}
+	)
+	out = [
+		{
+			"purpose": r.purpose,
+			"cost_center": r.cost_center,
+			"company": cc_company.get(r.cost_center),
+			"applies_to": r.get("applies_to") or "Semua",
+		}
+		for r in rows
+		if r.purpose and r.cost_center
+	]
+	if company:
+		out = [p for p in out if p["company"] == company]
+	if applies:
+		out = [p for p in out if p["applies_to"] in ("Semua", applies)]
+	return out
+
+
+def _apply_issue_cost_center(doc):
+	"""Tujuan → satu cost center seragam untuk semua baris, pada:
+	- Stock Out (Stock Entry · Material Issue) → tujuan "Stock Out"/"Semua"; bila tanpa tujuan
+	  dipakai Default Cost Center (bila milik perusahaan dokumen).
+	- Penerimaan Barang (Purchase Receipt, bukan retur) → tujuan "Penerimaan Barang"/"Semua".
+	Tujuan wajib bila diatur & ada tujuan untuk perusahaan + jenis dokumen tsb. Bila tak ada cost
+	center terpilih, ERPNext mengisi dari Item/Company/PO seperti biasa.
+	"""
+	if doc.doctype == "Stock Entry" and doc.get("stock_entry_type") == "Material Issue":
+		applies, label = "Stock Out", _("Stock Out")
+	elif doc.doctype == "Purchase Receipt" and not doc.get("is_return"):
+		applies, label = "Penerimaan Barang", _("Penerimaan Barang")
+	else:
 		return
-	cc = frappe.db.get_single_value("Stock Ops Settings", "default_cost_center")
-	if not cc:
-		return
-	if frappe.db.get_value("Cost Center", cc, "company") != doc.company:
-		return
-	for row in doc.get("items") or []:
-		row.cost_center = cc
+	purpose = (doc.get("stock_ops_purpose") or "").strip()
+	purposes = _issue_purposes(doc.company, applies)
+	cc = None
+	if purpose:
+		match = next((p for p in purposes if p["purpose"] == purpose), None)
+		if not match:
+			frappe.throw(_("Tujuan \"{0}\" tidak terdaftar untuk {1} perusahaan {2}.").format(purpose, label, doc.company))
+		doc.stock_ops_purpose = purpose
+		cc = match["cost_center"]
+	elif purposes and frappe.db.get_single_value("Stock Ops Settings", "issue_purpose_required"):
+		frappe.throw(_("Tujuan wajib diisi untuk {0}.").format(label))
+	elif applies == "Stock Out":
+		cc = frappe.db.get_single_value("Stock Ops Settings", "default_cost_center")
+		if cc and frappe.db.get_value("Cost Center", cc, "company") != doc.company:
+			cc = None
+	if cc:
+		for row in doc.get("items") or []:
+			row.cost_center = cc
 
 
 @frappe.whitelist()
@@ -1155,6 +1277,62 @@ def apply_workflow_action(doctype, name, action, note=None):
 
 
 @frappe.whitelist()
+def get_server_doc(doctype, name):
+	"""Detail dokumen server untuk ditampilkan DI aplikasi (Daftar > Server), tanpa membuka Desk.
+
+	Lingkup sama dengan list_recent: perusahaan dalam lingkup user; staf (dibatasi, bukan manajer)
+	hanya dokumen miliknya atau yang ia setujui."""
+	if doctype not in ALLOWED_DOCTYPES:
+		frappe.throw(_("Doctype tidak diizinkan: {0}").format(doctype))
+	doc = frappe.get_doc(doctype, name)
+	_assert_company_allowed(doc.company)
+	user = frappe.session.user
+	if _allowed_companies() and not _is_manager() and user not in (doc.owner, doc.get("stock_ops_approver")):
+		frappe.throw(_("Anda tidak berwenang melihat dokumen ini."), frappe.PermissionError)
+
+	items = doc.get("items") or []
+	first = items[0] if items else frappe._dict()
+	if doctype == "Stock Entry":
+		src = doc.get("from_warehouse") or first.get("s_warehouse")
+		tgt = doc.get("to_warehouse") or first.get("t_warehouse")
+	elif doctype == "Material Request":
+		src = doc.get("set_from_warehouse") or first.get("from_warehouse")
+		tgt = doc.get("set_warehouse") or first.get("warehouse")
+	else:
+		src, tgt = None, doc.get("set_warehouse") or first.get("warehouse")
+	state = doc.get("workflow_state")
+	return {
+		"doctype": doctype,
+		"name": doc.name,
+		"docstatus": doc.docstatus,
+		"workflow_state": state,
+		"approval_note": doc.get("stock_ops_approval_note") if state == "Rejected" else None,
+		"company": doc.company,
+		"date": str(doc.get("posting_date") or doc.get("transaction_date") or ""),
+		"subtype": doc.get("stock_entry_type") or doc.get("material_request_type"),
+		"is_return": cint(doc.get("is_return")),
+		"source_warehouse": src,
+		"target_warehouse": tgt,
+		"supplier": doc.get("supplier"),
+		"customer": doc.get("party_name"),
+		"purpose": doc.get("stock_ops_purpose"),
+		"remarks": doc.get("remarks"),
+		"owner": doc.owner,
+		"approver": doc.get("stock_ops_approver"),
+		"items": [
+			{
+				"item_code": i.item_code,
+				"item_name": i.get("item_name"),
+				"qty": i.get("qty"),
+				"uom": i.get("uom") or i.get("stock_uom"),
+				"rejected_qty": i.get("rejected_qty"),
+			}
+			for i in items
+		],
+	}
+
+
+@frappe.whitelist()
 def get_doc_state(doctype, name):
 	"""Status terkini dokumen dari server (untuk refresh tampilan lokal): docstatus + workflow_state."""
 	if doctype not in ALLOWED_DOCTYPES:
@@ -1209,20 +1387,92 @@ def get_approval_detail(name):
 
 
 @frappe.whitelist()
-def list_pending_approvals(limit=50):
-	"""Material Request yang menunggu persetujuan user saat ini."""
+def list_pending_approvals(limit=50, all=0):
+	"""Material Request yang menunggu persetujuan user saat ini.
+
+	`all=1` (khusus System Manager): SEMUA permintaan yang menunggu persetujuan dalam lingkup
+	perusahaannya — untuk memantau & mengganti approver yang salah/sudah resign."""
 	if not frappe.get_meta("Material Request").get_field("workflow_state"):
 		return []
+	filters = {"workflow_state": "Pending Approval"}
+	if frappe.utils.cint(all):
+		_assert_system_manager()
+		co = _company_filter()
+		if co:
+			filters["company"] = co
+	else:
+		filters["stock_ops_approver"] = frappe.session.user
 	rows = frappe.get_all(
 		"Material Request",
-		filters={"stock_ops_approver": frappe.session.user, "workflow_state": "Pending Approval"},
-		fields=["name", "transaction_date", "material_request_type", "owner", "company", "workflow_state"],
+		filters=filters,
+		fields=["name", "transaction_date", "material_request_type", "owner", "company", "workflow_state", "stock_ops_approver"],
 		order_by="transaction_date desc, modified desc",
 		limit_page_length=int(limit),
 	)
 	for r in rows:
 		r["item_count"] = frappe.db.count("Material Request Item", {"parent": r["name"]})
 	return rows
+
+
+def _is_system_manager():
+	return frappe.session.user == "Administrator" or "System Manager" in frappe.get_roles()
+
+
+def _assert_system_manager():
+	if not _is_system_manager():
+		frappe.throw(_("Hanya System Manager yang dapat melakukan ini."), frappe.PermissionError)
+
+
+@frappe.whitelist()
+def change_approver(name, approver, reason=None):
+	"""System Manager mengganti approver Permintaan Pembelian yang sedang Menunggu Persetujuan
+	(mis. approver di Employee salah, atau approver sudah resign). Approver baru langsung
+	menerima notifikasi "Persetujuan diperlukan" (email + lonceng) & bisa menyetujui."""
+	_assert_system_manager()
+	doc = frappe.get_doc("Material Request", name)
+	_assert_company_allowed(doc.company)
+	if doc.material_request_type != "Purchase" or doc.get("workflow_state") != "Pending Approval":
+		frappe.throw(_("Approver hanya bisa diganti saat permintaan pembelian Menunggu Persetujuan."))
+	approver = (approver or "").strip()
+	if approver in ("", "Guest") or not frappe.db.get_value("User", approver, "enabled"):
+		frappe.throw(_("User approver tidak ditemukan atau nonaktif: {0}").format(approver))
+	if approver == doc.owner:
+		frappe.throw(_("Approver tidak boleh pemohon sendiri."))
+	old = doc.get("stock_ops_approver")
+	if approver == old:
+		return {"name": doc.name, "stock_ops_approver": approver, "changed": False}
+
+	doc.db_set("stock_ops_approver", approver)
+	msg = _("Approver diganti dari {0} ke {1} oleh {2}.").format(old or "-", approver, frappe.session.user)
+	if reason:
+		msg += " " + _("Alasan: {0}").format(reason)
+	doc.add_comment("Info", msg)
+	# Notifikasi "Pending" hanya terpicu saat workflow_state berubah → kirim ulang template yang
+	# sama secara eksplisit ke approver baru.
+	for n in ("Stock Ops MR Pending (Email)", "Stock Ops MR Pending (System)"):
+		if frappe.db.get_value("Notification", n, "enabled"):
+			try:
+				frappe.get_doc("Notification", n).send(doc)
+			except Exception:
+				frappe.log_error(frappe.get_traceback(), "Stock Ops change_approver notify")
+	frappe.db.commit()
+	return {"name": doc.name, "stock_ops_approver": approver, "changed": True}
+
+
+@frappe.whitelist()
+def search_users(txt=None, limit=20):
+	"""Cari user aktif (calon approver) — khusus System Manager."""
+	_assert_system_manager()
+	txt = (txt or "").strip()
+	or_filters = [["name", "like", f"%{txt}%"], ["full_name", "like", f"%{txt}%"]] if txt else None
+	return frappe.get_all(
+		"User",
+		filters={"enabled": 1, "name": ["not in", ["Guest", "Administrator"]]},
+		or_filters=or_filters,
+		fields=["name", "full_name"],
+		order_by="full_name asc",
+		limit_page_length=int(limit),
+	)
 
 
 @frappe.whitelist()
@@ -1264,7 +1514,7 @@ def list_recent(company=None, limit=20):
 	for d in frappe.get_all(
 		"Purchase Receipt",
 		filters=dict(base),
-		fields=["name", "supplier as subtype", "posting_date as date", "status", "docstatus", "modified"],
+		fields=["name", "supplier as subtype", "is_return", "posting_date as date", "status", "docstatus", "modified"],
 		order_by="modified desc",
 		limit_page_length=limit,
 	):
