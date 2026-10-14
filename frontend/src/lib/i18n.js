@@ -38,7 +38,10 @@ const messages = {
       search: 'Cari nomor / pemohon…', reviewTitle: 'Tinjau Permintaan', requester: 'Pemohon',
       reason: 'Alasan penolakan', noReason: '(tidak ada alasan dicantumkan)',
       reopenHint: 'Buka kembali permintaan ini untuk mengajukannya ulang.',
-      reopen: 'Buka Kembali & Ajukan Ulang', reopened: '{name} dibuka kembali — silakan ajukan ulang'
+      reopen: 'Buka Kembali & Ajukan Ulang', reopened: '{name} dibuka kembali — silakan ajukan ulang',
+      mine: 'Untuk saya', all: 'Semua', approver: 'Approver', changeApprover: 'Ganti Approver',
+      newApprover: 'Cari approver baru (nama / email)…', reasonOpt: 'Alasan (opsional)',
+      approverChanged: '{name}: approver diganti ke {user}'
     },
     nav: { home: 'Beranda', list: 'Daftar', create: 'Buat', settings: 'Setelan', sync: 'Sync', balance: 'Stok', movement: 'Mutasi' },
     docType: {
@@ -57,10 +60,10 @@ const messages = {
       groupQTN: 'Penjualan'
     },
     home: {
-      hello: 'Halo, {name} 👋', pendingSync: 'Menunggu sync', synced: 'Tersinkron',
+      hello: 'Halo, {name}', pendingSync: 'Menunggu sync', synced: 'Tersinkron',
       totalDocs: 'Total dokumen', quickCreate: 'Buat Dokumen', recent: 'Terbaru', menuTitle: 'Menu',
       emptyDocs: 'Belum ada dokumen. Tekan tombol Buat di bawah.',
-      offlineBanner: '📴 Mode offline — transaksi tersimpan di Outbox & disinkron saat online.',
+      offlineBanner: 'Mode offline — transaksi tersimpan di Outbox & disinkron saat online.',
       draftLocal: 'Draft lokal',
       lowAlert: '{n} item stok menipis', lowAlertSub: 'Ketuk untuk lihat & minta beli', viewAlerts: 'Lihat',
       menu: { lookup: 'Cari / Scan', balance: 'Stok', movement: 'Mutasi', low: 'Menipis', transfer: 'Transfer', opname: 'Opname' }
@@ -77,17 +80,20 @@ const messages = {
       totalQty: 'Total Qty', photos: 'Foto Barang', addPhoto: 'Tambah foto',
       processing: 'Memproses…', notePlaceholder: 'Keterangan (opsional)',
       photoHint: 'Foto di-upload ke attachment dokumen ({vis}) saat sync.',
-      offlineHint: '📴 Offline — tersimpan di Outbox & disinkron otomatis saat online.',
-      onlineOnly: '{doc} wajib dibuat saat online', onlineOnlyHint: '📶 Wajib online — hanya Permintaan Barang yang bisa dibuat offline.', onlineOnlyBtn: 'Harus Online',
+      offlineHint: 'Offline — tersimpan di Outbox & disinkron otomatis saat online.',
+      onlineOnly: '{doc} wajib dibuat saat online', onlineOnlyHint: 'Wajib online — hanya Permintaan Barang yang bisa dibuat offline.', onlineOnlyBtn: 'Harus Online',
       location: 'Lokasi', tagLocation: 'Tag Lokasi', locating: 'Mengambil lokasi…', locationOff: 'Lokasi tidak tersedia', viewMap: 'Lihat peta',
       saveSync: 'Simpan & Sync (draft)', saveOutbox: 'Simpan ke Outbox',
       vItems: 'Tambahkan minimal 1 item', vQty: 'Qty item tidak boleh 0',
       vSrc: 'Pilih gudang asal', vTgt: 'Pilih gudang tujuan', vSame: 'Gudang asal & tujuan tidak boleh sama',
+      purpose: 'Tujuan', costCenter: 'Cost Center', vPurpose: 'Pilih tujuan',
+      purposeNotSet: 'Pilihan Tujuan belum tampil: isi tabel "Tujuan → Cost Center" di Stock Ops Settings untuk {company}.',
       vSupplier: 'Pilih supplier', whSearch: 'Cari gudang…', whEmpty: 'Gudang tidak ditemukan',
+      search: 'Cari…', searchEmpty: 'Tidak ditemukan',
       acceptedWh: 'Gudang Terima', rejectedWh: 'Gudang Tolak', assetLocation: 'Lokasi Aset',
       accepted: 'Terima', rejected: 'Tolak', asset: 'Aset', uom: 'Satuan',
       vRejWh: 'Pilih gudang tolak (ada qty ditolak)', vAssetLoc: 'Pilih lokasi aset (ada item aset)',
-      insufficientStock: '⚠️ Stok tidak cukup — butuh {need} {uom}, tersedia {avail} {uom}'
+      insufficientStock: 'Stok tidak cukup — butuh {need} {uom}, tersedia {avail} {uom}'
     },
     list: { title: 'Daftar Dokumen', empty: 'Tidak ada dokumen pada filter ini', local: 'Lokal', server: 'Server', openErp: 'Buka di ERPNext' },
     detail: {
@@ -118,7 +124,7 @@ const messages = {
       transfer: 'Transfer', stockIn: 'Stock In', stockOut: 'Stock Out'
     },
     low: {
-      title: 'Stok Menipis', threshold: 'Ambang', empty: 'Tidak ada stok menipis 👍',
+      title: 'Stok Menipis', threshold: 'Ambang', empty: 'Tidak ada stok menipis',
       level: 'Batas', request: 'Minta Beli', items: 'item',
       selectAll: 'Pilih semua', clear: 'Batal', reqQty: 'Req', bulkRequest: 'Request Beli',
       selected: '{n} dipilih', created: 'MR {name} dibuat ({n} item)'
@@ -136,7 +142,7 @@ const messages = {
     },
     sync: {
       title: 'Sync / Outbox', waiting: '{n} menunggu', syncedN: '{n} tersinkron',
-      syncAll: '🔄 Sync semua', autoSync: 'Auto-sync', autoSyncDesc: 'Kirim otomatis saat online',
+      syncAll: 'Sync semua', autoSync: 'Auto-sync', autoSyncDesc: 'Kirim otomatis saat online',
       outbox: 'Outbox', allSynced: 'Semua sudah tersinkron', sync: 'Sync'
     },
     settings: {
@@ -157,7 +163,7 @@ const messages = {
       installPwa: 'Install Web App (PWA)', installPwaDesc: 'Pasang ke layar utama perangkat',
       apkUnavailable: 'Tautan APK belum diatur di Stock Ops Settings', pwaUnavailable: 'Install belum tersedia (buka di Chrome/Android atau sudah terpasang)',
       other: 'Lainnya', backend: 'Backend (P1)', mockVersion: 'Versi mock',
-      clearData: '🧹 Bersihkan data lokal', confirmClear: 'Hapus semua dokumen lokal (mock)?'
+      clearData: 'Bersihkan data lokal', confirmClear: 'Hapus semua dokumen lokal (mock)?'
     },
     login: {
       subtitle: 'Permintaan & Stok Barang — Mobile', email: 'Email', password: 'Password',
@@ -177,7 +183,7 @@ const messages = {
       syncDelayed: 'Masih offline — sync ditunda', nothingToSync: 'Tidak ada yang perlu disinkron',
       cantSyncOffline: 'Tidak bisa sync — sedang offline', submitFirst: 'Sync dulu sebelum submit',
       submitted: '{doc} disubmit', cancelled: '{doc} dibatalkan', settingsSaved: 'Pengaturan disimpan', dataCleared: 'Data lokal dibersihkan',
-      negativeStock: '❌ Stok tidak mencukupi. Server menolak karena stok akan minus (Allow Negative Stock non-aktif). Kurangi qty atau tambah stok dulu.',
+      negativeStock: 'Stok tidak mencukupi. Server menolak karena stok akan minus (Allow Negative Stock non-aktif). Kurangi qty atau tambah stok dulu.',
       scan: 'Scan: {code} → {name}',
       notifOn: 'Notifikasi diaktifkan', notifOff: 'Notifikasi dimatikan', notifDenied: 'Izin notifikasi ditolak', testSent: 'Notifikasi uji dikirim'
     }
@@ -213,7 +219,10 @@ const messages = {
       search: 'Search no. / requester…', reviewTitle: 'Review Request', requester: 'Requester',
       reason: 'Rejection reason', noReason: '(no reason given)',
       reopenHint: 'Reopen this request to submit it again.',
-      reopen: 'Reopen & Resubmit', reopened: '{name} reopened — you can submit it again'
+      reopen: 'Reopen & Resubmit', reopened: '{name} reopened — you can submit it again',
+      mine: 'Mine', all: 'All', approver: 'Approver', changeApprover: 'Change Approver',
+      newApprover: 'Search new approver (name / email)…', reasonOpt: 'Reason (optional)',
+      approverChanged: '{name}: approver changed to {user}'
     },
     nav: { home: 'Home', list: 'Docs', create: 'New', settings: 'Settings', sync: 'Sync', balance: 'Stock', movement: 'Moves' },
     docType: {
@@ -232,10 +241,10 @@ const messages = {
       groupQTN: 'Sales'
     },
     home: {
-      hello: 'Hi, {name} 👋', pendingSync: 'Pending sync', synced: 'Synced',
+      hello: 'Hi, {name}', pendingSync: 'Pending sync', synced: 'Synced',
       totalDocs: 'Total documents', quickCreate: 'Create Document', recent: 'Recent', menuTitle: 'Menu',
       emptyDocs: 'No documents yet. Tap the Create button below.',
-      offlineBanner: '📴 Offline mode — transactions saved to Outbox & synced when online.',
+      offlineBanner: 'Offline mode — transactions saved to Outbox & synced when online.',
       draftLocal: 'Local draft',
       lowAlert: '{n} low-stock items', lowAlertSub: 'Tap to view & request', viewAlerts: 'View',
       menu: { lookup: 'Find / Scan', balance: 'Stock', movement: 'Moves', low: 'Low Stock', transfer: 'Transfer', opname: 'Count' }
@@ -252,17 +261,20 @@ const messages = {
       totalQty: 'Total Qty', photos: 'Item Photos', addPhoto: 'Add photo',
       processing: 'Processing…', notePlaceholder: 'Remark (optional)',
       photoHint: 'Photos are uploaded to the document attachment ({vis}) on sync.',
-      offlineHint: '📴 Offline — saved to Outbox & auto-synced when online.',
-      onlineOnly: '{doc} must be created online', onlineOnlyHint: '📶 Online required — only Material Requests can be created offline.', onlineOnlyBtn: 'Online required',
+      offlineHint: 'Offline — saved to Outbox & auto-synced when online.',
+      onlineOnly: '{doc} must be created online', onlineOnlyHint: 'Online required — only Material Requests can be created offline.', onlineOnlyBtn: 'Online required',
       location: 'Location', tagLocation: 'Tag Location', locating: 'Getting location…', locationOff: 'Location unavailable', viewMap: 'View map',
       saveSync: 'Save & Sync (draft)', saveOutbox: 'Save to Outbox',
       vItems: 'Add at least 1 item', vQty: 'Item qty cannot be 0',
       vSrc: 'Select source warehouse', vTgt: 'Select target warehouse', vSame: 'Source & target warehouse must differ',
+      purpose: 'Purpose', costCenter: 'Cost Center', vPurpose: 'Select a purpose',
+      purposeNotSet: 'Purpose is hidden: fill the "Tujuan → Cost Center" table in Stock Ops Settings for {company}.',
       vSupplier: 'Select a supplier', whSearch: 'Search warehouse…', whEmpty: 'No warehouse found',
+      search: 'Search…', searchEmpty: 'Nothing found',
       acceptedWh: 'Accepted Warehouse', rejectedWh: 'Rejected Warehouse', assetLocation: 'Asset Location',
       accepted: 'Accepted', rejected: 'Rejected', asset: 'Asset', uom: 'Unit',
       vRejWh: 'Select rejected warehouse (some qty rejected)', vAssetLoc: 'Select asset location (asset items present)',
-      insufficientStock: '⚠️ Not enough stock — needs {need} {uom}, {avail} {uom} available'
+      insufficientStock: 'Not enough stock — needs {need} {uom}, {avail} {uom} available'
     },
     list: { title: 'Documents', empty: 'No documents for this filter', local: 'Local', server: 'Server', openErp: 'Open in ERPNext' },
     detail: {
@@ -293,7 +305,7 @@ const messages = {
       transfer: 'Transfer', stockIn: 'Stock In', stockOut: 'Stock Out'
     },
     low: {
-      title: 'Low Stock', threshold: 'Threshold', empty: 'No low stock items 👍',
+      title: 'Low Stock', threshold: 'Threshold', empty: 'No low stock items',
       level: 'Limit', request: 'Request', items: 'items',
       selectAll: 'Select all', clear: 'Clear', reqQty: 'Req', bulkRequest: 'Request Purchase',
       selected: '{n} selected', created: 'MR {name} created ({n} items)'
@@ -311,7 +323,7 @@ const messages = {
     },
     sync: {
       title: 'Sync / Outbox', waiting: '{n} waiting', syncedN: '{n} synced',
-      syncAll: '🔄 Sync all', autoSync: 'Auto-sync', autoSyncDesc: 'Send automatically when online',
+      syncAll: 'Sync all', autoSync: 'Auto-sync', autoSyncDesc: 'Send automatically when online',
       outbox: 'Outbox', allSynced: 'Everything is synced', sync: 'Sync'
     },
     settings: {
@@ -332,7 +344,7 @@ const messages = {
       installPwa: 'Install Web App (PWA)', installPwaDesc: 'Add to your home screen',
       apkUnavailable: 'APK link not set in Stock Ops Settings', pwaUnavailable: 'Install not available (open in Chrome/Android or already installed)',
       other: 'Other', backend: 'Backend (P1)', mockVersion: 'Mock version',
-      clearData: '🧹 Clear local data', confirmClear: 'Delete all local documents (mock)?'
+      clearData: 'Clear local data', confirmClear: 'Delete all local documents (mock)?'
     },
     login: {
       subtitle: 'Material Request & Stock Entry — Mobile', email: 'Email', password: 'Password',
@@ -352,7 +364,7 @@ const messages = {
       syncDelayed: 'Still offline — sync deferred', nothingToSync: 'Nothing to sync',
       cantSyncOffline: 'Cannot sync — currently offline', submitFirst: 'Sync before submitting',
       submitted: '{doc} submitted', cancelled: '{doc} cancelled', settingsSaved: 'Settings saved', dataCleared: 'Local data cleared',
-      negativeStock: '❌ Insufficient stock. The server rejected it because stock would go negative (Allow Negative Stock is off). Reduce qty or add stock first.',
+      negativeStock: 'Insufficient stock. The server rejected it because stock would go negative (Allow Negative Stock is off). Reduce qty or add stock first.',
       scan: 'Scan: {code} → {name}',
       notifOn: 'Notifications enabled', notifOff: 'Notifications disabled', notifDenied: 'Notification permission denied', testSent: 'Test notification sent'
     }

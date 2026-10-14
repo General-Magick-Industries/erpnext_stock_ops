@@ -100,8 +100,12 @@ export const createQuotation = (customer, items, company, externalLocalid, remar
   )
 
 // Persetujuan (workflow-driven — mengikuti Workflow di server/Desk, tak hardcode aksi)
-export const listPendingApprovals = (limit = 50) =>
-  call('stock_ops.api.list_pending_approvals', { limit })
+export const listPendingApprovals = (limit = 50, all = 0) =>
+  call('stock_ops.api.list_pending_approvals', { limit, all })
+// System Manager: ganti approver permintaan yang Menunggu Persetujuan + cari calon approver
+export const changeApprover = (name, approver, reason) =>
+  call('stock_ops.api.change_approver', { name, approver, reason }, { post: true })
+export const searchUsers = (txt) => call('stock_ops.api.search_users', { txt })
 export const getWorkflowTransitions = (doctype, name) =>
   call('stock_ops.api.get_workflow_transitions', { doctype, name })
 export const applyWorkflowAction = (doctype, name, action, note) =>
@@ -110,6 +114,8 @@ export const getApprovalDetail = (name) => call('stock_ops.api.get_approval_deta
 
 // Status terkini dokumen server (untuk sinkronkan tampilan lokal: docstatus + workflow_state)
 export const getDocState = (doctype, name) => call('stock_ops.api.get_doc_state', { doctype, name })
+// Detail dokumen server untuk ditampilkan di aplikasi (Daftar > Server)
+export const getServerDoc = (doctype, name) => call('stock_ops.api.get_server_doc', { doctype, name })
 
 // Resolve kode (barcode/item_code/nama) → item_code (untuk hasil scan)
 export const resolveItem = (code) => call('stock_ops.api.resolve_item', { code })

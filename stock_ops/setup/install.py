@@ -73,11 +73,22 @@ QTN_REMARKS_FIELD = {
 	"description": "Catatan/keterangan dari aplikasi Stock Ops (Quotation).",
 }
 
+# Tujuan Stock Out (Material Issue) — dipetakan ke cost center di Stock Ops Settings.
+PURPOSE_FIELD = {
+	"fieldname": "stock_ops_purpose",
+	"label": "Tujuan (Stock Ops)",
+	"fieldtype": "Data",
+	"no_copy": 1,
+	"in_standard_filter": 1,
+	"insert_after": "stock_ops_geolocation",
+	"description": "Tujuan dari aplikasi Stock Ops (Stock Out / Penerimaan Barang); menentukan cost center (Stock Ops Settings).",
+}
+
 CUSTOM_FIELDS = {
 	"Material Request": [dict(LOCALID_FIELD), dict(GEO_FIELD), dict(APPROVER_FIELD), dict(APPROVAL_NOTE_FIELD), dict(MR_REMARKS_FIELD)],
-	"Stock Entry": [dict(LOCALID_FIELD), dict(GEO_FIELD)],
+	"Stock Entry": [dict(LOCALID_FIELD), dict(GEO_FIELD), dict(PURPOSE_FIELD)],
 	"Stock Reconciliation": [dict(LOCALID_FIELD)],
-	"Purchase Receipt": [dict(LOCALID_FIELD), dict(GEO_FIELD)],
+	"Purchase Receipt": [dict(LOCALID_FIELD), dict(GEO_FIELD), dict(PURPOSE_FIELD)],
 	# Quotation: hanya perlu idempotensi + catatan (tanpa gudang/geo).
 	"Quotation": [dict(LOCALID_FIELD), dict(QTN_REMARKS_FIELD)],
 	# Pengaitan gudang per employee (dipakai Stock Ops untuk membatasi stok/pergerakan)
