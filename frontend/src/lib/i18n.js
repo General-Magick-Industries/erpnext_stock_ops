@@ -41,7 +41,8 @@ const messages = {
       reopen: 'Buka Kembali & Ajukan Ulang', reopened: '{name} dibuka kembali — silakan ajukan ulang',
       mine: 'Untuk saya', all: 'Semua', approver: 'Approver', changeApprover: 'Ganti Approver',
       newApprover: 'Cari approver baru (nama / email)…', reasonOpt: 'Alasan (opsional)',
-      approverChanged: '{name}: approver diganti ke {user}'
+      approverChanged: '{name}: approver diganti ke {user}',
+      noApprover: '(belum diatur)', noApproverHint: 'Approver belum diatur — minta admin mengisi Leave Approver di data Employee Anda sebelum mengajukan.'
     },
     nav: { home: 'Beranda', list: 'Daftar', create: 'Buat', settings: 'Setelan', sync: 'Sync', balance: 'Stok', movement: 'Mutasi' },
     docType: {
@@ -52,6 +53,7 @@ const messages = {
       SE_TRANSFER: 'Transfer Barang',
       GRN: 'Penerimaan Barang (Purchase Receipt)',
       RET: 'Retur Barang (Purchase Return)',
+      OPN: 'Stock Opname',
       QTN: 'Penawaran Jual (Quotation)',
       groupMR: 'Permintaan Barang',
       groupSE: 'Stok Barang',
@@ -222,7 +224,8 @@ const messages = {
       reopen: 'Reopen & Resubmit', reopened: '{name} reopened — you can submit it again',
       mine: 'Mine', all: 'All', approver: 'Approver', changeApprover: 'Change Approver',
       newApprover: 'Search new approver (name / email)…', reasonOpt: 'Reason (optional)',
-      approverChanged: '{name}: approver changed to {user}'
+      approverChanged: '{name}: approver changed to {user}',
+      noApprover: '(not set)', noApproverHint: 'No approver set — ask an admin to fill the Leave Approver on your Employee record before submitting.'
     },
     nav: { home: 'Home', list: 'Docs', create: 'New', settings: 'Settings', sync: 'Sync', balance: 'Stock', movement: 'Moves' },
     docType: {
@@ -233,6 +236,7 @@ const messages = {
       SE_TRANSFER: 'Stock Transfer',
       GRN: 'Goods Receipt (Purchase Receipt)',
       RET: 'Goods Return (Purchase Return)',
+      OPN: 'Stock Count',
       QTN: 'Sales Quotation',
       groupMR: 'Material Requests',
       groupSE: 'Stock Entries',

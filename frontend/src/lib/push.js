@@ -1,6 +1,6 @@
 import { call } from './api'
 
-const SCOPE = '/stock_ops/'
+const SCOPE = '/stock_ops'
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)

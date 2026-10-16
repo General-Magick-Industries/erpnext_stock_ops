@@ -36,9 +36,16 @@ window.addEventListener('appinstalled', () => {
   appStore.installPrompt = null
 })
 
-// Service worker (PWA installable + offline app-shell) hanya saat disajikan bench di /stock_ops/.
+// Service worker (PWA installable + offline app-shell) hanya saat disajikan bench.
+// Scope "/stock_ops" TANPA slash akhir: beberapa server (proxy Docker) membalas "/stock_ops/" dengan
+// redirect absolut ke port internal (mis. :8080) → app terpasang gagal dibuka. SW lama (scope
+// "/stock_ops/") dilepas.
 if (servedByBench && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/stock_ops/sw.js', { scope: '/stock_ops/' }).catch(() => {})
+  navigator.serviceWorker
+    .getRegistrations()
+    .then((regs) => regs.filter((r) => new URL(r.scope).pathname === '/stock_ops/').forEach((r) => r.unregister()))
+    .catch(() => {})
+  navigator.serviceWorker.register('/stock_ops_sw.js', { scope: '/stock_ops' }).catch(() => {})
 }
 
 // Jika sudah login & online, segarkan master data di latar (juga jadi cache offline).

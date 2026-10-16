@@ -94,17 +94,17 @@ def _send(sub, payload):
 			frappe.log_error(f"web push failed: {e}", "Stock Ops Push")
 
 
-def _dispatch(filters, title, body, url="/stock_ops/"):
+def _dispatch(filters, title, body, url="/stock_ops"):
 	payload = {"title": title, "body": body, "url": url}
 	for s in frappe.get_all(DT, filters=filters, fields=["name", "endpoint", "p256dh", "auth"]):
 		_send(frappe._dict(s), payload)
 
 
-def send_to_user(user, title, body, url="/stock_ops/"):
+def send_to_user(user, title, body, url="/stock_ops"):
 	_dispatch({"user": user}, title, body, url)
 
 
-def send_to_all(title, body, url="/stock_ops/"):
+def send_to_all(title, body, url="/stock_ops"):
 	_dispatch({}, title, body, url)
 
 

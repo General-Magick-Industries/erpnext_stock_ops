@@ -14,7 +14,8 @@ let html = readFileSync(join(outDir, 'index.html'), 'utf8')
 
 const inject =
   '\n  <link rel="manifest" href="/stock_ops/manifest.json">\n' +
-  '  <link rel="apple-touch-icon" href="/assets/stock_ops/stock_ops/icon.svg">\n' +
+  '  <link rel="apple-touch-icon" href="/assets/stock_ops/stock_ops/apple-touch-icon.png">\n' +
+  '  <link rel="icon" type="image/png" sizes="192x192" href="/assets/stock_ops/stock_ops/icon-192.png">\n' +
   '  <script>\n' +
   '    window.csrf_token = "{{ csrf_token }}";\n' +
   '    window.stockops_user = "{{ stockops_user }}";\n' +

@@ -91,8 +91,15 @@ export const DOC_TYPES = {
 
 export const DOC_TYPE_LIST = Object.values(DOC_TYPES)
 
+// Jenis dokumen server yang TIDAK ada di menu Buat (mis. opname) — hanya untuk tampilan.
+export const SERVER_ONLY_TYPES = {
+  OPN: { key: 'OPN', short: 'OPN', doctype: 'Stock Reconciliation', icon: 'list', color: '#7c3aed' }
+}
+export const docTypeCfg = (key) => DOC_TYPES[key] || SERVER_ONLY_TYPES[key]
+
 // Petakan dokumen server (list_recent / get_server_doc) → jenis app (ikon/warna/label).
 export function serverTypeKey(d) {
+  if (d.doctype === 'Stock Reconciliation') return 'OPN'
   if (d.doctype === 'Material Request') return d.subtype === 'Purchase' ? 'PR' : 'MR'
   if (d.doctype === 'Purchase Receipt') return d.is_return ? 'RET' : 'GRN'
   if (d.doctype === 'Quotation') return 'QTN'

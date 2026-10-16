@@ -4,12 +4,13 @@ import { useRoute } from 'vue-router'
 import { useApp } from '../stores/app'
 import { useMaster } from '../stores/master'
 import { useI18n } from '../lib/i18n'
-import { getServerDoc } from '../lib/service'
-import { DOC_TYPES, serverTypeKey } from '../data/mock'
+import { getServerDoc, submitTransaction, applyWorkflowAction } from '../lib/service'
+import { docTypeCfg, serverTypeKey } from '../data/mock'
 import AppBar from '../components/AppBar.vue'
 
-// Detail dokumen server (dari Daftar > Server) DITAMPILKAN DI APLIKASI.
-// Hanya tombol "Buka di Desk" yang membuka tab baru.
+// Detail / pratinjau dokumen server DI APLIKASI — dari Daftar > Server, setelah Opname disimpan,
+// dan setelah Permintaan Pembelian dari Stok Menipis dibuat. Bisa langsung Submit / Ajukan
+// Persetujuan / Buka Kembali. Hanya tombol "Buka di Desk" yang membuka tab baru.
 const route = useRoute()
 const app = useApp()
 const master = useMaster()
@@ -21,7 +22,39 @@ const doc = ref(null)
 const loading = ref(true)
 const error = ref('')
 
-const cfg = computed(() => (doc.value ? DOC_TYPES[serverTypeKey(doc.value)] : null))
+const cfg = computed(() => (doc.value ? docTypeCfg(serverTypeKey(doc.value)) : null))
+const isOpname = computed(() => doc.value && doc.value.doctype === 'Stock Reconciliation')
+const isPurchaseMR = computed(() => doc.value && doc.value.doctype === 'Material Request' && doc.value.subtype === 'Purchase')
+const canSubmit = computed(
+  () => doc.value && doc.value.can_submit && (!doc.value.workflow_state || doc.value.workflow_state === 'Draft')
+)
+const submitLabel = computed(() => (isPurchaseMR.value ? t('approval.submitForApproval') : t('detail.submit')))
+const canReopen = computed(
+  () => doc.value && doc.value.workflow_state === 'Rejected' && doc.value.owner === (app.user && app.user.email)
+)
+// Approver: yang sudah ditetapkan, atau calon approver (leave approver) sebelum diajukan.
+const approver = computed(() => doc.value && (doc.value.approver || doc.value.approver_preview))
+const busy = ref(false)
+async function run(fn, okMsg) {
+  busy.value = true
+  try {
+    const res = await fn()
+    app.notify(okMsg(res), 'success')
+    await load()
+  } catch (e) {
+    app.notify(e && e.message ? e.message : String(e), 'error')
+  } finally {
+    busy.value = false
+  }
+}
+const submit = () =>
+  run(
+    () => submitTransaction(doc.value.doctype, doc.value.name),
+    (r) => (r && r.workflow_state === 'Pending Approval' ? t('approval.submittedForApproval') + ' → ' + r.name : t('toast.submitted', { doc: r.name }))
+  )
+const reopen = () =>
+  run(() => applyWorkflowAction(doc.value.doctype, doc.value.name, 'Reopen'), () => t('approval.reopened', { name: doc.value.name }))
+const diffClass = (n) => (Number(n) > 0 ? 'diff-plus' : Number(n) < 0 ? 'diff-minus' : '')
 const totalQty = computed(() => (doc.value ? doc.value.items.reduce((s, i) => s + (Number(i.qty) || 0), 0) : 0))
 const docstatusClass = { 0: 's-pending', 1: 's-submitted', 2: 's-error' }
 function wfLabel(state) {
@@ -62,7 +95,7 @@ onMounted(load)
           <span class="badge-status" :class="docstatusClass[doc.docstatus]">{{ t('status.' + doc.docstatus) }}</span>
         </div>
 
-        <div v-if="doc.workflow_state" class="mt8">
+        <div v-if="doc.workflow_state && doc.workflow_state !== 'Draft'" class="mt8">
           <span class="wf-chip" :class="wfClass(doc.workflow_state)">{{ wfLabel(doc.workflow_state) }}</span>
         </div>
 
@@ -70,12 +103,15 @@ onMounted(load)
           <div><div class="tiny muted">{{ t('form.company') }}</div><div class="small">{{ doc.company }}</div></div>
           <div><div class="tiny muted">{{ t('form.date') }}</div><div class="small">{{ doc.date }}</div></div>
           <div v-if="doc.source_warehouse"><div class="tiny muted">{{ t('form.sourceWh') }}</div><div class="small">{{ doc.source_warehouse }}</div></div>
-          <div v-if="doc.target_warehouse"><div class="tiny muted">{{ t('form.targetWh') }}</div><div class="small">{{ doc.target_warehouse }}</div></div>
+          <div v-if="doc.target_warehouse"><div class="tiny muted">{{ isOpname ? t('settings.warehouse') : t('form.targetWh') }}</div><div class="small">{{ doc.target_warehouse }}</div></div>
           <div v-if="doc.supplier"><div class="tiny muted">{{ t('form.supplier') }}</div><div class="small">{{ doc.supplier }}</div></div>
           <div v-if="doc.customer"><div class="tiny muted">{{ t('form.customer') }}</div><div class="small">{{ doc.customer }}</div></div>
           <div v-if="doc.purpose"><div class="tiny muted">{{ t('form.purpose') }}</div><div class="small">{{ doc.purpose }}</div></div>
           <div><div class="tiny muted">{{ t('approval.requester') }}</div><div class="small truncate">{{ doc.owner }}</div></div>
-          <div v-if="doc.approver"><div class="tiny muted">{{ t('approval.approver') }}</div><div class="small truncate">{{ doc.approver }}</div></div>
+          <div v-if="approver || isPurchaseMR">
+            <div class="tiny muted">{{ t('approval.approver') }}</div>
+            <div class="small truncate">{{ approver || t('approval.noApprover') }}</div>
+          </div>
         </div>
         <div v-if="doc.remarks" class="mt8 small"><Icon name="note" /> {{ doc.remarks }}</div>
         <a
@@ -105,9 +141,27 @@ onMounted(load)
             <div class="truncate" style="font-weight: 600">{{ line.item_name || line.item_code }}</div>
             <div class="tiny muted truncate">{{ line.item_code }}<span v-if="line.rejected_qty"> · {{ t('form.rejected') }} {{ line.rejected_qty }}</span></div>
           </div>
-          <div style="font-weight: 700">{{ line.qty }} <span class="tiny muted">{{ line.uom }}</span></div>
+          <div v-if="isOpname" class="opn-qty">
+            <div class="tiny muted">{{ t('opname.system') }} {{ line.current_qty }} → {{ t('opname.counted') }}</div>
+            <div style="font-weight: 700">{{ line.qty }}</div>
+            <div class="tiny" :class="diffClass(line.qty_difference)">{{ t('opname.diff') }} {{ Number(line.qty_difference) > 0 ? '+' : '' }}{{ line.qty_difference }}</div>
+          </div>
+          <div v-else style="font-weight: 700">{{ line.qty }} <span class="tiny muted">{{ line.uom }}</span></div>
         </div>
       </div>
+
+      <div v-if="doc.workflow_state === 'Pending Approval'" class="card mt12 tiny muted" style="text-align: center">
+        {{ t('approval.waiting') }}
+      </div>
+      <div v-if="canSubmit && isPurchaseMR && !approver" class="card mt12 tiny warn-card">
+        <Icon name="warning" /> {{ t('approval.noApproverHint') }}
+      </div>
+      <button v-if="canSubmit" class="btn ok block mt12" :disabled="busy || !app.online" @click="submit">
+        {{ busy ? t('form.processing') : submitLabel }}
+      </button>
+      <button v-if="canReopen" class="btn brand block mt12" :disabled="busy || !app.online" @click="reopen">
+        {{ t('approval.reopen') }}
+      </button>
       <div style="height: 8px"></div>
     </template>
   </div>
@@ -121,6 +175,10 @@ onMounted(load)
 .wf-chip.approved { background: #dcfce7; color: #166534; }
 .wf-chip.rejected { background: #fee2e2; color: #991b1b; }
 .reject-card { border-left: 4px solid var(--danger); }
+.warn-card { color: #92400e; background: #fef3c7; border: 1px solid #fcd34d; }
+.opn-qty { text-align: right; flex: none; }
+.diff-plus { color: #16a34a; font-weight: 700; }
+.diff-minus { color: var(--danger); font-weight: 700; }
 .desk-link {
   display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--brand);
   text-decoration: none; padding: 7px 12px; border: 1px solid var(--brand); border-radius: 8px;

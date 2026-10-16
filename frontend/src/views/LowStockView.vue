@@ -69,7 +69,8 @@ async function bulkRequest() {
     const payload = chosen.map((b) => ({ item_code: b.item_code, qty: suggest(b), uom: b.stock_uom, warehouse: b.warehouse }))
     const res = await bulkPurchaseRequest(payload, app.settings.company, uuid())
     app.notify(t('low.created', { name: res.name, n: res.count || payload.length }), 'success')
-    await load()
+    // Pratinjau permintaan di aplikasi + "Ajukan Persetujuan" (approver ditampilkan).
+    router.push(`/sdoc/${encodeURIComponent('Material Request')}/${encodeURIComponent(res.name)}`)
   } catch (e) {
     app.notify(e && e.message ? e.message : String(e), 'error')
   } finally {

@@ -6,7 +6,7 @@ import { useApp } from '../stores/app'
 import { useMaster } from '../stores/master'
 import { useI18n } from '../lib/i18n'
 import { listRecent } from '../lib/service'
-import { DOC_TYPES, DOC_TYPE_LIST, serverTypeKey as typeKeyOf } from '../data/mock'
+import { DOC_TYPES, DOC_TYPE_LIST, docTypeCfg, serverTypeKey as typeKeyOf } from '../data/mock'
 import AppBar from '../components/AppBar.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import FilterBar from '../components/FilterBar.vue'
@@ -142,7 +142,7 @@ function openDoc(d) {
       <div v-if="loadingServer" class="empty"><div class="big"><Icon name="loading" spin /></div>…</div>
       <div v-else-if="!serverDocs.length" class="empty"><div class="big"><Icon name="list" /></div>{{ t('list.empty') }}</div>
       <div v-for="d in serverDocs" :key="d.name" class="list-item mt12" style="cursor: pointer" @click="openDoc(d)">
-        <span class="lead-icon" :style="{ background: DOC_TYPES[typeKeyOf(d)].color }"><Icon :name="DOC_TYPES[typeKeyOf(d)].icon" /></span>
+        <span class="lead-icon" :style="{ background: docTypeCfg(typeKeyOf(d)).color }"><Icon :name="docTypeCfg(typeKeyOf(d)).icon" /></span>
         <div class="grow" style="min-width: 0">
           <div class="row between">
             <div class="truncate" style="font-weight: 700">{{ d.name }}</div>

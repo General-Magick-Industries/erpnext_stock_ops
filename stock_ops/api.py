@@ -4,7 +4,7 @@ import frappe
 from frappe import _
 from frappe.utils import cint
 
-ALLOWED_DOCTYPES = ("Material Request", "Stock Entry", "Purchase Receipt", "Quotation")
+ALLOWED_DOCTYPES = ("Material Request", "Stock Entry", "Purchase Receipt", "Quotation", "Stock Reconciliation")
 
 
 def get_user_warehouses(user=None):
@@ -547,7 +547,14 @@ def bulk_purchase_request(items, company=None, external_localid=None):
 	if not items:
 		frappe.throw(_("Tidak ada item untuk diminta"))
 
-	_assert_warehouses_allowed({i.get("warehouse") for i in items if i.get("warehouse")})
+	whs = {i.get("warehouse") for i in items if i.get("warehouse")}
+	_assert_warehouses_allowed(whs)
+	# Perusahaan permintaan = perusahaan gudang item (default perangkat bisa berbeda → error ERPNext).
+	wh_companies = set(_warehouse_companies(list(whs)))
+	if len(wh_companies) > 1:
+		frappe.throw(_("Pilih item dari satu perusahaan saja (terpilih: {0}).").format(", ".join(sorted(wh_companies))))
+	if wh_companies:
+		company = wh_companies.pop()
 
 	if external_localid:
 		existing = frappe.db.get_value("Material Request", {"external_localid": external_localid}, "name")
@@ -1202,6 +1209,7 @@ def submit_transaction(doctype, name):
 	if doctype not in ALLOWED_DOCTYPES:
 		frappe.throw(_("Doctype tidak diizinkan: {0}").format(doctype))
 	doc = frappe.get_doc(doctype, name)
+	_assert_company_allowed(doc.company)
 
 	from frappe.model.workflow import apply_workflow, get_transitions, get_workflow_name
 
@@ -1232,6 +1240,7 @@ def cancel_transaction(doctype, name):
 	if doctype not in ALLOWED_DOCTYPES:
 		frappe.throw(_("Doctype tidak diizinkan: {0}").format(doctype))
 	doc = frappe.get_doc(doctype, name)
+	_assert_company_allowed(doc.company)
 	doc.cancel()
 	frappe.db.commit()
 	return {"name": doc.name, "docstatus": doc.docstatus}
@@ -1326,10 +1335,29 @@ def get_server_doc(doctype, name):
 				"qty": i.get("qty"),
 				"uom": i.get("uom") or i.get("stock_uom"),
 				"rejected_qty": i.get("rejected_qty"),
+				"warehouse": i.get("warehouse") or i.get("s_warehouse") or i.get("t_warehouse"),
+				# Stock Reconciliation (opname): stok sistem vs hasil hitung fisik
+				"current_qty": i.get("current_qty"),
+				"qty_difference": i.get("quantity_difference"),
 			}
 			for i in items
 		],
+		"can_submit": bool(doc.docstatus == 0 and frappe.has_permission(doctype, "submit", doc)),
+		"approver_preview": _approver_preview(doc),
 	}
+
+
+def _approver_preview(doc):
+	"""Siapa yang akan menyetujui Permintaan Pembelian yang masih Draft (ditampilkan sebelum diajukan)."""
+	if doc.doctype != "Material Request" or doc.get("material_request_type") != "Purchase":
+		return None
+	if doc.get("stock_ops_approver"):
+		return doc.stock_ops_approver
+	if doc.get("workflow_state") not in (None, "", "Draft"):
+		return None
+	from stock_ops.approval import get_approver_or_none
+
+	return get_approver_or_none(doc.owner)
 
 
 @frappe.whitelist()
@@ -1519,6 +1547,15 @@ def list_recent(company=None, limit=20):
 		limit_page_length=limit,
 	):
 		out.append({"doctype": "Purchase Receipt", **d})
+
+	for d in frappe.get_all(
+		"Stock Reconciliation",
+		filters=dict(base),
+		fields=["name", "purpose as subtype", "posting_date as date", "docstatus", "modified"],
+		order_by="modified desc",
+		limit_page_length=limit,
+	):
+		out.append({"doctype": "Stock Reconciliation", "status": None, **d})
 
 	out.sort(key=lambda x: x.get("modified") or "", reverse=True)
 	for d in out:

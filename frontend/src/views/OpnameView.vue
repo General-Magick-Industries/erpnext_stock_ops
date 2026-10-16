@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useApp } from '../stores/app'
 import { useMaster } from '../stores/master'
 import { useI18n } from '../lib/i18n'
@@ -10,6 +11,7 @@ import SearchInput from '../components/SearchInput.vue'
 import FilterBar from '../components/FilterBar.vue'
 
 const app = useApp()
+const router = useRouter()
 const master = useMaster()
 const { t } = useI18n()
 
@@ -69,7 +71,8 @@ async function submit() {
     const items = changed.value.map((r) => ({ item_code: r.item_code, qty: Number(r.counted), valuation_rate: r.valuation_rate }))
     const res = await createOpname(warehouse.value, items, company.value, uuid())
     app.notify(t('opname.created', { name: res.name, n: res.count || items.length }), 'success')
-    await load()
+    // Pratinjau hasil opname di aplikasi + tombol Submit (tak perlu buka Desk).
+    router.push(`/sdoc/${encodeURIComponent('Stock Reconciliation')}/${encodeURIComponent(res.name)}`)
   } catch (e) {
     app.notify(e && e.message ? e.message : String(e), 'error')
   } finally {
