@@ -1226,12 +1226,54 @@ def submit_transaction(doctype, name):
 		if not transitions:
 			frappe.throw(_("Tidak ada aksi workflow yang tersedia untuk dokumen ini."))
 		apply_workflow(doc, transitions[0].get("action"))
+	elif doctype == "Stock Reconciliation":
+		_submit_opname(doc)
 	else:
 		doc.submit()
 
 	frappe.db.commit()
 	doc.reload()
 	return {"name": doc.name, "docstatus": doc.docstatus, "workflow_state": getattr(doc, "workflow_state", None)}
+
+
+def _submit_opname(doc):
+	"""Submit opname (Stock Reconciliation) dari aplikasi.
+
+	ERPNext menolak rekonsiliasi yang MULAI dari saldo negatif bila Allow Negative Stock mati: cek
+	negatifnya = saldo sebelumnya + actual_qty (0 untuk rekonsiliasi) < 0 → "N units … needed", padahal
+	opname justru memperbaiki saldo minus tsb (sisa dari masa minus diizinkan). Bila opname HANYA menaikkan
+	saldo negatif ke hasil hitung >= 0 dan tak ada transaksi sesudahnya untuk item/gudang tsb, cek negatif
+	dilewati KHUSUS dokumen ini (setara mengaktifkan Allow Negative Stock sesaat) + dicatat di komentar.
+	Selain itu perilaku ERPNext biasa."""
+	from frappe.utils import flt
+
+	neg_rows = [r for r in doc.items if flt(r.current_qty) < 0]
+	fixes_negative = bool(neg_rows) and all(flt(r.qty) >= 0 for r in neg_rows) and not _has_future_sle(doc)
+	if fixes_negative:
+		update = doc.update_stock_ledger
+		doc.update_stock_ledger = lambda allow_negative_stock=False: update(allow_negative_stock=True)
+	doc.submit()
+	if fixes_negative:
+		doc.add_comment(
+			"Info",
+			_("Opname memperbaiki saldo negatif (dari Stock Ops): {0}").format(
+				", ".join(f"{r.item_code} @ {r.warehouse}: {flt(r.current_qty)} → {flt(r.qty)}" for r in neg_rows)
+			),
+		)
+
+
+def _has_future_sle(doc):
+	"""Ada transaksi stok SESUDAH waktu posting opname untuk item/gudang di dokumen ini?"""
+	from frappe.utils import get_datetime
+
+	at = get_datetime(f"{doc.posting_date} {doc.posting_time}")
+	for r in doc.items:
+		if frappe.db.exists(
+			"Stock Ledger Entry",
+			{"item_code": r.item_code, "warehouse": r.warehouse, "is_cancelled": 0, "posting_datetime": [">", at]},
+		):
+			return True
+	return False
 
 
 @frappe.whitelist()

@@ -7,6 +7,7 @@ import { useI18n } from '../lib/i18n'
 import { getServerDoc, submitTransaction, applyWorkflowAction } from '../lib/service'
 import { docTypeCfg, serverTypeKey } from '../data/mock'
 import AppBar from '../components/AppBar.vue'
+import { stripHtml, isNegativeStockError } from '../lib/util'
 
 // Detail / pratinjau dokumen server DI APLIKASI — dari Daftar > Server, setelah Opname disimpan,
 // dan setelah Permintaan Pembelian dari Stok Menipis dibuat. Bisa langsung Submit / Ajukan
@@ -42,7 +43,10 @@ async function run(fn, okMsg) {
     app.notify(okMsg(res), 'success')
     await load()
   } catch (e) {
-    app.notify(e && e.message ? e.message : String(e), 'error')
+    // Pesan server bisa berisi HTML (mis. tautan item/gudang) → tampilkan sebagai teks.
+    const raw = e && e.message ? e.message : String(e)
+    const msg = stripHtml(raw)
+    app.notify(isNegativeStockError(raw) ? `${t('toast.negativeStock')} — ${msg}` : msg, 'error')
   } finally {
     busy.value = false
   }

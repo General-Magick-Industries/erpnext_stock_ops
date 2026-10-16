@@ -24,6 +24,15 @@ let timer = null
 const keyOf = (b) => b.item_code + '|' + b.warehouse
 // Saran qty beli: pakai reorder_qty item (jika diset di child reorder_levels), jika tidak pakai kekurangan ke batas.
 const suggest = (b) => (Number(b.reorder_qty) > 0 ? Math.round(b.reorder_qty) : Math.max(1, Math.ceil((b.limit || 0) - (b.actual_qty || 0))))
+// Qty beli per baris bisa diubah (default = saran). key -> qty
+const qtyEdit = ref({})
+const qtyOf = (b) => {
+  const v = qtyEdit.value[keyOf(b)]
+  return v === undefined || v === '' ? suggest(b) : Number(v)
+}
+function setQty(b, v) {
+  qtyEdit.value = { ...qtyEdit.value, [keyOf(b)]: v }
+}
 const selCount = computed(() => Object.values(sel.value).filter(Boolean).length)
 const allSelected = computed(() => items.value.length > 0 && selCount.value === items.value.length)
 
@@ -35,6 +44,7 @@ async function load() {
     restricted.value = !!res.restricted
     warehouses.value = res.warehouses || []
     sel.value = {}
+    qtyEdit.value = {}
   } catch (e) {
     app.notify(e && e.message ? e.message : String(e), 'error')
     items.value = []
@@ -64,9 +74,10 @@ function toggleAll() {
 async function bulkRequest() {
   const chosen = items.value.filter((b) => sel.value[keyOf(b)])
   if (!chosen.length) return
+  if (chosen.some((b) => !(qtyOf(b) > 0))) return app.notify(t('form.vQty'), 'warn')
   saving.value = true
   try {
-    const payload = chosen.map((b) => ({ item_code: b.item_code, qty: suggest(b), uom: b.stock_uom, warehouse: b.warehouse }))
+    const payload = chosen.map((b) => ({ item_code: b.item_code, qty: qtyOf(b), uom: b.stock_uom, warehouse: b.warehouse }))
     const res = await bulkPurchaseRequest(payload, app.settings.company, uuid())
     app.notify(t('low.created', { name: res.name, n: res.count || payload.length }), 'success')
     // Pratinjau permintaan di aplikasi + "Ajukan Persetujuan" (approver ditampilkan).
@@ -115,7 +126,17 @@ function fmt(n) {
         <div class="grow" style="min-width: 0; cursor: pointer" @click="router.push(`/item/${encodeURIComponent(b.item_code)}`)">
           <div class="truncate" style="font-weight: 600">{{ b.item_name }}</div>
           <div class="tiny muted truncate">{{ b.item_code }} · <Icon name="warehouse" /> {{ b.warehouse }}</div>
-          <div class="tiny muted">{{ t('low.level') }}: {{ fmt(b.limit) }} · {{ t('low.reqQty') }} <b style="color: var(--brand)">{{ fmt(suggest(b)) }}</b> {{ b.stock_uom }}</div>
+          <div class="tiny muted">{{ t('low.level') }}: {{ fmt(b.limit) }} · {{ t('low.reqQty') }} <b style="color: var(--brand)">{{ fmt(qtyOf(b)) }}</b> {{ b.stock_uom }}</div>
+          <!-- Qty beli bisa diubah saat baris dipilih -->
+          <div v-if="sel[keyOf(b)]" class="buy-qty" @click.stop>
+            <span class="tiny muted">{{ t('low.buyQty') }}</span>
+            <div class="qty-box">
+              <button @click="setQty(b, Math.max(1, qtyOf(b) - 1))">−</button>
+              <input type="number" inputmode="decimal" min="0" :value="qtyOf(b)" @input="setQty(b, $event.target.value)" />
+              <button @click="setQty(b, qtyOf(b) + 1)"><Icon name="plus" /></button>
+            </div>
+            <span class="tiny muted">{{ b.stock_uom }}</span>
+          </div>
         </div>
         <div style="text-align: right; margin-right: 4px">
           <div style="font-weight: 800; color: var(--danger)">{{ fmt(b.actual_qty) }}</div>
@@ -132,3 +153,8 @@ function fmt(n) {
     </button>
   </div>
 </template>
+
+<style scoped>
+.buy-qty { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.buy-qty .qty-box input { width: 64px; }
+</style>

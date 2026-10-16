@@ -128,7 +128,7 @@ const messages = {
     low: {
       title: 'Stok Menipis', threshold: 'Ambang', empty: 'Tidak ada stok menipis',
       level: 'Batas', request: 'Minta Beli', items: 'item',
-      selectAll: 'Pilih semua', clear: 'Batal', reqQty: 'Req', bulkRequest: 'Request Beli',
+      selectAll: 'Pilih semua', clear: 'Batal', reqQty: 'Req', buyQty: 'Qty beli', bulkRequest: 'Request Beli',
       selected: '{n} dipilih', created: 'MR {name} dibuat ({n} item)'
     },
     opname: {
@@ -311,7 +311,7 @@ const messages = {
     low: {
       title: 'Low Stock', threshold: 'Threshold', empty: 'No low stock items',
       level: 'Limit', request: 'Request', items: 'items',
-      selectAll: 'Select all', clear: 'Clear', reqQty: 'Req', bulkRequest: 'Request Purchase',
+      selectAll: 'Select all', clear: 'Clear', reqQty: 'Req', buyQty: 'Buy qty', bulkRequest: 'Request Purchase',
       selected: '{n} selected', created: 'MR {name} created ({n} items)'
     },
     opname: {
