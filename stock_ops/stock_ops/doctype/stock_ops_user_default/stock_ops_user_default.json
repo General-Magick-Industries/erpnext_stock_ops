@@ -1,0 +1,98 @@
+{
+ "actions": [],
+ "creation": "2026-10-25 00:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "istable": 1,
+ "field_order": [
+  "user",
+  "full_name",
+  "applies_to",
+  "company",
+  "source_warehouse",
+  "target_warehouse",
+  "purpose",
+  "show_assets"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "full_name",
+   "fieldtype": "Data",
+   "label": "Nama",
+   "fetch_from": "user.full_name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "applies_to",
+   "fieldtype": "Select",
+   "label": "Berlaku untuk",
+   "options": "Semua\nStock In\nStock Out\nTransfer\nPermintaan Transfer\nPermintaan Pembelian\nPenerimaan Barang\nStock Opname\nStok & Mutasi",
+   "default": "Semua",
+   "reqd": 1,
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "Form/halaman yang memakai default baris ini. Baris jenis tertentu mengalahkan baris \"Semua\"; kolom kosong jatuh ke baris \"Semua\", lalu ke default Employee / Pengaturan."
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "Kosongkan untuk mengikuti perusahaan gudang / Employee."
+  },
+  {
+   "fieldname": "source_warehouse",
+   "fieldtype": "Link",
+   "label": "Gudang Sumber",
+   "options": "Warehouse",
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "Stock Out, Transfer, Permintaan Transfer (gudang asal). Juga gudang awal di Stok, Mutasi & Opname."
+  },
+  {
+   "fieldname": "target_warehouse",
+   "fieldtype": "Link",
+   "label": "Gudang Tujuan",
+   "options": "Warehouse",
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "Stock In, Transfer, Permintaan, Penerimaan Barang (gudang penerima). Juga acuan filter item (Item Defaults)."
+  },
+  {
+   "fieldname": "purpose",
+   "fieldtype": "Data",
+   "label": "Tujuan (Cost Center)",
+   "description": "Tujuan default Stock Out / Penerimaan Barang — harus ada di tabel Tujuan → Cost Center untuk perusahaan tsb."
+  },
+  {
+   "fieldname": "show_assets",
+   "fieldtype": "Check",
+   "label": "Tampilkan Aset",
+   "default": "0",
+   "description": "Bila tidak dicentang, item fixed asset disembunyikan dari pilihan item."
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-25 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Stock Ops",
+ "name": "Stock Ops User Default",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

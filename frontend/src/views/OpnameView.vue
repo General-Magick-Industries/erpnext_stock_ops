@@ -15,8 +15,10 @@ const router = useRouter()
 const master = useMaster()
 const { t } = useI18n()
 
-// Perusahaan dari server (Employee/Settings) bila ada; jika tidak, default lokal.
-const company = computed(() => (master.defaults && master.defaults.company) || app.settings.company)
+// Default per User (Stock Opname) → company & gudang langsung terpilih; lalu server
+// (Employee/Settings); lalu default lokal.
+const ud = master.defaultsFor('OPN')
+const company = computed(() => ud.company || (master.defaults && master.defaults.company) || app.settings.company)
 const whOptions = computed(() =>
   master.userWarehouses.length ? master.userWarehouses : master.warehousesForCompany(company.value)
 )
@@ -55,7 +57,8 @@ async function load() {
 }
 
 onMounted(() => {
-  warehouse.value = whOptions.value[0] || ''
+  const pref = ud.source_warehouse || ud.target_warehouse
+  warehouse.value = (pref && whOptions.value.includes(pref) ? pref : whOptions.value[0]) || ''
   load()
 })
 

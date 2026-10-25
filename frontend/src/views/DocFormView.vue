@@ -82,6 +82,14 @@ const hasAsset = computed(() => doc.items.some((i) => i.is_fixed_asset))
 const blockedOffline = computed(() => !!(cfg && cfg.onlineOnly && !app.online))
 // Gudang acuan stok di item picker: gudang asal bila ada (keluar/transfer), selain itu tujuan.
 const pickerWarehouse = computed(() => (cfg && cfg.source ? doc.sourceWarehouse : doc.targetWarehouse) || '')
+// Saringan item picker: keluar/transfer → item ber-stok di gudang asal; masuk/permintaan/penerimaan →
+// item ber-Item Defaults gudang penerima. Aset tampil sesuai Default per User (tanpa baris = tampil).
+const PICKER_FILTER = { SE_OUT: 'stock', SE_TRANSFER: 'stock', SE_IN: 'defaults', GRN: 'defaults', MR: 'defaults', PR: 'defaults' }
+const pickerFilterMode = (cfg && PICKER_FILTER[cfg.key]) || ''
+const pickerFilterWarehouse = computed(() =>
+  pickerFilterMode === 'stock' ? doc.sourceWarehouse || '' : pickerFilterMode ? doc.targetWarehouse || '' : ''
+)
+const pickerShowAssets = master.defaultsFor(typeKey).show_assets !== false
 
 // ===== Peringatan stok (lunak) untuk dokumen yang MENGURANGI stok (ada gudang asal) =====
 // Angka stok diambil dari saldo gudang asal (cache master.stockByWh). Peringatan bersifat
@@ -411,7 +419,15 @@ async function save() {
     </button>
     <div style="height: 8px"></div>
 
-    <ItemPickerSheet v-if="showPicker" :warehouse="pickerWarehouse" @pick="addItem" @close="showPicker = false" />
+    <ItemPickerSheet
+      v-if="showPicker"
+      :warehouse="pickerWarehouse"
+      :filter-mode="pickerFilterMode"
+      :filter-warehouse="pickerFilterWarehouse"
+      :show-assets="pickerShowAssets"
+      @pick="addItem"
+      @close="showPicker = false"
+    />
     <PurchaseOrderSheet v-if="showPO" :company="doc.company" :supplier="doc.supplier" @pick="selectPO" @close="showPO = false" />
   </div>
 </template>

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useApp } from '../stores/app'
+import { useMaster } from '../stores/master'
 import { useI18n } from '../lib/i18n'
 import { getStockLedger } from '../lib/service'
 import AppBar from '../components/AppBar.vue'
@@ -9,6 +10,7 @@ import FilterBar from '../components/FilterBar.vue'
 import { fmtDateTime } from '../lib/util'
 
 const app = useApp()
+const master = useMaster()
 const { t } = useI18n()
 
 const loading = ref(false)
@@ -16,8 +18,15 @@ const entries = ref([])
 const warehouses = ref([])
 const restricted = ref(false)
 const q = ref('')
+// Default per User (Stok & Mutasi): company + gudang awal sudah terpilih (tetap bisa diganti).
+const ud = master.defaultsFor('STOCK')
+const company = computed(() => ud.company || app.settings.company)
+const defaultWh = ud.source_warehouse || ud.target_warehouse || ''
 const direction = ref('all') // all | in | out
-const whFilter = ref('ALL')
+const whFilter = ref(defaultWh || 'ALL')
+// Pilihan chip = seluruh gudang lingkup user. API hanya mengembalikan gudang yang difilter, jadi
+// daftar ini diperbarui saat memuat "Semua gudang" saja (agar chip lain tak hilang setelah memilih).
+const allWarehouses = ref(master.userWarehouses.length ? [...master.userWarehouses] : master.warehousesForCompany(company.value))
 const fromDate = ref('')
 const toDate = ref('')
 
@@ -25,7 +34,7 @@ async function load() {
   loading.value = true
   try {
     const res = await getStockLedger({
-      company: app.settings.company,
+      company: company.value,
       direction: direction.value === 'all' ? '' : direction.value,
       warehouse: whFilter.value === 'ALL' ? '' : whFilter.value,
       from_date: fromDate.value || '',
@@ -34,6 +43,7 @@ async function load() {
     })
     entries.value = res.entries || []
     warehouses.value = res.warehouses || []
+    if (whFilter.value === 'ALL') allWarehouses.value = warehouses.value
     restricted.value = !!res.restricted
   } catch (e) {
     app.notify(e && e.message ? e.message : String(e), 'error')
@@ -83,13 +93,13 @@ function dt(e) {
         <label class="date-field"><span>{{ t('movement.to') }}</span><input type="date" v-model="toDate" /></label>
         <button v-if="fromDate || toDate" class="btn sm" style="align-self: flex-end" @click="clearDates"><Icon name="close" /></button>
       </div>
-      <div v-if="warehouses.length > 1" class="chips wrap" style="margin-top: 10px">
+      <div v-if="allWarehouses.length > 1" class="chips wrap" style="margin-top: 10px">
         <button class="chip" :class="{ active: whFilter === 'ALL' }" @click="whFilter = 'ALL'">{{ t('balance.allWh') }}</button>
-        <button v-for="w in warehouses" :key="w" class="chip" :class="{ active: whFilter === w }" @click="whFilter = w">{{ w }}</button>
+        <button v-for="w in allWarehouses" :key="w" class="chip" :class="{ active: whFilter === w }" @click="whFilter = w">{{ w }}</button>
       </div>
     </FilterBar>
 
-    <div v-if="restricted" class="tiny muted" style="margin: 6px 4px"><Icon name="lock" /> {{ t('balance.restricted') }}: {{ warehouses.join(', ') }}</div>
+    <div v-if="restricted" class="tiny muted" style="margin: 6px 4px"><Icon name="lock" /> {{ t('balance.restricted') }}: {{ allWarehouses.join(', ') }}</div>
 
     <div v-if="loading">
       <div class="card" v-for="i in 4" :key="i" style="margin-top: 10px">
