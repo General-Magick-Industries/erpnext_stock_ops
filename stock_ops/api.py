@@ -138,11 +138,18 @@ def _user_scope(emp=None):
 	if restricted and allowed_companies and company not in allowed_companies:
 		company = allowed_companies[0]
 
+	# Default per User (Stock Ops Settings) — sudah dijepit ke lingkup; baris "Semua" mengalahkan
+	# Employee/Settings untuk company & gudang sumber.
+	user_defaults = _user_defaults(user_whs, allowed_companies)
+	base = user_defaults.get("*") or {}
+	if base.get("company"):
+		company = base["company"]
+
 	# Kunci Company hanya bila lingkup tepat satu perusahaan.
 	company_read_only = bool(restricted and len(allowed_companies) == 1 and company)
 
 	# Gudang sumber default — pakai Settings; bila gudang dibatasi & tak valid, gudang pertama user.
-	src = _default_source_warehouse()
+	src = base.get("source_warehouse") or _default_source_warehouse()
 	if user_whs and (not src or src not in user_whs):
 		src = user_whs[0]
 
@@ -155,7 +162,74 @@ def _user_scope(emp=None):
 		"company": company,
 		"company_read_only": company_read_only,
 		"default_source_warehouse": src,
+		"user_defaults": user_defaults,
 	}
+
+
+# Stock Ops User Default.applies_to → kunci jenis di PWA ("*" = Semua, STOCK = Stok & Mutasi).
+USER_DEFAULT_KEYS = {
+	"Semua": "*",
+	"Stock In": "SE_IN",
+	"Stock Out": "SE_OUT",
+	"Transfer": "SE_TRANSFER",
+	"Permintaan Transfer": "MR",
+	"Permintaan Pembelian": "PR",
+	"Penerimaan Barang": "GRN",
+	"Stock Opname": "OPN",
+	"Stok & Mutasi": "STOCK",
+}
+
+
+def _user_defaults(user_whs, allowed_companies, user=None):
+	"""Default per User (Stock Ops Settings › Default per User) untuk user login, per jenis.
+
+	{"*": {...}, "SE_OUT": {...}, ...}; tiap jenis sudah digabung dengan baris "Semua" (kolom kosong
+	diwarisi, kecuali company-nya berbeda). Dijepit ke lingkup akses SAAT INI — gudang/company yang
+	sudah tak boleh diakses (mis. User Permission berubah setelah disimpan) dibuang, bukan dipakai."""
+	if not frappe.db.exists("DocType", "Stock Ops User Default"):
+		return {}
+	rows = frappe.get_all(
+		"Stock Ops User Default",
+		filters={"parent": "Stock Ops Settings", "parenttype": "Stock Ops Settings", "user": user or frappe.session.user},
+		fields=["applies_to", "company", "source_warehouse", "target_warehouse", "purpose", "show_assets"],
+		order_by="idx asc",
+	)
+	if not rows:
+		return {}
+	whs = {w for r in rows for w in (r.source_warehouse, r.target_warehouse) if w}
+	wh_co = {
+		w.name: w.company
+		for w in frappe.get_all("Warehouse", filters={"name": ["in", list(whs) or [""]], "disabled": 0, "is_group": 0}, fields=["name", "company"])
+	}
+
+	def clean(r):
+		co = r.company if r.company and (not allowed_companies or r.company in allowed_companies) else ""
+		d = {"company": co, "purpose": (r.purpose or "").strip(), "show_assets": bool(r.show_assets)}
+		for f in ("source_warehouse", "target_warehouse"):
+			w = r.get(f)
+			ok = (
+				w in wh_co
+				and (not user_whs or w in user_whs)
+				and (not allowed_companies or wh_co[w] in allowed_companies)
+				and (not co or wh_co[w] == co)
+			)
+			d[f] = w if ok else ""
+		if not d["company"]:
+			d["company"] = wh_co.get(d["source_warehouse"]) or wh_co.get(d["target_warehouse"]) or ""
+		return d
+
+	by_key = {USER_DEFAULT_KEYS.get(r.applies_to or "Semua"): clean(r) for r in rows}
+	by_key.pop(None, None)
+	base = by_key.get("*") or {}
+	out = {"*": base} if base else {}
+	for key, d in by_key.items():
+		if key == "*":
+			continue
+		inherit = base if not d["company"] or d["company"] == base.get("company") else {}
+		merged = {k: (v or inherit.get(k) or "") for k, v in d.items() if k != "show_assets"}
+		merged["show_assets"] = d["show_assets"]
+		out[key] = merged
+	return out
 
 
 def _collect_warehouses(data):
@@ -862,10 +936,25 @@ def get_bootstrap():
 		"Item",
 		filters={"disabled": 0},
 		or_filters=[{"is_stock_item": 1}, {"is_fixed_asset": 1}],
-		fields=["name as item_code", "item_name", "stock_uom", "image", "item_group", "is_fixed_asset"],
+		fields=["name as item_code", "item_name", "stock_uom", "image", "item_group", "is_fixed_asset", "brand"],
 		order_by="item_name",
 		limit_page_length=0,
 	)
+	# Gudang default per item (ERPNext Item Defaults; fallback Item Group lalu Brand per perusahaan,
+	# urutan sama dengan get_item_details) → PWA menyaring pilihan item untuk gudang penerima.
+	idef = {}
+	for r in frappe.get_all(
+		"Item Default",
+		filters={"parenttype": ["in", ("Item", "Item Group", "Brand")], "default_warehouse": ["is", "set"]},
+		fields=["parent", "parenttype", "company", "default_warehouse"],
+		limit_page_length=0,
+	):
+		idef.setdefault((r.parenttype, r.parent), {})[r.company] = r.default_warehouse
+	for it in items:
+		d = dict(idef.get(("Brand", it.pop("brand", None)), {}))
+		d.update(idef.get(("Item Group", it["item_group"]), {}))
+		d.update(idef.get(("Item", it["item_code"]), {}))
+		it["default_warehouses"] = list(d.values())
 	# barcode (opsional) — siapkan map untuk scan nanti
 	barcodes = frappe.get_all("Item Barcode", fields=["parent", "barcode"], limit_page_length=0)
 	bc_map = {}
@@ -948,6 +1037,8 @@ def get_bootstrap():
 			"company_read_only": scope["company_read_only"],
 			"source_warehouse": scope["default_source_warehouse"],
 		},
+		# Default per User per jenis dokumen/halaman (lihat _user_defaults).
+		"user_defaults": scope["user_defaults"],
 		"restricted": scope["restricted"],
 		"user_warehouses": scope["user_whs"],
 		"menu": _app["menu"],

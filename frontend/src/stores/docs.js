@@ -54,10 +54,13 @@ export const useDocs = defineStore('docs', {
       const cfg = DOC_TYPES[typeKey]
       const app = useApp()
       const master = useMaster()
+      // Default per User untuk jenis ini (Stock Ops Settings › Default per User) didahulukan.
+      const ud = master.defaultsFor(typeKey)
       // Company dari server (Employee/Settings) bila ada; jika tidak, default lokal.
-      const company = (master.defaults && master.defaults.company) || app.settings.company
+      const company = ud.company || (master.defaults && master.defaults.company) || app.settings.company
       // Gudang sumber default dari Stock Ops Settings; jika kosong, default lokal.
-      const srcDefault = (master.defaults && master.defaults.source_warehouse) || app.settings.defaultSourceWarehouse
+      const srcDefault =
+        ud.source_warehouse || (master.defaults && master.defaults.source_warehouse) || app.settings.defaultSourceWarehouse
       return {
         localId: uuid(),
         type: typeKey,
@@ -67,7 +70,12 @@ export const useDocs = defineStore('docs', {
         sourceWarehouse: cfg.source ? srcDefault : '',
         // Untuk dokumen penerimaan (hanya target: Stock In / Purchase Receipt) default-kan
         // gudang penerima ke gudang default bila target khusus belum diset.
-        targetWarehouse: cfg.target ? app.settings.defaultTargetWarehouse || (cfg.source ? '' : srcDefault) : '',
+        targetWarehouse: cfg.target
+          ? ud.target_warehouse ||
+            (!cfg.source && ud.source_warehouse) ||
+            app.settings.defaultTargetWarehouse ||
+            (cfg.source ? '' : srcDefault)
+          : '',
         supplier: '',
         // Quotation (penawaran penjualan): customer existing atau nama bebas (→ Lead)
         customer: '',
@@ -78,7 +86,7 @@ export const useDocs = defineStore('docs', {
         // Retur Barang (Purchase Return): Purchase Receipt asal yang diretur
         returnAgainst: '',
         // Stock Out: tujuan barang keluar (dipetakan ke cost center di server)
-        purpose: '',
+        purpose: ud.purpose || '',
         // Status workflow (mis. MR Purchase: Pending Approval / Approved / Rejected)
         workflowState: null,
         remark: '',

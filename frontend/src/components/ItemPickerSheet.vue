@@ -8,7 +8,16 @@ import BarcodeScanner from './BarcodeScanner.vue'
 import SearchInput from './SearchInput.vue'
 
 // `warehouse` = gudang yang dipilih di form → tampilkan stok tersedia per item di gudang itu.
-const props = defineProps({ warehouse: { type: String, default: '' } })
+// Saringan pilihan item (bisa dimatikan user lewat "Tampilkan semua"):
+//  - filterMode 'stock'    : hanya item ber-stok di filterWarehouse (dokumen keluar / transfer)
+//  - filterMode 'defaults' : hanya item ber-Item Defaults gudang = filterWarehouse (masuk / permintaan)
+//  - showAssets false      : sembunyikan fixed asset (Default per User › Tampilkan Aset)
+const props = defineProps({
+  warehouse: { type: String, default: '' },
+  filterMode: { type: String, default: '' },
+  filterWarehouse: { type: String, default: '' },
+  showAssets: { type: Boolean, default: true }
+})
 const emit = defineEmits(['pick', 'close'])
 const app = useApp()
 const master = useMaster()
@@ -16,30 +25,60 @@ const { t } = useI18n()
 const q = ref('')
 const showScanner = ref(false)
 
-const items = computed(() => master.itemList)
+// Aturan aset berlaku tetap (diatur admin); saringan gudang bisa dimatikan user.
+const items = computed(() => master.itemList.filter((i) => props.showAssets || !i.is_fixed_asset))
+const showAll = ref(false)
 
 // Stok per item di gudang terpilih (dari cache master.stockByWh).
 const loadingStock = ref(false)
 async function loadStock() {
-  if (!props.warehouse || !app.online) return
+  const whs = [props.warehouse, props.filterMode === 'stock' ? props.filterWarehouse : ''].filter(Boolean)
+  if (!whs.length || !app.online) return
   loadingStock.value = true
   try {
-    await master.loadWarehouseStock(props.warehouse)
+    await Promise.all([...new Set(whs)].map((w) => master.loadWarehouseStock(w)))
   } finally {
     loadingStock.value = false
   }
 }
 onMounted(loadStock)
-watch(() => props.warehouse, loadStock)
+watch(() => [props.warehouse, props.filterWarehouse], loadStock)
 const stockMap = computed(() => (props.warehouse && master.stockByWh[props.warehouse]) || null)
+
+// Item hasil saringan gudang. null = saringan tak berlaku (mode kosong / data stok belum ada).
+const scoped = computed(() => {
+  const wh = props.filterWarehouse
+  if (!wh || !props.filterMode) return null
+  if (props.filterMode === 'stock') {
+    const m = master.stockByWh[wh]
+    return m ? items.value.filter((i) => Number(m[i.item_code] || 0) > 0) : null
+  }
+  if (props.filterMode === 'defaults') {
+    const f = items.value.filter((i) => (i.default_warehouses || []).includes(wh))
+    // Belum ada Item Defaults untuk gudang ini sama sekali → jangan kosongkan picker.
+    return f.length ? f : null
+  }
+  return null
+})
+const filterActive = computed(() => !showAll.value && scoped.value !== null)
+const pool = computed(() => (filterActive.value ? scoped.value : items.value))
+// Keterangan saringan untuk user (+ tombol Tampilkan semua / Saring lagi).
+const filterNote = computed(() => {
+  const wh = props.filterWarehouse
+  if (!wh || !props.filterMode) return ''
+  if (props.filterMode === 'defaults' && scoped.value === null) return t('picker.noDefaults', { wh })
+  if (scoped.value === null) return ''
+  if (showAll.value) return t('picker.showingAll')
+  return t(props.filterMode === 'stock' ? 'picker.filterStock' : 'picker.filterDefaults', { wh, n: scoped.value.length })
+})
 function stockOf(it) {
   const v = Number((stockMap.value && stockMap.value[it.item_code]) || 0)
   return Number.isInteger(v) ? v : +v.toFixed(2)
 }
 const results = computed(() => {
   const s = q.value.trim().toLowerCase()
-  if (!s) return items.value.slice(0, 100)
-  return items.value
+  if (!s) return pool.value.slice(0, 100)
+  return pool.value
     .filter(
       (i) =>
         (i.item_name || '').toLowerCase().includes(s) ||
@@ -75,6 +114,13 @@ function onDetected(code) {
     <div v-if="warehouse" class="tiny muted" style="margin: 0 4px 10px">
       {{ t('picker.stockAt', { wh: warehouse }) }}<span v-if="loadingStock"> · {{ t('common.loading') }}</span>
     </div>
+    <div v-if="filterNote" class="picker-filter tiny">
+      <Icon name="filter" />
+      <span class="grow">{{ filterNote }}</span>
+      <button v-if="scoped !== null" class="link-btn" @click="showAll = !showAll">
+        {{ showAll ? t('picker.showFiltered') : t('picker.showAll') }}
+      </button>
+    </div>
 
     <div v-for="it in results" :key="it.item_code" class="list-item" @click="emit('pick', it)" style="cursor: pointer">
       <img v-if="it.image" :src="it.image" class="thumb" alt="" />
@@ -91,7 +137,10 @@ function onDetected(code) {
 
     <div v-if="!results.length" class="empty">
       <div class="big"><Icon name="search" /></div>
-      {{ t('picker.noMatch') }}
+      {{ filterActive ? t('picker.noMatchFiltered') : t('picker.noMatch') }}
+      <div v-if="filterActive" style="margin-top: 10px">
+        <button class="btn sm" @click="showAll = true">{{ t('picker.showAll') }}</button>
+      </div>
     </div>
 
     <BarcodeScanner v-if="showScanner" @detected="onDetected" @close="showScanner = false" />
@@ -99,6 +148,24 @@ function onDetected(code) {
 </template>
 
 <style scoped>
+.picker-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--brand-soft);
+}
+.picker-filter .link-btn {
+  flex-shrink: 0;
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--brand);
+  font-weight: 700;
+  cursor: pointer;
+}
 .stk-badge {
   flex-shrink: 0;
   padding: 3px 9px;

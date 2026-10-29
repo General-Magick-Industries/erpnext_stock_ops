@@ -37,6 +37,8 @@ export const useMaster = defineStore('master', {
       // Tujuan Stock Out → cost center (Stock Ops Settings): [{purpose, cost_center, company}]
       issuePurposes: s.issuePurposes || [],
       issuePurposeRequired: s.issuePurposeRequired || false,
+      // Default per User per jenis (Stock Ops Settings): {'*': {...}, SE_OUT: {...}, STOCK: {...}, ...}
+      userDefaults: s.userDefaults || {},
       defaultLang: s.defaultLang || 'id',
       flutterApkUrl: s.flutterApkUrl || '',
       loadedAt: s.loadedAt || null,
@@ -72,7 +74,11 @@ export const useMaster = defineStore('master', {
     uomList: (s) => (s.uoms.length ? s.uoms : UOMS),
     supplierNames: (s) => (s.suppliers.length ? s.suppliers.map((x) => x.supplier) : SUPPLIERS),
     customerNames: (s) => (s.customers || []).map((c) => c.name),
-    locationNames: (s) => s.locations || []
+    locationNames: (s) => s.locations || [],
+    // Default user untuk satu jenis (kunci DOC_TYPES / OPN / STOCK); jatuh ke baris "Semua".
+    // {company, source_warehouse, target_warehouse, purpose, show_assets} — show_assets
+    // undefined bila user tak punya baris (perilaku lama: aset tetap tampil).
+    defaultsFor: (s) => (key) => (s.userDefaults && (s.userDefaults[key] || s.userDefaults['*'])) || {}
   },
   actions: {
     persist() {
@@ -97,6 +103,7 @@ export const useMaster = defineStore('master', {
           canQuotation: this.canQuotation,
           issuePurposes: this.issuePurposes,
           issuePurposeRequired: this.issuePurposeRequired,
+          userDefaults: this.userDefaults,
           defaultLang: this.defaultLang,
           flutterApkUrl: this.flutterApkUrl,
           loadedAt: this.loadedAt
@@ -116,6 +123,7 @@ export const useMaster = defineStore('master', {
           image: it.image || '',
           barcode: it.barcode || '',
           is_fixed_asset: it.is_fixed_asset ? 1 : 0,
+          default_warehouses: it.default_warehouses || [],
           uoms: Array.isArray(it.uoms) && it.uoms.length ? it.uoms : [{ uom: it.stock_uom || 'Nos', conversion_factor: 1 }]
         }))
         this.uoms = b.uoms || []
@@ -133,6 +141,7 @@ export const useMaster = defineStore('master', {
         this.canQuotation = !!b.can_quotation
         this.issuePurposes = b.issue_purposes || []
         this.issuePurposeRequired = !!b.issue_purpose_required
+        this.userDefaults = b.user_defaults || {}
         this.defaultLang = b.default_lang || 'id'
         this.flutterApkUrl = b.flutter_apk_url || ''
         this.loadedAt = new Date().toISOString()

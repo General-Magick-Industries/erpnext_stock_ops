@@ -174,7 +174,10 @@ const messages = {
       nativeNote: 'Login dengan akun ERPNext Anda. Token disimpan di perangkat.'
     },
     status: { pending: 'Pending', syncing: 'Syncing…', synced: 'Synced', error: 'Error', draft: 'Draft', submitted: 'Submitted', cancelled: 'Cancelled', '0': 'Draft', '1': 'Submitted', '2': 'Cancelled' },
-    picker: { title: 'Pilih Item', searchPlaceholder: 'Cari nama / kode / barcode…', noMatch: 'Tidak ada item cocok', stockAt: 'Stok tersedia di {wh}' },
+    picker: { title: 'Pilih Item', searchPlaceholder: 'Cari nama / kode / barcode…', noMatch: 'Tidak ada item cocok', stockAt: 'Stok tersedia di {wh}',
+      filterStock: 'Hanya item ber-stok di {wh} ({n})', filterDefaults: 'Hanya item dengan default gudang {wh} ({n})',
+      noDefaults: 'Belum ada item dengan Item Defaults gudang {wh} — semua item ditampilkan', showingAll: 'Menampilkan semua item',
+      showAll: 'Tampilkan semua', showFiltered: 'Saring lagi', noMatchFiltered: 'Tidak ada item cocok di saringan gudang ini' },
     scan: {
       title: 'Scan Barcode', hint: 'Arahkan kamera ke barcode item',
       notFound: 'Item dengan barcode {code} tidak ditemukan', camFail: 'Kamera tidak tersedia / izin ditolak'
@@ -357,7 +360,10 @@ const messages = {
       nativeNote: 'Sign in with your ERPNext account. Token stored on device.'
     },
     status: { pending: 'Pending', syncing: 'Syncing…', synced: 'Synced', error: 'Error', draft: 'Draft', submitted: 'Submitted', cancelled: 'Cancelled', '0': 'Draft', '1': 'Submitted', '2': 'Cancelled' },
-    picker: { title: 'Pick Item', searchPlaceholder: 'Search name / code / barcode…', noMatch: 'No matching item', stockAt: 'Available stock at {wh}' },
+    picker: { title: 'Pick Item', searchPlaceholder: 'Search name / code / barcode…', noMatch: 'No matching item', stockAt: 'Available stock at {wh}',
+      filterStock: 'Only items in stock at {wh} ({n})', filterDefaults: 'Only items whose default warehouse is {wh} ({n})',
+      noDefaults: 'No item has Item Defaults for {wh} yet — showing all items', showingAll: 'Showing all items',
+      showAll: 'Show all', showFiltered: 'Filter again', noMatchFiltered: 'No matching item in this warehouse filter' },
     scan: {
       title: 'Scan Barcode', hint: 'Point the camera at the item barcode',
       notFound: 'No item with barcode {code}', camFail: 'Camera unavailable / permission denied'
