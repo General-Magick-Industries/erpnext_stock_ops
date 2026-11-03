@@ -3,6 +3,8 @@
 // Font Awesome Free icons: CC BY 4.0 — https://fontawesome.com/license/free
 import {
   faArrowRightFromBracket,
+  faEye,
+  faEyeSlash,
   faArrowRightToBracket,
   faArrowUpRightFromSquare,
   faArrowsRotate,
@@ -22,6 +24,7 @@ import {
   faFileInvoice,
   faGear,
   faHouse,
+  faImages,
   faInbox,
   faLocationDot,
   faLock,
@@ -44,6 +47,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 
 export const ICONS = {
+  eye: faEye,
+  eyeoff: faEyeSlash,
   // navigasi & menu
   home: faHouse,
   warehouse: faWarehouse,
@@ -66,6 +71,7 @@ export const ICONS = {
   // aksi & status
   search: faMagnifyingGlass,
   camera: faCamera,
+  gallery: faImages,
   close: faXmark,
   refresh: faArrowsRotate,
   trash: faTrashCan,

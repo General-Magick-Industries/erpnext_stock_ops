@@ -15,6 +15,9 @@
   "issue_purpose_section",
   "issue_purpose_required",
   "issue_purposes",
+  "user_defaults_section",
+  "get_users",
+  "user_defaults",
   "nav_section",
   "show_stock_balance",
   "show_movement",
@@ -102,6 +105,23 @@
    "fieldtype": "Table",
    "label": "Tujuan → Cost Center",
    "options": "Stock Ops Issue Purpose"
+  },
+  {
+   "fieldname": "user_defaults_section",
+   "fieldtype": "Section Break",
+   "label": "Default per User",
+   "description": "Default company, gudang sumber/tujuan, tujuan (cost center) & tampil-aset per user, per jenis dokumen. Dipakai untuk mengisi form baru dan pilihan awal di Stok, Mutasi & Opname — bukan hak akses: nilainya harus di dalam lingkup gudang/perusahaan user (Employee / User Permission). Klik \"Get Users\" untuk menambahkan semua user aktif ber-role Stock Ops User / Stock Ops Manager yang belum ada di tabel."
+  },
+  {
+   "fieldname": "get_users",
+   "fieldtype": "Button",
+   "label": "Get Users"
+  },
+  {
+   "fieldname": "user_defaults",
+   "fieldtype": "Table",
+   "label": "Default per User",
+   "options": "Stock Ops User Default"
   },
   {
    "fieldname": "nav_section",
@@ -229,7 +249,7 @@
  ],
  "index_web_pages_for_search": 0,
  "links": [],
- "modified": "2026-10-10 02:00:00",
+ "modified": "2026-10-25 00:00:00",
  "modified_by": "Administrator",
  "module": "Stock Ops",
  "name": "Stock Ops Settings",

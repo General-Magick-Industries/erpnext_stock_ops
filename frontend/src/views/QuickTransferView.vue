@@ -16,14 +16,15 @@ const docs = useDocs()
 const master = useMaster()
 const { t } = useI18n()
 
-// Perusahaan dari server (Employee/Settings) bila ada; jika tidak, default lokal.
-const company = ref((master.defaults && master.defaults.company) || app.settings.company)
+// Default per User (jenis Transfer) didahulukan; lalu server (Employee/Settings); lalu default lokal.
+const ud = master.defaultsFor('SE_TRANSFER')
+const company = ref(ud.company || (master.defaults && master.defaults.company) || app.settings.company)
 const warehouseOptions = computed(() => master.warehousesForCompany(company.value))
 
 const form = reactive({
   item: null, // { item_code, item_name, stock_uom, image }
-  from: app.settings.defaultSourceWarehouse || '',
-  to: app.settings.defaultTargetWarehouse || '',
+  from: ud.source_warehouse || app.settings.defaultSourceWarehouse || '',
+  to: ud.target_warehouse || app.settings.defaultTargetWarehouse || '',
   qty: 1
 })
 const showPicker = ref(false)
@@ -116,6 +117,14 @@ async function submit() {
       <Icon name="transfer" /> {{ saving ? '…' : t('qt.submit') }}
     </button>
 
-    <ItemPickerSheet v-if="showPicker" :warehouse="form.from" @pick="pick" @close="showPicker = false" />
+    <ItemPickerSheet
+      v-if="showPicker"
+      :warehouse="form.from"
+      filter-mode="stock"
+      :filter-warehouse="form.from"
+      :show-assets="ud.show_assets !== false"
+      @pick="pick"
+      @close="showPicker = false"
+    />
   </div>
 </template>

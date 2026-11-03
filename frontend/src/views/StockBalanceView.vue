@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useApp } from '../stores/app'
+import { useMaster } from '../stores/master'
 import { useI18n } from '../lib/i18n'
 import { getStockBalance } from '../lib/service'
 import AppBar from '../components/AppBar.vue'
@@ -9,6 +10,7 @@ import SearchInput from '../components/SearchInput.vue'
 import FilterBar from '../components/FilterBar.vue'
 
 const app = useApp()
+const master = useMaster()
 const router = useRouter()
 const { t } = useI18n()
 
@@ -17,14 +19,19 @@ const balance = ref([])
 const warehouses = ref([])
 const restricted = ref(false)
 const q = ref('')
-const whFilter = ref('ALL')
+// Default per User (Stok & Mutasi): company + gudang awal sudah terpilih (tetap bisa diganti).
+const ud = master.defaultsFor('STOCK')
+const company = computed(() => ud.company || app.settings.company)
+const defaultWh = ud.source_warehouse || ud.target_warehouse || ''
+const whFilter = ref(defaultWh || 'ALL')
 
 async function load() {
   loading.value = true
   try {
-    const res = await getStockBalance({ company: app.settings.company })
+    const res = await getStockBalance({ company: company.value })
     balance.value = res.balance || []
     warehouses.value = res.warehouses || []
+    if (whFilter.value !== 'ALL' && !warehouses.value.includes(whFilter.value)) whFilter.value = 'ALL'
     restricted.value = !!res.restricted
   } catch (e) {
     app.notify(e && e.message ? e.message : String(e), 'error')

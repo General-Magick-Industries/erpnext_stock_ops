@@ -79,7 +79,7 @@ const messages = {
       vCustomer: 'Pilih atau isi customer',
       companyFromAccount: 'Mengikuti perusahaan akun Anda',
       sourceWh: 'Gudang Asal', targetWh: 'Gudang Tujuan', noItems: 'Belum ada item',
-      totalQty: 'Total Qty', photos: 'Foto Barang', addPhoto: 'Tambah foto',
+      totalQty: 'Total Qty', photos: 'Foto Barang', addPhoto: 'Tambah foto', photoCamera: 'Kamera', photoGallery: 'Galeri',
       processing: 'Memproses…', notePlaceholder: 'Keterangan (opsional)',
       photoHint: 'Foto di-upload ke attachment dokumen ({vis}) saat sync.',
       offlineHint: 'Offline — tersimpan di Outbox & disinkron otomatis saat online.',
@@ -97,7 +97,10 @@ const messages = {
       vRejWh: 'Pilih gudang tolak (ada qty ditolak)', vAssetLoc: 'Pilih lokasi aset (ada item aset)',
       insufficientStock: 'Stok tidak cukup — butuh {need} {uom}, tersedia {avail} {uom}'
     },
-    list: { title: 'Daftar Dokumen', empty: 'Tidak ada dokumen pada filter ini', local: 'Lokal', server: 'Server', openErp: 'Buka di ERPNext' },
+    list: {
+      title: 'Daftar Dokumen', empty: 'Tidak ada dokumen pada filter ini', local: 'Lokal', server: 'Server', openErp: 'Buka di ERPNext',
+      searchNo: 'Cari nomor dokumen…', since: 'Sejak {d}', loadMore: 'Muat lagi'
+    },
     detail: {
       localId: 'Local ID', created: 'Dibuat', error: 'Error', syncNow: 'Sync sekarang',
       syncing: 'Menyinkron…', offlineCantSync: 'Offline — tidak bisa sync',
@@ -106,6 +109,7 @@ const messages = {
     },
     report: {
       title: 'Laporan', period: 'Bulan ini', mrGroup: 'Permintaan Barang', seGroup: 'Stok Barang',
+      receiptGroup: 'Penerimaan, Retur & Opname', tapHint: 'ketuk untuk lihat dokumen',
       none: 'Belum ada data bulan ini', total: 'Total'
     },
     balance: {
@@ -145,7 +149,7 @@ const messages = {
     sync: {
       title: 'Sync / Outbox', waiting: '{n} menunggu', syncedN: '{n} tersinkron',
       syncAll: 'Sync semua', autoSync: 'Auto-sync', autoSyncDesc: 'Kirim otomatis saat online',
-      outbox: 'Outbox', allSynced: 'Semua sudah tersinkron', sync: 'Sync'
+      outbox: 'Outbox', allSynced: 'Semua sudah tersinkron', sync: 'Sync', syncedList: 'Sudah tersinkron'
     },
     settings: {
       title: 'Pengaturan', defaults: 'Default Transaksi', companyDefault: 'Perusahaan default',
@@ -171,10 +175,16 @@ const messages = {
       subtitle: 'Permintaan & Stok Barang — Mobile', email: 'Email', password: 'Password',
       signIn: 'Masuk', mockNote: 'P0 mock — login apa saja diterima. Di P1 terhubung ke sesi ERPNext.',
       server: 'URL Server ERPNext', userId: 'Email / Username',
-      nativeNote: 'Login dengan akun ERPNext Anda. Token disimpan di perangkat.'
+      nativeNote: 'Login dengan akun ERPNext Anda. Token disimpan di perangkat.',
+      webNote: 'Masuk dengan akun ERPNext Anda.', forgot: 'Lupa password?',
+      wrong: 'Email/username atau password salah.', tooMany: 'Terlalu banyak percobaan. Coba lagi beberapa menit lagi.',
+      fill: 'Isi email/username dan password.', noServer: 'Tidak ada koneksi ke server.', failed: 'Gagal masuk (HTTP {n}).'
     },
     status: { pending: 'Pending', syncing: 'Syncing…', synced: 'Synced', error: 'Error', draft: 'Draft', submitted: 'Submitted', cancelled: 'Cancelled', '0': 'Draft', '1': 'Submitted', '2': 'Cancelled' },
-    picker: { title: 'Pilih Item', searchPlaceholder: 'Cari nama / kode / barcode…', noMatch: 'Tidak ada item cocok', stockAt: 'Stok tersedia di {wh}' },
+    picker: { title: 'Pilih Item', searchPlaceholder: 'Cari nama / kode / barcode…', noMatch: 'Tidak ada item cocok', stockAt: 'Stok tersedia di {wh}',
+      filterStock: 'Hanya item ber-stok di {wh} ({n})', filterDefaults: 'Hanya item dengan default gudang {wh} ({n})',
+      noDefaults: 'Belum ada item dengan Item Defaults gudang {wh} — semua item ditampilkan', showingAll: 'Menampilkan semua item',
+      showAll: 'Tampilkan semua', showFiltered: 'Saring lagi', noMatchFiltered: 'Tidak ada item cocok di saringan gudang ini' },
     scan: {
       title: 'Scan Barcode', hint: 'Arahkan kamera ke barcode item',
       notFound: 'Item dengan barcode {code} tidak ditemukan', camFail: 'Kamera tidak tersedia / izin ditolak'
@@ -262,7 +272,7 @@ const messages = {
       vCustomer: 'Select or enter a customer',
       companyFromAccount: 'Follows your account company',
       sourceWh: 'Source Warehouse', targetWh: 'Target Warehouse', noItems: 'No items yet',
-      totalQty: 'Total Qty', photos: 'Item Photos', addPhoto: 'Add photo',
+      totalQty: 'Total Qty', photos: 'Item Photos', addPhoto: 'Add photo', photoCamera: 'Camera', photoGallery: 'Gallery',
       processing: 'Processing…', notePlaceholder: 'Remark (optional)',
       photoHint: 'Photos are uploaded to the document attachment ({vis}) on sync.',
       offlineHint: 'Offline — saved to Outbox & auto-synced when online.',
@@ -280,7 +290,10 @@ const messages = {
       vRejWh: 'Select rejected warehouse (some qty rejected)', vAssetLoc: 'Select asset location (asset items present)',
       insufficientStock: 'Not enough stock — needs {need} {uom}, {avail} {uom} available'
     },
-    list: { title: 'Documents', empty: 'No documents for this filter', local: 'Local', server: 'Server', openErp: 'Open in ERPNext' },
+    list: {
+      title: 'Documents', empty: 'No documents for this filter', local: 'Local', server: 'Server', openErp: 'Open in ERPNext',
+      searchNo: 'Search document number…', since: 'Since {d}', loadMore: 'Load more'
+    },
     detail: {
       localId: 'Local ID', created: 'Created', error: 'Error', syncNow: 'Sync now',
       syncing: 'Syncing…', offlineCantSync: 'Offline — cannot sync',
@@ -289,6 +302,7 @@ const messages = {
     },
     report: {
       title: 'Reports', period: 'This month', mrGroup: 'Material Requests', seGroup: 'Stock Entries',
+      receiptGroup: 'Receipts, Returns & Stock Counts', tapHint: 'tap to view documents',
       none: 'No data this month yet', total: 'Total'
     },
     balance: {
@@ -328,7 +342,7 @@ const messages = {
     sync: {
       title: 'Sync / Outbox', waiting: '{n} waiting', syncedN: '{n} synced',
       syncAll: 'Sync all', autoSync: 'Auto-sync', autoSyncDesc: 'Send automatically when online',
-      outbox: 'Outbox', allSynced: 'Everything is synced', sync: 'Sync'
+      outbox: 'Outbox', allSynced: 'Everything is synced', sync: 'Sync', syncedList: 'Synced'
     },
     settings: {
       title: 'Settings', defaults: 'Transaction Defaults', companyDefault: 'Default company',
@@ -354,10 +368,16 @@ const messages = {
       subtitle: 'Material Request & Stock Entry — Mobile', email: 'Email', password: 'Password',
       signIn: 'Sign in', mockNote: 'P0 mock — any login accepted. P1 connects to ERPNext session.',
       server: 'ERPNext Server URL', userId: 'Email / Username',
-      nativeNote: 'Sign in with your ERPNext account. Token stored on device.'
+      nativeNote: 'Sign in with your ERPNext account. Token stored on device.',
+      webNote: 'Sign in with your ERPNext account.', forgot: 'Forgot password?',
+      wrong: 'Wrong email/username or password.', tooMany: 'Too many attempts. Try again in a few minutes.',
+      fill: 'Enter email/username and password.', noServer: 'Cannot reach the server.', failed: 'Sign-in failed (HTTP {n}).'
     },
     status: { pending: 'Pending', syncing: 'Syncing…', synced: 'Synced', error: 'Error', draft: 'Draft', submitted: 'Submitted', cancelled: 'Cancelled', '0': 'Draft', '1': 'Submitted', '2': 'Cancelled' },
-    picker: { title: 'Pick Item', searchPlaceholder: 'Search name / code / barcode…', noMatch: 'No matching item', stockAt: 'Available stock at {wh}' },
+    picker: { title: 'Pick Item', searchPlaceholder: 'Search name / code / barcode…', noMatch: 'No matching item', stockAt: 'Available stock at {wh}',
+      filterStock: 'Only items in stock at {wh} ({n})', filterDefaults: 'Only items whose default warehouse is {wh} ({n})',
+      noDefaults: 'No item has Item Defaults for {wh} yet — showing all items', showingAll: 'Showing all items',
+      showAll: 'Show all', showFiltered: 'Filter again', noMatchFiltered: 'No matching item in this warehouse filter' },
     scan: {
       title: 'Scan Barcode', hint: 'Point the camera at the item barcode',
       notFound: 'No item with barcode {code}', camFail: 'Camera unavailable / permission denied'
