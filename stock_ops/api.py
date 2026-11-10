@@ -1,4 +1,5 @@
 import json
+import re
 
 import frappe
 from frappe import _
@@ -782,6 +783,9 @@ MENU_FIELDS = {
 	"se_out": "show_se_out",
 	"se_transfer": "show_se_transfer",
 	"grn": "show_purchase_receipt",
+	"request_to_pay": "show_request_to_pay",
+	"expense_claim": "show_expense_claim",
+	"employee_advance": "show_employee_advance",
 }
 
 
@@ -837,7 +841,16 @@ def _user_caps():
 	can_cancel = is_manager or any(
 		frappe.has_permission(dt, ptype="cancel") for dt in ("Material Request", "Stock Entry")
 	)
-	return {"is_manager": is_manager, "can_cancel": bool(can_cancel), "is_system_manager": _is_system_manager()}
+	from stock_ops.hr_claims import hr_caps
+	from stock_ops.request_to_pay.api import rtp_caps
+
+	return {
+		"is_manager": is_manager,
+		"can_cancel": bool(can_cancel),
+		"is_system_manager": _is_system_manager(),
+		"rtp": rtp_caps(),
+		"hr": hr_caps(),
+	}
 
 
 def _app_settings():
@@ -897,6 +910,45 @@ def has_app_permission():
 		return True
 	roles = set(frappe.get_roles())
 	return any(r in roles for r in ("System Manager", "Stock Manager", "Stock Ops Manager"))
+
+
+# ── Beranda per user: menu yang di-pin (Favorit) & disembunyikan ──
+# Disimpan sebagai user default (tabel DefaultValue bawaan Frappe, parent = user) → ikut akun di semua
+# perangkat, tanpa DocType baru. Menu yang dimatikan admin (Stock Ops Settings) tetap tidak tampil:
+# preferensi ini hanya bisa MENGURANGI / mengurutkan, tidak bisa memunculkan menu.
+HOME_PREFS_KEY = "stock_ops_home_prefs"
+_HOME_ID = re.compile(r"^[A-Za-z0-9_:-]{1,40}$")
+
+
+def _clean_ids(ids):
+	if isinstance(ids, str):
+		ids = frappe.parse_json(ids)
+	out = []
+	for i in ids or []:
+		if isinstance(i, str) and _HOME_ID.match(i) and i not in out:
+			out.append(i)
+	return out[:60]
+
+
+def _home_prefs(user):
+	raw = frappe.db.get_value("DefaultValue", {"parent": user, "defkey": HOME_PREFS_KEY}, "defvalue")
+	try:
+		p = frappe.parse_json(raw) if raw else {}
+	except Exception:
+		p = {}
+	return {"pinned": _clean_ids(p.get("pinned")), "hidden": _clean_ids(p.get("hidden"))}
+
+
+@frappe.whitelist(methods=["POST"])
+def save_home_prefs(pinned=None, hidden=None):
+	"""Simpan susunan Beranda user yang sedang login (pin = urutan Favorit)."""
+	user = frappe.session.user
+	if user == "Guest":
+		frappe.throw(_("Login dulu."), frappe.PermissionError)
+	prefs = {"pinned": _clean_ids(pinned), "hidden": _clean_ids(hidden)}
+	prefs["hidden"] = [i for i in prefs["hidden"] if i not in prefs["pinned"]]
+	frappe.defaults.set_user_default(HOME_PREFS_KEY, frappe.as_json(prefs, indent=0), user)
+	return prefs
 
 
 @frappe.whitelist()
@@ -1042,6 +1094,7 @@ def get_bootstrap():
 		"restricted": scope["restricted"],
 		"user_warehouses": scope["user_whs"],
 		"menu": _app["menu"],
+		"home_prefs": _home_prefs(user),
 		"default_lang": _app["default_lang"],
 		"flutter_apk_url": _app["flutter_apk_url"],
 		"caps": _app["caps"],

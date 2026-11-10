@@ -109,6 +109,7 @@ def after_install():
 	setup_custom_fields()
 	setup_roles_and_permissions()
 	setup_approval_workflow()
+	_setup_rtp()
 	from stock_ops.push import ensure_vapid_keys
 
 	ensure_vapid_keys()
@@ -124,6 +125,13 @@ def after_migrate():
 	setup_custom_fields()
 	setup_roles_and_permissions()
 	setup_approval_workflow()
+	_setup_rtp()
+
+
+def _setup_rtp():
+	from stock_ops.setup.rtp import setup_request_to_pay
+
+	setup_request_to_pay()
 
 
 def setup_custom_fields():
@@ -317,13 +325,14 @@ def setup_approval_workflow():
 _NOTIFICATIONS = [
 	{
 		"name": "Stock Ops MR Pending (Email)",
-		"subject": "Persetujuan diperlukan: {{ doc.name }}",
+		"subject": "[Perlu persetujuan] Permintaan pembelian {{ doc.name }} · {{ stock_ops_fullname(doc.owner) }}",
 		"event": "Value Change",
 		"value_changed": "workflow_state",
 		"condition": "doc.workflow_state == 'Pending Approval' and doc.material_request_type == 'Purchase'",
 		"channel": "Email",
 		"recipient": {"receiver_by_document_field": "stock_ops_approver"},
-		"message": "Permintaan pembelian {{ doc.name }} oleh {{ doc.owner }} menunggu persetujuan Anda.",
+		"message": '{{ stock_ops_mr_email(doc, "pending") }}',
+		"message_type": "HTML",
 	},
 	{
 		"name": "Stock Ops MR Pending (System)",
@@ -337,13 +346,14 @@ _NOTIFICATIONS = [
 	},
 	{
 		"name": "Stock Ops MR Approved PM (Email)",
-		"subject": "Permintaan pembelian disetujui: {{ doc.name }}",
+		"subject": "[Disetujui] Permintaan pembelian {{ doc.name }} siap dibuat PO",
 		"event": "Submit",
 		"value_changed": None,
 		"condition": "doc.material_request_type == 'Purchase'",
 		"channel": "Email",
 		"recipient": {"receiver_by_role": "Purchase Manager"},
-		"message": "Permintaan pembelian {{ doc.name }} telah disetujui dan siap diproses.",
+		"message": '{{ stock_ops_mr_email(doc, "approved") }}',
+		"message_type": "HTML",
 	},
 	{
 		"name": "Stock Ops MR Approved PM (System)",
@@ -367,13 +377,14 @@ _NOTIFICATIONS = [
 	},
 	{
 		"name": "Stock Ops MR Rejected Requester (Email)",
-		"subject": "Permintaan {{ doc.name }} ditolak",
+		"subject": "[Ditolak] Permintaan pembelian {{ doc.name }}",
 		"event": "Value Change",
 		"value_changed": "workflow_state",
 		"condition": "doc.workflow_state == 'Rejected' and doc.material_request_type == 'Purchase'",
 		"channel": "Email",
 		"recipient": {"receiver_by_document_field": "owner"},
-		"message": "Permintaan pembelian {{ doc.name }} ditolak. Alasan: {{ doc.stock_ops_approval_note or '-' }}",
+		"message": '{{ stock_ops_mr_email(doc, "rejected") }}',
+		"message_type": "HTML",
 	},
 ]
 
@@ -397,6 +408,7 @@ def _ensure_notifications():
 		doc.enabled = 1
 		doc.is_standard = 0
 		doc.message = cfg["message"]
+		doc.message_type = cfg.get("message_type", "Markdown")
 		doc.set("recipients", [])
 		doc.append("recipients", cfg["recipient"])
 		doc.flags.ignore_permissions = True

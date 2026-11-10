@@ -28,6 +28,9 @@ export async function nativeLogin(url, usr, pwd) {
 
 // Master data (sekali panggil, untuk cache offline)
 export const bootstrap = () => call('stock_ops.api.get_bootstrap')
+// Susunan Beranda user (pin & sembunyikan) — disimpan per akun di server.
+export const saveHomePrefs = (prefs) =>
+  call('stock_ops.api.save_home_prefs', { pinned: prefs.pinned, hidden: prefs.hidden }, { post: true })
 
 // Buat dokumen draft (idempoten via external_localid)
 export const createTransaction = (payload) =>
@@ -145,3 +148,22 @@ export const markNotificationsRead = (name) =>
   call('stock_ops.api.mark_notifications_read', name ? { name } : {}, { post: true })
 
 export { uploadFile }
+
+// ===== Request to Pay (online-only) =====
+const RTP = 'stock_ops.request_to_pay.api.'
+export const getRtpSetup = (company) => call(RTP + 'get_rtp_setup', { company })
+export const listRtp = (params) => call(RTP + 'list_rtp', params)
+export const getRtp = (name) => call(RTP + 'get_rtp', { name })
+export const saveRtp = (data, submit = 0) => call(RTP + 'save_rtp', { data, submit }, { post: true })
+export const applyRtpAction = (name, action, note, payment_reference) =>
+  call(RTP + 'apply_rtp_action', { name, action, note, payment_reference }, { post: true })
+export const getRtpFile = (name, file_url) => fetchBlob(RTP + 'get_rtp_file', { name, file_url })
+
+// ── Menu HR (HRMS): Klaim Biaya (Expense Claim) & Kasbon (Employee Advance) ──
+const HR = 'stock_ops.hr_claims.'
+export const getHrSetup = (kind) => call(HR + 'get_hr_setup', { kind })
+export const listHr = (kind, params) => call(HR + 'list_hr', { kind, ...params })
+export const getHr = (kind, name) => call(HR + 'get_hr', { kind, name })
+export const saveHr = (kind, data) => call(HR + 'save_hr', { kind, data: JSON.stringify(data) }, { post: true })
+export const hrAction = (kind, name, action, note) => call(HR + 'hr_action', { kind, name, action, note }, { post: true })
+export const getHrFile = (kind, name, file_url) => fetchBlob(HR + 'get_hr_file', { kind, name, file_url })

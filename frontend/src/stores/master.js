@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
-import { bootstrap, getStockBalance } from '../lib/service'
+import { bootstrap, getStockBalance, saveHomePrefs } from '../lib/service'
 import { ITEMS, WAREHOUSES, COMPANIES, UOMS, SUPPLIERS } from '../data/mock'
 
 const LS = 'stockops.master'
+// Satu bootstrap yang sedang berjalan dipakai bersama (main.js + route guard) agar tidak dobel request.
+let inflight = null
 
 function load() {
   try {
@@ -28,6 +30,10 @@ export const useMaster = defineStore('master', {
       employee: s.employee || null, // detail Employee user (company/department/branch/grade/…)
       defaults: s.defaults || null,
       menu: s.menu || {}, // visibilitas menu dari Stock Ops Settings
+      // Susunan Beranda user: {pinned: [id urut Favorit], hidden: [id]}. homePrefsDirty = belum terkirim
+      // (diubah saat offline) → dikirim saat bootstrap berikutnya, bukan ditimpa data server.
+      homePrefs: s.homePrefs || { pinned: [], hidden: [] },
+      homePrefsDirty: s.homePrefsDirty || false,
       caps: s.caps || {}, // kemampuan user (mis. can_cancel) — dari Role Permission
       isApprover: s.isApprover || false, // user adalah approver (leave approver) MR Purchase
       pendingApprovals: s.pendingApprovals || 0, // jumlah MR menunggu persetujuan user
@@ -52,6 +58,17 @@ export const useMaster = defineStore('master', {
     hasData: (s) => s.items.length > 0,
     // Menu tampil? default true bila belum dimuat / tak diset di server.
     menuOn: (s) => (key) => s.menu[key] !== false,
+    // Request to Pay: menu aktif di Settings DAN user punya role RTP (caps.rtp dari server).
+    rtp: (s) => (s.caps && s.caps.rtp) || {},
+    rtpOn: (s) => s.menu.request_to_pay !== false && !!(s.caps && s.caps.rtp && s.caps.rtp.enabled),
+    // Menu HR (HRMS): caps.hr dari server. Tampil bila menu aktif di Settings DAN user bisa mengajukan
+    // (terhubung ke Employee) atau menjadi approver.
+    hr: (s) => (s.caps && s.caps.hr) || {},
+    hrOn: (s) => (kind) => {
+      const h = (s.caps && s.caps.hr) || {}
+      const key = kind === 'claim' ? 'expense_claim' : 'employee_advance'
+      return !!h.enabled && s.menu[key] !== false && !!(h[kind] && (h[kind].can_request || h.can_approve))
+    },
     // Boleh cancel dokumen di server? default true bila caps belum dimuat
     // (penegakan sebenarnya tetap di server; ini hanya menyembunyikan tombol).
     canCancel: (s) => s.caps.can_cancel !== false,
@@ -96,6 +113,8 @@ export const useMaster = defineStore('master', {
           employee: this.employee,
           defaults: this.defaults,
           menu: this.menu,
+          homePrefs: this.homePrefs,
+          homePrefsDirty: this.homePrefsDirty,
           caps: this.caps,
           isApprover: this.isApprover,
           pendingApprovals: this.pendingApprovals,
@@ -110,7 +129,34 @@ export const useMaster = defineStore('master', {
         })
       )
     },
-    async load() {
+    // Simpan susunan Beranda: langsung berlaku di HP ini, lalu dikirim ke server (ikut akun).
+    setHomePrefs(prefs) {
+      this.homePrefs = { pinned: [...(prefs.pinned || [])], hidden: [...(prefs.hidden || [])] }
+      this.homePrefsDirty = true
+      this.persist()
+      return this.pushHomePrefs()
+    },
+    async pushHomePrefs() {
+      try {
+        const saved = await saveHomePrefs(this.homePrefs)
+        if (saved) this.homePrefs = { pinned: saved.pinned || [], hidden: saved.hidden || [] }
+        this.homePrefsDirty = false
+        this.persist()
+        return true
+      } catch {
+        return false // offline / gagal → tetap dirty, dicoba lagi saat bootstrap berikutnya
+      }
+    },
+    load() {
+      if (!inflight) inflight = this._load().finally(() => { inflight = null })
+      return inflight
+    },
+    // Untuk route guard: tunggu master pertama kali dimuat (browser baru / habis login belum punya cache),
+    // supaya tautan langsung (mis. email "/stock_ops#/rtp/RTP-…") tidak terlempar ke Beranda.
+    ensureLoaded() {
+      return this.loadedAt ? Promise.resolve() : this.load()
+    },
+    async _load() {
       this.loading = true
       try {
         const b = await bootstrap()
@@ -134,6 +180,8 @@ export const useMaster = defineStore('master', {
         this.employee = b.employee || null
         this.defaults = b.defaults || null
         this.menu = b.menu || {}
+        if (this.homePrefsDirty) this.pushHomePrefs()
+        else if (b.home_prefs) this.homePrefs = { pinned: b.home_prefs.pinned || [], hidden: b.home_prefs.hidden || [] }
         this.caps = b.caps || {}
         this.isApprover = !!b.is_approver
         this.pendingApprovals = b.pending_approvals || 0
